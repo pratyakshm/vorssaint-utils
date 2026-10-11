@@ -9,6 +9,9 @@ struct NotchSpringTunerPopover: View {
     @AppStorage(DefaultsKey.notchSpringMass) private var mass = NotchMotion.defaultSpringMass
     @AppStorage(DefaultsKey.notchSpringStiffness) private var stiffness = NotchMotion.defaultSpringStiffness
     @AppStorage(DefaultsKey.notchSpringDamping) private var damping = NotchMotion.defaultSpringDamping
+    @ObservedObject private var l10n = L10n.shared
+
+    private var locale: Locale { Locale(identifier: l10n.language.rawValue) }
 
     private var sanitized: (mass: Double, stiffness: Double, damping: Double) {
         (NotchMotion.sanitizedSpringMass(mass),
@@ -54,11 +57,11 @@ struct NotchSpringTunerPopover: View {
             NotchSpringCurve(spring: spring)
                 .frame(height: 56)
             slider("Mass", value: $mass, in: NotchMotion.springMassRange, step: 0.1,
-                   formatted: String(format: "%.1f", sanitized.mass))
+                   formatted: String(format: "%.1f", locale: locale, sanitized.mass))
             slider("Stiffness", value: $stiffness, in: NotchMotion.springStiffnessRange, step: 1,
                    formatted: "\(Int(sanitized.stiffness))")
             slider("Damping", value: $damping, in: NotchMotion.springDampingRange, step: 0.5,
-                   formatted: String(format: "%.1f", sanitized.damping))
+                   formatted: String(format: "%.1f", locale: locale, sanitized.damping))
             HStack {
                 Text("Gentle at the defaults; lower damping bounces more.")
                     .font(.caption).foregroundStyle(.secondary)
