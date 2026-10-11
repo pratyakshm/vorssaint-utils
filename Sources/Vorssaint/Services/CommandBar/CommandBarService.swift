@@ -498,7 +498,7 @@ final class CommandBarService: ObservableObject {
     /// Below the island, centred on it, where the drop lands.
     private func hang(_ panel: NSPanel, below island: CGRect) {
         panel.contentViewController?.view.layoutSubtreeIfNeeded()
-        let size = panel.contentViewController?.view.fittingSize ?? NSSize(width: CommandBarView.width, height: 380)
+        let size = panel.contentViewController?.view.fittingSize ?? NSSize(width: CommandBarView.windowWidth, height: 380)
         let screen = NSScreen.screens.first { $0.frame.contains(CGPoint(x: island.midX, y: island.maxY - 1)) }?
             .visibleFrame ?? NSScreen.pointerVisibleFrame
         panelScreen = screen
@@ -3446,7 +3446,9 @@ final class CommandBarService: ObservableObject {
                     appDelegate()?.openSettingsWindow()
                     return nil
                 case "k":
-                    self.openActions()
+                    // Toggles the selected row's menu: open it, or step back
+                    // out of it when it is already up.
+                    if case .actions = self.mode { self.stepBack() } else { self.openActions() }
                     return nil
                 case "p":
                     if let entry = self.selectedEntry, !entry.isAnswer,

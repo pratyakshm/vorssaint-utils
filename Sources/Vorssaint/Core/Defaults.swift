@@ -594,6 +594,9 @@ enum DefaultsKey {
     static let commandBarShortcut = "commandBarShortcut"
     /// Compact mode: an empty field shows nothing but itself. Off by default
     static let commandBarCompactMode = "commandBarCompactMode"
+    /// Minimal look: single-line rows with a trailing kind label, no category
+    /// chips, Try examples, number badges or footer hints. On by default.
+    static let commandBarMinimalLook = "commandBarMinimalLook"
     /// The ASCII layout borrowed while the bar is open, restored on close. Off by default
     static let commandBarASCIILayoutEnabled = "commandBarASCIILayoutEnabled"
     static let commandBarUsage = "commandBarUsage"           // per-command run counts, never queries
@@ -892,6 +895,9 @@ enum DefaultsKey {
     static let notchLowBatteryMenuBar = "notchLowBatteryMenuBar"
     static let notchHoverDelay = "notchHoverDelay"
     static let notchCloseDelay = "notchCloseDelay"
+    static let notchSpringMass = "notchSpringMass"
+    static let notchSpringStiffness = "notchSpringStiffness"
+    static let notchSpringDamping = "notchSpringDamping"
     static let notchReturnHome = "notchReturnHome"
     static let notchHomeModule = "notchHomeModule"
     static let notchOpensActivity = "notchOpensActivity"
@@ -1478,6 +1484,9 @@ enum Defaults {
         DefaultsKey.notchLowBatteryMenuBar: true,
         DefaultsKey.notchHoverDelay: NotchSupport.defaultHoverDelay,
         DefaultsKey.notchCloseDelay: NotchSupport.defaultCloseDelay,
+        DefaultsKey.notchSpringMass: NotchMotion.defaultSpringMass,
+        DefaultsKey.notchSpringStiffness: NotchMotion.defaultSpringStiffness,
+        DefaultsKey.notchSpringDamping: NotchMotion.defaultSpringDamping,
         DefaultsKey.notchReturnHome: false,
         DefaultsKey.notchHomeModule: NotchModule.controls.rawValue,
         DefaultsKey.notchOpensActivity: true,
@@ -1774,6 +1783,7 @@ enum Defaults {
         DefaultsKey.scratchpadShortcut: GlobalShortcut.scratchpadDefault.storageValue,
         DefaultsKey.commandBarShortcutEnabled: false,
         DefaultsKey.commandBarCompactMode: false,
+        DefaultsKey.commandBarMinimalLook: true,
         DefaultsKey.commandBarASCIILayoutEnabled: false,
         DefaultsKey.commandBarDisabledSources: "",
         DefaultsKey.commandBarAliases: "",

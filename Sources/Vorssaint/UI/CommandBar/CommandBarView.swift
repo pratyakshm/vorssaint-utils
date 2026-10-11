@@ -28,10 +28,21 @@ struct CommandBarView: View {
     }
     /// As tall as the list is ever allowed to be, so the panel never grows
     /// past what a laptop screen can show above the fold.
-    static let listCeiling: CGFloat = 452
+    static let listCeiling: CGFloat = 420
     static let width: CGFloat = 560
+    /// The window panel's own width: TinyCast's panel measures 750 points,
+    /// and the command bar copies that width. The island and droplet copies
+    /// keep the compact width above.
+    static let windowWidth: CGFloat = 750
+    /// The window panel's outer corner, again TinyCast's own panel radius.
+    static let panelRadius: CGFloat = 26
+    /// A floating actions menu's fixed width, so filtering its rows never
+    /// moves it under the pointer.
+    static let actionsWidth: CGFloat = 320
+    /// One actions row's stated height, so the capped list lands on a row.
+    static let actionsRowHeight: CGFloat = 36
     /// The field alone, as the compact bar shows it.
-    static let fieldHeight: CGFloat = 50
+    static let fieldHeight: CGFloat = 44
     private static let homeChipID = "category.all"
 
     /// Where this copy is drawn: the island's own, or the bar's window, which
@@ -44,7 +55,14 @@ struct CommandBarView: View {
     @ObservedObject private var homebrew = HomebrewManager.shared
     @Environment(\.colorScheme) private var colorScheme
     @FocusState private var searchFocused: Bool
+    @FocusState private var actionSearchFocused: Bool
     @State private var showHomebrewDetails = false
+    /// TinyCast's minimal look: single-line rows with a trailing kind label,
+    /// no chips, examples, badges or footer. Off restores the old chrome.
+    @AppStorage(DefaultsKey.commandBarMinimalLook) private var minimalLook = true
+    /// What the floating actions menu is filtered to. Local, never the
+    /// search: typing there must not disturb the list behind the menu.
+    @State private var actionFilter = ""
 
     /// The mark, made a handle. Dragging rides on AppKit's own window
     /// dragging — the same machinery a title bar uses — rather than a
@@ -120,84 +138,118 @@ struct CommandBarView: View {
 
     private var shownAs: CommandBarPresentation { presentation ?? service.presentation }
 
+    /// The window copy is wide; the island and droplet copies keep the
+    /// compact width the island's geometry is built around.
+    private var panelWidth: CGFloat { shownAs == .window ? Self.windowWidth : Self.width }
+
     /// Out of the island the bar is the island's: black, or the open island's
     /// own surface, and dark like it.
     @ViewBuilder private var backdrop: some View {
         switch shownAs {
-        case .window: HUDBackdrop(cornerRadius: 22, contrast: .high)
+        case .window: HUDBackdrop(cornerRadius: Self.panelRadius, contrast: .high)
         case .droplet: RoundedRectangle(cornerRadius: 22, style: .continuous).fill(Color.black)
         case .island: Color.clear
         }
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            searchBar
-            if let warning = service.uninstallWarning {
-                Label(warning, systemImage: "exclamationmark.triangle")
-                    .font(.callout)
-                    .foregroundStyle(.orange)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(.horizontal, 17)
-                    .padding(.bottom, 12)
-            }
-            switch service.mode {
-            case .search:
-                if showsCategoryChips {
-                    Divider()
-                    categoryChipsRow
+        // Top-anchored: the menu floats over the list's corner while the
+        // field stays exactly where it was, whatever the menu measures.
+        ZStack(alignment: .topLeading) {
+            VStack(spacing: 0) {
+                searchBar
+                if let warning = service.uninstallWarning {
+                    Label(warning, systemImage: "exclamationmark.triangle")
+                        .font(.callout)
+                        .foregroundStyle(.orange)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.horizontal, 17)
+                        .padding(.bottom, 12)
                 }
-                if service.rows.isEmpty {
-                    // A category with nothing in it needs the same way out a
-                    // fruitless search gets, or the panel is a room with no
-                    // door in it.
-                    if !trimmedQuery.isEmpty || service.activeCategory != nil {
+                switch service.mode {
+                case .search:
+                    if showsCategoryChips {
                         Divider()
-                        emptyState
+                        categoryChipsRow
                     }
-                } else {
-                    if !showsCategoryChips { Divider() }
-                    resultsList
+                    if service.rows.isEmpty {
+                        // A category with nothing in it needs the same way out a
+                        // fruitless search gets, or the panel is a room with no
+                        // door in it.
+                        if !trimmedQuery.isEmpty || service.activeCategory != nil {
+                            Divider()
+                            emptyState
+                        }
+                    } else {
+                        if !showsCategoryChips { Divider() }
+                        resultsList
+                    }
+                case .argument(let entryID):
+                    Divider()
+                    argumentCard(entryID: entryID)
+                case .confirm(let entryID):
+                    Divider()
+                    confirmCard(entryID: entryID)
+                case .uninstallReview:
+                    Divider()
+                    uninstallReviewCard
+                case .uninstallHomebrewConfirm:
+                    Divider()
+                    uninstallHomebrewConfirmCard
+                case .actions:
+                    // The list stays up behind the floating menu, the way a
+                    // popover keeps its parent visible instead of replacing it.
+                    if !service.rows.isEmpty {
+                        Divider()
+                        resultsList
+                    }
+                case .naming(let entryID):
+                    Divider()
+                    namingCard(entryID: entryID)
+                case .capturingShortcut(let entryID):
+                    Divider()
+                    shortcutCard(entryID: entryID)
                 }
-            case .argument(let entryID):
-                Divider()
-                argumentCard(entryID: entryID)
-            case .confirm(let entryID):
-                Divider()
-                confirmCard(entryID: entryID)
-            case .uninstallReview:
-                Divider()
-                uninstallReviewCard
-            case .uninstallHomebrewConfirm:
-                Divider()
-                uninstallHomebrewConfirmCard
-            case .actions:
-                Divider()
-                actionsList
-            case .naming(let entryID):
-                Divider()
-                namingCard(entryID: entryID)
-            case .capturingShortcut(let entryID):
-                Divider()
-                shortcutCard(entryID: entryID)
+                // A footer under a bare field reads as a second row of chrome on
+                // something meant to be one strip. The minimal look swaps the
+                // hint line for floating controls: a menu circle and pills.
+                if !service.isCompactHome {
+                    if minimalLook {
+                        bottomBar
+                    } else {
+                        Divider()
+                        footer
+                    }
+                }
             }
-            // A footer under a bare field reads as a second row of chrome on
-            // something meant to be one strip.
-            if !service.isCompactHome {
-                Divider()
-                footer
+            .frame(width: panelWidth)
+            .environment(\.colorScheme, shownAs == .window ? colorScheme : .dark)
+            .background(backdrop)
+            // The ⌘K menu floats over the list's own corner instead of
+            // replacing it, so dismissing it lands back where it opened.
+            // Hung under the header, never over it.
+            if case .actions(let entryID) = service.mode, shownAs == .window {
+                actionsPanel(entryID: entryID)
+                    .padding(.trailing, 12)
+                    .padding(.top, 64)
+                    .padding(.bottom, 12)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
             }
         }
-        .frame(width: Self.width)
-        .environment(\.colorScheme, shownAs == .window ? colorScheme : .dark)
-        .background(backdrop)
-        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: shownAs == .window ? Self.panelRadius : 22,
+                                    style: .continuous))
         .onAppear {
             focusSearch()
             service.barDidAppear()
         }
         .onChange(of: service.presentationID) { _, _ in focusSearch() }
-        .onChange(of: service.mode) { _, _ in focusSearch() }
+        .onChange(of: service.mode) { _, mode in
+            if case .actions = mode {
+                actionFilter = ""
+            } else {
+                focusSearch()
+            }
+        }
         // Typing as the drop still falls hurries it, so the bar shows what
         // is being typed right away.
         .onChange(of: service.query) { _, query in
@@ -211,6 +263,13 @@ struct CommandBarView: View {
         presentation == .island ? service.presentation == .island : service.presentation != .island
     }
 
+    /// While the actions menu is up the list behind it is frozen: a scroll
+    /// under the pointer must not move the row the menu acts on.
+    private var isActionsOpen: Bool {
+        if case .actions = service.mode { return true }
+        return false
+    }
+
     private func focusSearch() {
         DispatchQueue.main.async { if isShown { searchFocused = true } }
     }
@@ -218,16 +277,17 @@ struct CommandBarView: View {
     // MARK: - Field
 
     private var searchBar: some View {
-        HStack(spacing: 10) {
-            // The mark leads the field, the same face the quick panel and the
-            // radial menu wear; modes speak through the chip and the cards.
+        HStack(spacing: 12) {
+            // A magnifier leads the field, the way launchers do: the mark
+            // stays on the quick panel and the radial menu, not here.
             // Both axes are pinned: the panel re-fits on every keystroke and
-            // a mark left to follow the proposed height shrinks or vanishes
+            // a glyph left to follow the proposed height shrinks or vanishes
             // mid-layout. It is also the handle that carries the bar to
             // wherever the hand wants it; a double-click brings it home.
             if shownAs == .window {
-                BrandMark(width: 22, tint: markTint)
-                    .opacity(0.85)
+                Image(systemName: "magnifyingglass")
+                    .font(.system(size: 18, weight: .medium))
+                    .foregroundStyle(.secondary)
                     .frame(width: 22, height: 22)
                     .allowsHitTesting(false)
                     .overlay(
@@ -261,11 +321,11 @@ struct CommandBarView: View {
             }
             TextField(fieldPlaceholder, text: $service.query)
                 .textFieldStyle(.plain)
-                .font(.system(size: 16))
+                .font(.system(size: shownAs == .window ? 20 : 16))
                 .focused($searchFocused)
                 .disableAutocorrection(true)
                 .accessibilityLabel(text.pageTitle)
-            if service.isCompactHome { compactHints }
+            if service.isCompactHome, !minimalLook { compactHints }
             if !service.query.isEmpty {
                 Button {
                     service.query = ""
@@ -278,7 +338,8 @@ struct CommandBarView: View {
             }
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, 14)
+        .padding(.top, 10)
+        .padding(.bottom, 10)
     }
 
     /// The collapsed bar has no footer, so the keys that still work (↓ to
@@ -298,55 +359,123 @@ struct CommandBarView: View {
         .fixedSize()
     }
 
-    /// Everything that can be done to the selected row, in the same list
-    /// shape as the results so there is nothing new to learn.
-    private var actionsList: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text(text.actionsTitle.uppercased())
-                .font(.system(size: 9, weight: .bold))
-                .tracking(0.5)
-                .foregroundStyle(.tertiary)
-                .padding(.horizontal, 16)
-                .padding(.top, 10)
-                .padding(.bottom, 2)
-            VStack(spacing: 1) {
-                ForEach(Array(service.actionRows.enumerated()), id: \.element.id) { index, action in
-                    Button {
-                        service.runAction(action)
-                    } label: {
-                        HStack(spacing: 10) {
-                            Image(systemName: action.symbolName)
-                                .font(.system(size: 13.5, weight: .semibold))
-                                .foregroundStyle(action.isDestructive
-                                                 ? Color.red : Color.primary.opacity(0.85))
-                                .frame(width: 30, height: 30)
-                            Text(action.title)
-                                .font(.system(size: 13, weight: .medium))
-                                .foregroundStyle(action.isDestructive ? Color.red : Color.primary)
-                            Spacer(minLength: 12)
-                            Image(systemName: "return")
-                                .font(.system(size: 10, weight: .semibold))
-                                .foregroundStyle(.tertiary)
-                                .opacity(index == service.actionIndex ? 1 : 0)
+    /// Everything that can be done to the selected row, floating over the
+    /// list's own corner instead of replacing it, so closing it lands back
+    /// where it opened. A filter at its foot narrows the rows in place.
+    private func actionsPanel(entryID: String) -> some View {
+        let actions = service.actionRows
+        let selectedID = actions.indices.contains(service.actionIndex)
+            ? actions[service.actionIndex].id : nil
+        let shown = filteredActions(actions)
+        return VStack(spacing: 0) {
+            if let entry = service.entry(withID: entryID) {
+                Text(entry.title)
+                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 12)
+                    .padding(.top, 8)
+                    .padding(.bottom, 6)
+            }
+            ScrollViewReader { proxy in
+                ScrollView {
+                    LazyVStack(spacing: 1) {
+                        ForEach(Array(shown.enumerated()), id: \.element.id) { index, action in
+                            if index > 0, actionsDividerAbove(action, after: shown[index - 1]) {
+                                Rectangle()
+                                    .fill(Color.primary.opacity(0.10))
+                                    .frame(height: 1)
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 8)
+                            }
+                            Button {
+                                service.runAction(action)
+                            } label: {
+                                HStack(spacing: 8) {
+                                    Image(systemName: action.symbolName)
+                                        .font(.system(size: 14, weight: .medium))
+                                        .foregroundStyle(action.isDestructive
+                                                         ? Color.red : Color.secondary)
+                                        .frame(width: 20, height: 20)
+                                    Text(action.title)
+                                        .font(.body)
+                                        .foregroundStyle(action.isDestructive ? Color.red : Color.primary)
+                                        .lineLimit(1)
+                                    Spacer(minLength: 8)
+                                    if action.id == selectedID {
+                                        keyCap("↵")
+                                    }
+                                }
+                                .padding(.horizontal, 8)
+                                .frame(maxWidth: .infinity, minHeight: Self.actionsRowHeight,
+                                       maxHeight: Self.actionsRowHeight, alignment: .leading)
+                                .contentShape(Rectangle())
+                                .background(
+                                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                        .fill(action.id == selectedID
+                                              ? Color.primary.opacity(0.10) : .clear)
+                                )
+                            }
+                            .buttonStyle(.plain)
+                            .id(action.id)
                         }
-                        .padding(.horizontal, 9)
-                        .padding(.vertical, 7)
-                        .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                        .background(
-                            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                .fill(index == service.actionIndex
-                                      ? (action.isDestructive
-                                         ? Color.red.opacity(0.12)
-                                         : Color.accentColor.opacity(0.14))
-                                      : .clear)
-                        )
                     }
-                    .buttonStyle(.plain)
+                    .padding(.horizontal, 8)
+                }
+                .frame(maxHeight: (Self.actionsRowHeight + 1) * 5.5)
+                .onChange(of: service.actionIndex) { _, _ in
+                    if let selectedID { proxy.scrollTo(selectedID) }
                 }
             }
-            .padding(.horizontal, 8)
-            .padding(.vertical, 8)
+            Rectangle()
+                .fill(Color.primary.opacity(0.10))
+                .frame(height: 1)
+            // The same bottom filter the launchers this copies put under
+            // their own menus.
+            TextField(text.actionsSearchPlaceholder, text: $actionFilter)
+                .textFieldStyle(.plain)
+                .font(.body)
+                .focused($actionSearchFocused)
+                .disableAutocorrection(true)
+                .padding(.horizontal, 20)
+                .frame(height: Self.actionsRowHeight)
         }
+        .frame(width: Self.actionsWidth)
+        .background(HUDBackdrop(cornerRadius: 16, contrast: .high))
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .shadow(color: .black.opacity(0.35), radius: 24, y: 8)
+        .onAppear { actionSearchFocused = true }
+    }
+
+    /// The rows the filter keeps, in order. Empty shows everything, so
+    /// clearing it is the way back.
+    private func filteredActions(_ actions: [CommandBarService.RowAction]) -> [CommandBarService.RowAction] {
+        let needle = actionFilter.trimmingCharacters(in: .whitespaces)
+        guard !needle.isEmpty else { return actions }
+        return actions.filter { $0.title.localizedCaseInsensitiveContains(needle) }
+    }
+
+    /// A hairline above the housekeeping group and above a newly
+    /// destructive run, so one list reads as sections, not a wall.
+    private func actionsDividerAbove(_ action: CommandBarService.RowAction,
+                                     after prev: CommandBarService.RowAction) -> Bool {
+        if action.id == "pin", prev.id != "pin" { return true }
+        return action.isDestructive && !prev.isDestructive
+    }
+
+    /// One outlined keycap for a row's chord, the way launchers draw theirs.
+    private func keyCap(_ text: String) -> some View {
+        Text(text)
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 4)
+            .frame(minWidth: 18, minHeight: 18)
+            .background(
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .strokeBorder(Color.primary.opacity(0.20), lineWidth: 1)
+            )
     }
 
     /// Naming a row: the field becomes the name, and says so when the name is
@@ -420,9 +549,10 @@ struct CommandBarView: View {
     }
 
     /// The chips stay up while a category is on, typing or not: a filter the
-    /// person cannot see is a filter they will blame the bar for.
+    /// person cannot see is a filter they will blame the bar for. The minimal
+    /// look hides them outright; the category still clears with Esc.
     private var showsCategoryChips: Bool {
-        !service.categoryChips.isEmpty
+        !minimalLook && !service.categoryChips.isEmpty
             && (service.isShowingSuggestions || service.activeCategory != nil)
     }
 
@@ -453,7 +583,7 @@ struct CommandBarView: View {
 
     private var resultsList: some View {
         VStack(alignment: .leading, spacing: 0) {
-            if service.isShowingSuggestions, service.activeCategory == nil {
+            if service.isShowingSuggestions, service.activeCategory == nil, !minimalLook {
                 // A list of commands never says the bar can add up, convert or
                 // reach into another app's menus. Examples do, and clicking
                 // one fills the field so it can be tried on the spot.
@@ -484,7 +614,7 @@ struct CommandBarView: View {
                 // The bar shows more than fits when nothing is typed, and a
                 // list with no scrollbar looks like a list that ends there.
                 ScrollView(showsIndicators: service.rows.count > 14) {
-                    LazyVStack(spacing: 1) {
+                    LazyVStack(spacing: minimalLook ? 0 : 1) {
                         ForEach(Array(service.rows.enumerated()), id: \.element.id) { index, entry in
                             // Every heading lives in the list, directly above
                             // the rows it names.
@@ -542,15 +672,16 @@ struct CommandBarView: View {
         .accessibilityAddTraits(isActive ? [.isButton, .isSelected] : .isButton)
     }
 
+    /// One section's label, in its own case and weight: a heading names the
+    /// rows under it instead of shouting over them.
     private func sectionHeader(_ title: String) -> some View {
-        Text(title.uppercased())
-            .font(.system(size: 9, weight: .bold))
-            .tracking(0.5)
-            .foregroundStyle(.tertiary)
+        Text(title)
+            .font(.subheadline.weight(.medium))
+            .foregroundStyle(.secondary)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 8)
-            .padding(.top, 6)
-            .padding(.bottom, 3)
+            .padding(.top, 8)
+            .padding(.bottom, 4)
     }
 
     private func row(_ entry: CommandBarEntry, index: Int) -> some View {
@@ -562,62 +693,114 @@ struct CommandBarView: View {
         } label: {
             HStack(spacing: 10) {
                 iconView(entry)
-                VStack(alignment: .leading, spacing: 1.5) {
+                if minimalLook {
+                    // One line: the name, its bound keys, then what it is on
+                    // the right. Holding ⌘ turns the right side into the
+                    // digit that runs the row. Any warning takes the right
+                    // side instead of a kind label.
                     titleView(entry)
-                    subtitleView(entry)
+                    if let caps = rowKeyCaps(entry) {
+                        HStack(spacing: 2) {
+                            ForEach(caps, id: \.self) { cap in
+                                keyCap(cap)
+                            }
+                        }
+                    }
+                    Spacer(minLength: 12)
+                    if entry.trouble != nil {
+                        subtitleView(entry)
+                    } else if let value = entry.answerValue {
+                        Text(value)
+                            .font(.system(size: 12, weight: .semibold, design: .rounded))
+                            .foregroundStyle(Color.accentColor)
+                            .monospacedDigit()
+                    } else if service.commandIsHeld, index < 9 {
+                        HStack(spacing: 2) {
+                            keyCap("⌘")
+                            keyCap("\(index + 1)")
+                        }
+                    } else if !entry.subtitle.isEmpty {
+                        Text(entry.subtitle)
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
+                } else {
+                    VStack(alignment: .leading, spacing: 1.5) {
+                        titleView(entry)
+                        subtitleView(entry)
+                    }
+                    Spacer(minLength: 12)
+                    if service.commandIsHeld, index < 9 {
+                        // Holding Command turns the list into nine numbered rows.
+                        Text("⌘\(index + 1)")
+                            .font(.system(size: 10, weight: .semibold, design: .rounded))
+                            .foregroundStyle(Color.accentColor)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2.5)
+                            .background(
+                                RoundedRectangle(cornerRadius: 5, style: .continuous)
+                                    .fill(Color.accentColor.opacity(0.12))
+                            )
+                    } else if let value = entry.answerValue {
+                        Text(value)
+                            .font(.system(size: 12, weight: .semibold, design: .rounded))
+                            .foregroundStyle(Color.accentColor)
+                            .monospacedDigit()
+                    } else if let shortcut = service.rowShortcut(for: entry)?.displayString
+                                ?? entry.shortcut?.displayString ?? entry.menuShortcut {
+                        Text(shortcut)
+                            .font(.system(size: 10, weight: .semibold, design: .rounded))
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2.5)
+                            .background(
+                                RoundedRectangle(cornerRadius: 5, style: .continuous)
+                                    .fill(Color.primary.opacity(0.06))
+                            )
+                    }
+                    Image(systemName: "return")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(.tertiary)
+                        // Always laid out, only drawn on the selected row: without
+                        // the reserved width every row shifted as the selection
+                        // moved.
+                        .opacity(isSelected ? 1 : 0)
                 }
-                Spacer(minLength: 12)
-                if service.commandIsHeld, index < 9 {
-                    // Holding Command turns the list into nine numbered rows.
-                    Text("⌘\(index + 1)")
-                        .font(.system(size: 10, weight: .semibold, design: .rounded))
-                        .foregroundStyle(Color.accentColor)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2.5)
-                        .background(
-                            RoundedRectangle(cornerRadius: 5, style: .continuous)
-                                .fill(Color.accentColor.opacity(0.12))
-                        )
-                } else if let value = entry.answerValue {
-                    Text(value)
-                        .font(.system(size: 12, weight: .semibold, design: .rounded))
-                        .foregroundStyle(Color.accentColor)
-                        .monospacedDigit()
-                } else if let shortcut = service.rowShortcut(for: entry)?.displayString
-                            ?? entry.shortcut?.displayString ?? entry.menuShortcut {
-                    Text(shortcut)
-                        .font(.system(size: 10, weight: .semibold, design: .rounded))
-                        .foregroundStyle(.secondary)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2.5)
-                        .background(
-                            RoundedRectangle(cornerRadius: 5, style: .continuous)
-                                .fill(Color.primary.opacity(0.06))
-                        )
-                }
-                Image(systemName: "return")
-                    .font(.system(size: 10, weight: .semibold))
-                    .foregroundStyle(.tertiary)
-                    // Always laid out, only drawn on the selected row: without
-                    // the reserved width every row shifted as the selection
-                    // moved.
-                    .opacity(isSelected ? 1 : 0)
             }
-            .padding(.horizontal, 9)
-            .padding(.vertical, entry.isAnswer ? 9 : 7)
+            .padding(.horizontal, minimalLook ? 8 : 9)
+            .padding(.vertical, entry.isAnswer ? 9 : (minimalLook ? 6 : 7))
             .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
             .background(
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .fill(isSelected ? Color.accentColor.opacity(0.14) : .clear)
+                    .fill(rowFill(isSelected: isSelected))
             )
         }
         .buttonStyle(.plain)
         .onHover { hovering in
-            if hovering { service.selectFromHover(index) }
+            if hovering, !isActionsOpen { service.selectFromHover(index) }
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityLabel(entry))
         .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
+    }
+
+    /// The row's bound combination as single caps, or nil when no chord
+    /// runs it: a row shortcut first, then the row's own, then someone
+    /// else's menu shortcut written out as one cap.
+    private func rowKeyCaps(_ entry: CommandBarEntry) -> [String]? {
+        if let shortcut = service.rowShortcut(for: entry) ?? entry.shortcut {
+            return shortcut.keyCaps
+        }
+        if let menu = entry.menuShortcut { return [menu] }
+        return nil
+    }
+
+    /// The selection is a neutral wash, the same in every list, never the
+    /// accent: a blue row reads as a button about to be pressed.
+    private func rowFill(isSelected: Bool) -> Color {
+        guard isSelected else { return .clear }
+        return minimalLook ? Color.primary.opacity(0.10) : Color.accentColor.opacity(0.14)
     }
 
     /// Everything the eye gets from a row, said in words: the name, where it
@@ -637,8 +820,8 @@ struct CommandBarView: View {
         return parts.filter { !$0.isEmpty }.joined(separator: ", ")
     }
 
-    /// The title with the letters that actually matched in accent, so the row
-    /// shows why it is here. The calculator's result gets the loud treatment.
+    /// The title, plain: the row shows what it is, not why it matched.
+    /// The calculator's result gets the loud treatment.
     @ViewBuilder
     private func titleView(_ entry: CommandBarEntry) -> some View {
         if entry.isAnswer {
@@ -650,6 +833,13 @@ struct CommandBarView: View {
                 .foregroundStyle(.primary)
                 .lineLimit(1)
                 .truncationMode(.middle)
+        } else if minimalLook {
+            Text(entry.title)
+                .font(.body)
+                .foregroundStyle(.primary)
+                .lineLimit(1)
+                .truncationMode(.tail)
+                .help(entry.title)
         } else {
             let offsets = service.highlightOffsets(for: entry)
             if offsets.isEmpty {
@@ -711,50 +901,65 @@ struct CommandBarView: View {
     }
 
     private func iconView(_ entry: CommandBarEntry) -> some View {
-        ZStack(alignment: .topTrailing) {
-            // An app or file icon already has its own shape and padding, so a
-            // plate behind it reads as a second frame; only glyphs get one.
-            if entry.usesPlateIcon {
+        // The minimal look draws icons bare at one size, with no plate and
+        // no badge: a dot under a running app says it runs.
+        let side: CGFloat = minimalLook ? 26 : 30
+        return ZStack(alignment: .topTrailing) {
+            if minimalLook {
+                iconContent(entry, side: side)
+                    .frame(width: side, height: side)
+            } else if entry.usesPlateIcon {
+                // An app or file icon already has its own shape and padding, so a
+                // plate behind it reads as a second frame; only glyphs get one.
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .fill(entry.isActive ? Color.accentColor.opacity(0.16) : Color.primary.opacity(0.06))
                     .frame(width: 30, height: 30)
-                    .overlay(iconContent(entry))
+                    .overlay(iconContent(entry, side: 30))
             } else {
-                iconContent(entry)
+                iconContent(entry, side: 30)
                     .frame(width: 30, height: 30)
             }
             if entry.isActive {
-                Circle()
-                    .fill(.green)
-                    .frame(width: 7, height: 7)
-                    // A ring keeps the dot legible on top of a colorful icon.
-                    .overlay(Circle().strokeBorder(Color(nsColor: .windowBackgroundColor), lineWidth: 1.2))
-                    .offset(x: 2.5, y: -2.5)
+                if minimalLook {
+                    Circle()
+                        .fill(.secondary)
+                        .frame(width: 3, height: 3)
+                        .offset(y: 3)
+                } else {
+                    Circle()
+                        .fill(.green)
+                        .frame(width: 7, height: 7)
+                        // A ring keeps the dot legible on top of a colorful icon.
+                        .overlay(Circle().strokeBorder(Color(nsColor: .windowBackgroundColor), lineWidth: 1.2))
+                        .offset(x: 2.5, y: -2.5)
+                }
             }
         }
     }
 
     @ViewBuilder
-    private func iconContent(_ entry: CommandBarEntry) -> some View {
+    private func iconContent(_ entry: CommandBarEntry, side: CGFloat = 30) -> some View {
         switch entry.icon {
         case .symbol(let name):
             Image(systemName: name)
-                .font(.system(size: 13.5, weight: .semibold))
-                .foregroundStyle(entry.isActive ? Color.accentColor : Color.primary.opacity(0.85))
+                .font(.system(size: minimalLook ? 14 : 13.5,
+                              weight: minimalLook ? .medium : .semibold))
+                .foregroundStyle(entry.isActive && !minimalLook
+                                 ? Color.accentColor : Color.primary.opacity(0.85))
         case .appIcon(let path):
             Image(nsImage: CommandBarIconCache.icon(forPath: path))
                 .resizable()
                 .aspectRatio(contentMode: .fit)
-                .frame(width: 28, height: 28)
+                .frame(width: side, height: side)
         case .clipboardImage(let name):
             ClipboardThumbnailImage(source: .stored(name: name), contentMode: .fill)
-                .frame(width: 28, height: 28)
+                .frame(width: side, height: side)
                 .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
         case .filePath(let path):
             Image(nsImage: CommandBarIconCache.icon(forPath: path))
                 .resizable()
                 .aspectRatio(contentMode: .fit)
-                .frame(width: 28, height: 28)
+                .frame(width: side, height: side)
         case .color(let color):
             ColorSwatch(color: color, size: 22)
         }
@@ -1165,6 +1370,46 @@ struct CommandBarView: View {
     }
 
     // MARK: - Footer
+
+    /// Floating controls instead of a hint line: the menu circle on the
+    /// left, the action pills on the right. No bar, just controls.
+    private var bottomBar: some View {
+        HStack(spacing: 0) {
+            Button {
+                CommandBarService.shared.hide()
+                SettingsRouter.shared.page = .commandBar
+                appDelegate()?.openSettingsWindow()
+            } label: {
+                BrandMark(width: 14, tint: markTint)
+                    .frame(width: 28, height: 28)
+                    .background(Circle().fill(Color.primary.opacity(0.08)))
+            }
+            .buttonStyle(.plain)
+            .help(text.actionOpenSettings)
+            Spacer(minLength: 0)
+            // The pills advertise exactly what the keys do: ⌘K toggles this
+            // row's menu, so the pill stays up while the menu is open.
+            if service.canOpenActions || isActionsOpen {
+                Button {
+                    if isActionsOpen { service.stepBack() } else { service.openActions() }
+                } label: {
+                    HStack(spacing: 6) {
+                        Text(text.actionsHint)
+                            .font(.callout.weight(.medium))
+                            .foregroundStyle(.secondary)
+                        keyCap("⌘")
+                        keyCap("K")
+                    }
+                    .padding(4)
+                    .background(Capsule().fill(Color.primary.opacity(0.08)))
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(.horizontal, 8)
+        .frame(height: 52)
+        .frame(maxWidth: .infinity)
+    }
 
     private var footer: some View {
         HStack(spacing: 5) {

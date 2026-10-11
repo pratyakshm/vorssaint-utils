@@ -169,6 +169,13 @@ struct CommandBarFeatureStrings {
     let filesIgnoreAdd: String
     let compactModeToggle: String
     let compactModeCaption: String
+    /// English until the translators follow: the minimal-look toggle and the
+    /// actions menu's bottom filter. Defaulted so the per-language
+    /// initializers below keep compiling untouched.
+    let minimalLookToggle: String = "Minimal look"
+    let minimalLookCaption: String =
+        "Single-line rows with a trailing kind label; hides the category chips, examples and hint line."
+    let actionsSearchPlaceholder: String = "Search for actions…"
     let emojiSkinToneLabel: String
     let emojiSkinToneCaption: String
     let asciiLayoutToggle: String

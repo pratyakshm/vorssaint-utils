@@ -10,6 +10,7 @@ struct CommandBarSettings: View {
     @ObservedObject private var secureInput = SecureInputMonitor.shared
     @AppStorage(DefaultsKey.commandBarShortcutEnabled) private var shortcutEnabled = false
     @AppStorage(DefaultsKey.commandBarCompactMode) private var compactMode = false
+    @AppStorage(DefaultsKey.commandBarMinimalLook) private var minimalLook = true
     @AppStorage(DefaultsKey.commandBarEmojiSkinTone) private var emojiSkinTone = ""
     @AppStorage(DefaultsKey.commandBarASCIILayoutEnabled) private var asciiLayoutEnabled = false
     @AppStorage(DefaultsKey.commandBarDisabledSources) private var disabledSources = ""
@@ -82,6 +83,10 @@ struct CommandBarSettings: View {
                 // screen with a stale value between them.
                 Toggle(text.compactModeToggle, isOn: $compactMode)
                 Text(text.compactModeCaption)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Toggle(text.minimalLookToggle, isOn: $minimalLook)
+                Text(text.minimalLookCaption)
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 if CommandBarPreferences.isEnabled(.emoji, disabledRaw: disabledSources) {
