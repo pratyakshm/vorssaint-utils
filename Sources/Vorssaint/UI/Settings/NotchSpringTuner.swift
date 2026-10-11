@@ -136,7 +136,7 @@ private struct NotchSpringPreview: View {
 
     var body: some View {
         TimelineView(.periodic(from: .now, by: 1 / 60)) { timeline in
-            let elapsed = timeline.date.timeIntervalSinceReferenceDate.truncatedRemainder(dividingBy: cycle)
+            let elapsed = timeline.date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: cycle)
             let progress = progress(at: elapsed)
             let opening = isOpening(at: elapsed)
             let width = 126 + (252 - 126) * progress
