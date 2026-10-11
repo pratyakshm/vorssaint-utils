@@ -2524,10 +2524,90 @@ enum NotchMotion {
         }
     }
 
-    static let growingWidth = Spring(duration: 0.44, bounce: 0.25)
-    static let growingHeight = Spring(duration: 0.38, bounce: 0.22)
-    static let shrinkingWidth = Spring(duration: 0.30, bounce: 0)
-    static let shrinkingHeight = Spring(duration: 0.26, bounce: 0)
+    /// The tunable open/close spring. Defaults settle in ~600 ms with a
+    /// gentle overshoot: mass 1, stiffness 160, damping 17.
+    static let defaultSpringMass = 1.0
+    static let defaultSpringStiffness = 160.0
+    static let defaultSpringDamping = 17.0
+    static let springMassRange: ClosedRange<Double> = 0.1...4.0
+    static let springStiffnessRange: ClosedRange<Double> = 10...400
+    static let springDampingRange: ClosedRange<Double> = 1...40
+    /// The height drops a little ahead of the width widening, at the same
+    /// damping ratio.
+    static let springHeightStiffnessFactor = 1.35
+    /// Baseline open/close time at the defaults, shown in the tuner.
+    static let springBaselineDuration: TimeInterval = 0.6
+    /// The width travel the tuner's millisecond badge is measured over.
+    static let springReferenceTravel: CGFloat = 320
+
+    static func sanitizedSpringMass(_ value: Double) -> Double {
+        guard value.isFinite else { return defaultSpringMass }
+        return min(springMassRange.upperBound, max(springMassRange.lowerBound, value))
+    }
+
+    static func sanitizedSpringStiffness(_ value: Double) -> Double {
+        guard value.isFinite else { return defaultSpringStiffness }
+        return min(springStiffnessRange.upperBound, max(springStiffnessRange.lowerBound, value))
+    }
+
+    static func sanitizedSpringDamping(_ value: Double) -> Double {
+        guard value.isFinite else { return defaultSpringDamping }
+        return min(springDampingRange.upperBound, max(springDampingRange.lowerBound, value))
+    }
+
+    /// The tuner's mass/stiffness/damping, sanitized, read live so the
+    /// island and its preview use the same values.
+    static func tunedSpringParameters(in defaults: UserDefaults = .standard) -> (mass: Double, stiffness: Double, damping: Double) {
+        let mass = defaults.object(forKey: DefaultsKey.notchSpringMass) as? Double ?? defaultSpringMass
+        let stiffness = defaults.object(forKey: DefaultsKey.notchSpringStiffness) as? Double ?? defaultSpringStiffness
+        let damping = defaults.object(forKey: DefaultsKey.notchSpringDamping) as? Double ?? defaultSpringDamping
+        return (sanitizedSpringMass(mass), sanitizedSpringStiffness(stiffness), sanitizedSpringDamping(damping))
+    }
+
+    /// A mass/stiffness/damping spring expressed in the duration/bounce
+    /// terms the island animates with. duration = 2π/ω0, bounce = 1 − ζ,
+    /// so the defaults land near the previous gentle curve and settle in
+    /// about 600 ms.
+    static func tunedSpring(width: Bool, in defaults: UserDefaults = .standard) -> Spring {
+        let params = tunedSpringParameters(in: defaults)
+        let mass = max(0.01, params.mass)
+        var stiffness = max(0.01, params.stiffness)
+        var damping = max(0.01, params.damping)
+        if !width {
+            // Stiffer, with damping scaled to keep the same damping ratio,
+            // so the height drops ahead without bouncing more.
+            stiffness *= springHeightStiffnessFactor
+            damping *= springHeightStiffnessFactor.squareRoot()
+        }
+        let omega = (stiffness / mass).squareRoot()
+        guard omega > 0 else { return Spring(duration: springBaselineDuration, bounce: 0) }
+        let zeta = damping / (2 * (stiffness * mass).squareRoot())
+        return Spring(duration: 2 * Double.pi / omega, bounce: min(0.95, max(0, 1 - zeta)))
+    }
+
+    /// How long the tuner's values take to settle a reference travel,
+    /// for the millisecond badge. Same physics the island animates with.
+    static func referenceSettlingDuration(mass: Double, stiffness: Double, damping: Double) -> TimeInterval {
+        let mass = max(0.01, sanitizedSpringMass(mass))
+        let stiffness = max(0.01, sanitizedSpringStiffness(stiffness))
+        let damping = max(0.01, sanitizedSpringDamping(damping))
+        let omega = (stiffness / mass).squareRoot()
+        guard omega > 0 else { return springBaselineDuration }
+        let zeta = damping / (2 * (stiffness * mass).squareRoot())
+        let spring = Spring(duration: 2 * Double.pi / omega, bounce: min(0.95, max(0, 1 - zeta)))
+            .limited(travel: springReferenceTravel, limit: overshootLimit)
+        let step = 1.0 / 240
+        var settled = step
+        var time = step
+        while time < 2 {
+            if abs(spring.progress(at: time) - 1) * Double(springReferenceTravel) > Double(settledDistance) {
+                settled = time + step
+            }
+            time += step
+        }
+        return settled
+    }
+
     /// A strip that stays on screen and only fits a new reading, as a level
     /// passing 99% or 9%, eases to its width without a swing, either way.
     static let steadyWidth = Spring(duration: 0.5, bounce: 0)
@@ -2539,8 +2619,10 @@ enum NotchMotion {
 
     static func spring(from: CGFloat, to: CGFloat, width: Bool, steady: Bool = false) -> Spring {
         if steady && width { return steadyWidth }
-        let spring = to > from ? (width ? growingWidth : growingHeight) : (width ? shrinkingWidth : shrinkingHeight)
-        return spring.limited(travel: abs(to - from), limit: overshootLimit)
+        // Opening and closing share one gentle tunable spring (~600 ms at
+        // the defaults); the height runs a little stiffer so it drops
+        // ahead of the width.
+        return tunedSpring(width: width).limited(travel: abs(to - from), limit: overshootLimit)
     }
 
     /// The spring carrying the island's sides, for controls that ride along them.
@@ -2554,7 +2636,7 @@ enum NotchMotion {
         var durations: [TimeInterval] = []
         if from.width != to.width { durations.append(spring(from: from.width, to: to.width, width: true).duration) }
         if from.height != to.height { durations.append(spring(from: from.height, to: to.height, width: false).duration) }
-        return durations.max() ?? growingWidth.duration
+        return durations.max() ?? springBaselineDuration
     }
 
     static func size(at time: TimeInterval, from: CGSize, to: CGSize, steady: Bool = false) -> CGSize {

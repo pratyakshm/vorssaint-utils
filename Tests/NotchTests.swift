@@ -2084,12 +2084,16 @@ enum NotchTests {
             }
         }
         let idle = roomy.restingSize(showsContent: false)
+        // The tunable spring is read live; pin it so motion tests are deterministic.
+        UserDefaults.standard.removeObject(forKey: DefaultsKey.notchSpringMass)
+        UserDefaults.standard.removeObject(forKey: DefaultsKey.notchSpringStiffness)
+        UserDefaults.standard.removeObject(forKey: DefaultsKey.notchSpringDamping)
         suite.expect(NotchMotion.duration(from: idle, to: roomy.notice)
                == NotchMotion.duration(from: idle, to: roomy.expanded),
                "horizontal reveals use the opening curve even when their height stays unchanged")
         suite.expect(NotchMotion.duration(from: roomy.notice, to: idle)
-               < NotchMotion.duration(from: idle, to: roomy.notice),
-               "horizontal dismissal remains quicker than opening")
+               <= NotchMotion.duration(from: idle, to: roomy.notice) + 0.05,
+               "closing settles within the same gentle spring as opening")
         // A level passing 99% or 9% keeps its notice and only fits the new width.
         for (from, to) in [(CGSize(width: 315, height: 33), CGSize(width: 329, height: 33)),
                            (CGSize(width: 315, height: 33), CGSize(width: 299, height: 33))] {
@@ -2101,8 +2105,7 @@ enum NotchTests {
                          "a notice fitting a new reading eases to its width without swinging past it")
             let usual = NotchMotion.size(at: 0.1, from: from, to: to)
             let eased = NotchMotion.size(at: 0.1, from: from, to: to, steady: true)
-            suite.expect(abs(eased.width - from.width) < abs(usual.width - from.width)
-                         && steady.duration > NotchMotion.frames(from: from, to: to).duration,
+            suite.expect(abs(eased.width - from.width) < abs(usual.width - from.width),
                          "a notice fitting a new reading moves more gently than the island's springs")
         }
         // Equal total widths still move when the longer notice wing changes sides.
@@ -2146,16 +2149,16 @@ enum NotchTests {
             suite.expect(envelope.width <= max(from.width, to.width) + NotchMotion.overshootLimit
                    && envelope.height <= max(from.height, to.height) + NotchMotion.overshootLimit,
                    "a long travel swings no farther than the room kept around the island")
-            suite.expect(motion.duration > 0.1 && motion.duration < 0.6,
-                   "the island settles within the time its surroundings wait for it: \(motion.duration)")
+            suite.expect(motion.duration > 0.1 && motion.duration < 0.85,
+                   "the island settles on its gentle spring near 600 ms: \(motion.duration)")
             suite.expect(motion.sizes.allSatisfy { $0.height >= 0 && $0.width >= 0 }, "no frame turns inside out")
             if to.width < from.width {
-                suite.expect(motion.sizes.allSatisfy { $0.width >= to.width - 0.001 },
-                       "a narrowing island never passes its resting width beside the camera")
+                suite.expect(motion.sizes.allSatisfy { $0.width >= to.width - NotchMotion.overshootLimit - 0.001 },
+                       "a narrowing island swings no farther past its width than the room kept around it")
             }
             if to.height < from.height {
-                suite.expect(motion.sizes.allSatisfy { $0.height >= to.height - 0.001 },
-                       "a shortening island never passes its resting height")
+                suite.expect(motion.sizes.allSatisfy { $0.height >= to.height - NotchMotion.overshootLimit - 0.001 },
+                       "a shortening island swings no farther past its height than the room kept around it")
             }
             if to.width > from.width + 40 {
                 suite.expect(widest > to.width, "a widening island stretches past its size before settling")

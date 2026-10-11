@@ -97,7 +97,11 @@ struct NotchSettings: View {
     @AppStorage(DefaultsKey.brightnessControlEnabled) private var brightnessControlEnabled = false
     @AppStorage(DefaultsKey.clipboardHistoryEnabled) private var clipboardHistoryEnabled = false
     @AppStorage(DefaultsKey.notchHoverExpands) private var hoverExpand = true
+    @AppStorage(DefaultsKey.notchSpringMass) private var springMass = NotchMotion.defaultSpringMass
+    @AppStorage(DefaultsKey.notchSpringStiffness) private var springStiffness = NotchMotion.defaultSpringStiffness
+    @AppStorage(DefaultsKey.notchSpringDamping) private var springDamping = NotchMotion.defaultSpringDamping
     @AppStorage(DefaultsKey.notchQuickAccessLayout) private var accessData = Data()
+    @State private var showingSpringTuner = false
     @State private var tab = NotchSettingsTab.layout
     @State private var selectedModule = NotchModule.controls
     @State private var draggingModule: NotchModule?
@@ -604,6 +608,13 @@ struct NotchSettings: View {
         }
     }
 
+    /// The tuner's settling time at the saved values, e.g. "600 ms".
+    private var springDurationLabel: String {
+        let ms = Int((NotchMotion.referenceSettlingDuration(mass: springMass, stiffness: springStiffness,
+                                                            damping: springDamping) * 1000).rounded())
+        return "\(ms) ms"
+    }
+
     private var behaviorPage: some View {
         VStack(alignment: .leading, spacing: 20) {
             SettingsCard(title: editor.opening) {
@@ -621,6 +632,13 @@ struct NotchSettings: View {
                                          caption: gesturesEnabled ? FeatureStrings.notchGestures(l10n.language).hint : nil,
                                          isOn: $gesturesEnabled, feature: .notchGestures)
                 switchRow("waveform.path", text.hapticFeedback, isOn: $hapticFeedback)
+                SettingsRow(symbol: "tuningfork", title: "Opening animation",
+                            caption: "Gentle spring, about \(springDurationLabel). Tune mass, stiffness and damping with a live preview.") {
+                    Button("Tune…") { showingSpringTuner = true }
+                        .popover(isPresented: $showingSpringTuner) {
+                            NotchSpringTunerPopover()
+                        }
+                }
                 SettingsRow(symbol: "arrow.uturn.backward", title: editor.reopening) {
                     Picker(editor.reopening, selection: Binding(get: {
                         guard returnHome else { return "" }
