@@ -128,6 +128,15 @@ enum CommandBarPreferences {
         return String(id.dropFirst(prefix.count))
     }
 
+    /// The history entry a clipboard row id names, or nil when the id is not
+    /// a clipboard row. Clipboard rows are never pinned, named or hidden, so
+    /// this is the only lasting handle the bar has on them.
+    static func clipboardUUID(fromRowID id: String) -> UUID? {
+        guard let prefix = CommandBarSource.clipboard.idPrefix, id.hasPrefix(prefix),
+              id.count > prefix.count else { return nil }
+        return UUID(uuidString: String(id.dropFirst(prefix.count)))
+    }
+
     /// The tone the person chose for emoji that can carry one. An unknown
     /// value reads as the default.
     static func skinTone(from raw: String) -> CommandBarEmoji.SkinTone {

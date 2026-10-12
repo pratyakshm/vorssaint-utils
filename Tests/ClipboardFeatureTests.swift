@@ -734,6 +734,23 @@ enum ClipboardFeatureTests {
                     now: bucketNow, calendar: bucketCalendar) == .yesterday,
                 "the newest clipboard buckets read as Today then Yesterday")
 
+        // MARK: Inline history sections (command bar parity)
+
+        let pinnedEntry = ClipboardHistoryEntry(text: "pinned",
+                                                copiedAt: bucketNow,
+                                                pinnedAt: bucketNow)
+        let sectioned = ClipboardHistorySections.sections(
+            [bucketEntry(daysAgo: 60), pinnedEntry, bucketEntry(daysAgo: 0)],
+            pinnedTitle: "Pinned", now: bucketNow, calendar: bucketCalendar)
+        suite.expect(sectioned.map(\.title) == ["Pinned", "Today", "Earlier"]
+                && sectioned[0].entries.map(\.id) == [pinnedEntry.id],
+                "inline clipboard sections lead with pins, then newest-first buckets")
+        let clipUUID = UUID()
+        suite.expect(CommandBarPreferences.clipboardUUID(fromRowID: "clipboard.\(clipUUID.uuidString)") == clipUUID
+                && CommandBarPreferences.clipboardUUID(fromRowID: "app./Applications/Clip.app") == nil
+                && CommandBarPreferences.clipboardUUID(fromRowID: "clipboard.") == nil,
+                "only clipboard row ids resolve to a history entry")
+
         // MARK: Clipboard history window placement
 
         _ = NSApplication.shared

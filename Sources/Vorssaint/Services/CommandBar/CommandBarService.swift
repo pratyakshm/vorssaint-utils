@@ -1503,18 +1503,38 @@ final class CommandBarService: ObservableObject {
                 }
                 if let category = activeCategory {
                     let bar = FeatureStrings.commandBar(L10n.shared.language)
-                    let content = CommandBarService.uniqued(categoryContent(category, bar: bar))
-                    let byID = Dictionary(content.map { ($0.id, $0) },
-                                          uniquingKeysWith: { first, _ in first })
-                    let usage = CommandBarUsage.decode(
-                        UserDefaults.standard.string(forKey: DefaultsKey.commandBarUsage))
-                    let durableUsage = usage.filter { byID[$0.key]?.countsUsage == true }
-                    rows = CommandBarUsage.categoryIDs(usage: durableUsage,
-                                                       available: content.map(\.id))
-                        .compactMap { byID[$0] }
-                    sectionTitles = rows.isEmpty
-                        ? [:]
-                        : [0: categoryHeading(category, count: rows.count)]
+                    if category == .clipboard {
+                        // Inline history keeps its sections: pinned first, then
+                        // date buckets, instead of one flat usage-ordered list.
+                        let hidden = hiddenCache
+                        var sectionedRows: [CommandBarEntry] = []
+                        var sectionedTitles: [Int: String] = [:]
+                        for section in CommandBarCatalog.sectionedClipboardBrowseEntries(
+                            bar: bar,
+                            clipboard: FeatureStrings.clipboard(L10n.shared.language),
+                            paste: { [weak self] entry in self?.paste(entry) }) {
+                            let kept = section.rows.filter { !hidden.contains($0.stableKey) }
+                            guard !kept.isEmpty else { continue }
+                            sectionedTitles[sectionedRows.count] =
+                                "\(section.title) · \(kept.count)"
+                            sectionedRows.append(contentsOf: kept)
+                        }
+                        rows = CommandBarService.uniqued(sectionedRows)
+                        sectionTitles = rows.isEmpty ? [:] : sectionedTitles
+                    } else {
+                        let content = CommandBarService.uniqued(categoryContent(category, bar: bar))
+                        let byID = Dictionary(content.map { ($0.id, $0) },
+                                              uniquingKeysWith: { first, _ in first })
+                        let usage = CommandBarUsage.decode(
+                            UserDefaults.standard.string(forKey: DefaultsKey.commandBarUsage))
+                        let durableUsage = usage.filter { byID[$0.key]?.countsUsage == true }
+                        rows = CommandBarUsage.categoryIDs(usage: durableUsage,
+                                                           available: content.map(\.id))
+                            .compactMap { byID[$0] }
+                        sectionTitles = rows.isEmpty
+                            ? [:]
+                            : [0: categoryHeading(category, count: rows.count)]
+                    }
                 } else if showsBrowse {
                     let suggestions = suggestionRows()
                     rows = suggestions.rows
@@ -2090,18 +2110,50 @@ final class CommandBarService: ObservableObject {
     }
 
     /// Whether the selected row has anything to offer here. A clipboard item
-    /// is a passing thing with no lasting id, so it is not in the index and
-    /// there is nothing to pin, name or hide about it: the bar says so by not
-    /// offering the panel at all instead of opening an empty one.
+    /// is a passing thing with no lasting id, so it is not in the index;
+    /// pinning and deleting it still belong a key away, so the bar offers
+    /// exactly those instead of the full panel or an empty one.
     var canOpenActions: Bool {
         guard case .search = mode, let entry = selectedEntry, !entry.isAnswer,
-              entriesByID[entry.id] != nil else { return false }
+              entriesByID[entry.id] != nil
+              || (CommandBarPreferences.source(ofRowID: entry.id) == .clipboard
+                  && clipboardHistoryEntry(forRowID: entry.id) != nil)
+        else { return false }
         return !actions(for: entry).isEmpty
+    }
+
+    /// The history entry a clipboard row names, or nil when the row is gone.
+    private func clipboardHistoryEntry(forRowID id: String) -> ClipboardHistoryEntry? {
+        guard let uuid = CommandBarPreferences.clipboardUUID(fromRowID: id) else { return nil }
+        return ClipboardHistoryService.shared.entries.first { $0.id == uuid }
     }
 
     private func actions(for entry: CommandBarEntry) -> [RowAction] {
         let bar = FeatureStrings.commandBar(L10n.shared.language)
         var actions: [RowAction] = []
+        // Clipboard rows take pin and delete only: they accept no pin, name,
+        // shortcut or hiding through the preferences, and forgetting a
+        // ranking that never counted them would be a lie.
+        if CommandBarPreferences.source(ofRowID: entry.id) == .clipboard,
+           let clip = clipboardHistoryEntry(forRowID: entry.id) {
+            let clipText = FeatureStrings.clipboard(L10n.shared.language)
+            actions.append(RowAction(id: "clipboardPin",
+                                     title: clip.isPinned ? clipText.unpin : clipText.pin,
+                                     symbolName: clip.isPinned ? "pin.slash" : "pin") { [weak self] in
+                ClipboardHistoryService.shared.togglePin(clip)
+                self?.leaveActions()
+                self?.refreshResults()
+            })
+            actions.append(RowAction(id: "clipboardDelete",
+                                     title: clipText.delete,
+                                     symbolName: "trash",
+                                     isDestructive: true) { [weak self] in
+                ClipboardHistoryService.shared.remove(clip)
+                self?.leaveActions()
+                self?.refreshResults()
+            })
+            return actions
+        }
         if let app = installedApp(for: entry) {
             if let running = runningApplication(for: app) {
                 actions.append(RowAction(id: "quitApp",

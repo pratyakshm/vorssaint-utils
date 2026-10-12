@@ -387,7 +387,14 @@ enum CommandBarCatalog {
                 shortcut: keepsHistory ? roleShortcut(.clipboard) : nil,
                 trouble: canUseHistory ? nil
                     : .needsSetup(featureTitle: clipboard.title, page: .clipboard),
-                run: { _ in afterBeat(0.1) { ClipboardHistoryService.shared.showHistoryWindow() } }))
+                // Inline history: the bar stays open and becomes the clipboard
+                // browser instead of handing off to a separate panel.
+                keepsBarOpen: true,
+                run: { _ in
+                    let service = CommandBarService.shared
+                    service.query = ""
+                    service.setCategory(.clipboard)
+                }))
             // Counted when the bar lists it: a copy made before confirming is kept.
             let recentIDs = ClipboardHistoryService.shared.recentEntriesSnapshot
             entries.append(CommandBarEntry(
@@ -1750,6 +1757,26 @@ enum CommandBarCatalog {
         let imageLabel = FeatureStrings.clipboard(L10n.shared.language).imageEntryLabel
         return history.entries.prefix(limit).map { entry in
             clipboardRow(entry, imageLabel: imageLabel, bar: bar, paste: paste)
+        }
+    }
+
+    /// The whole history as sections of rows for the clipboard category, in
+    /// section order. The caller flattens, filters and heads each section, so
+    /// headings stay keyed to the rows actually shown.
+    static func sectionedClipboardBrowseEntries(bar: CommandBarFeatureStrings,
+                                                clipboard: ClipboardFeatureStrings,
+                                                paste: @escaping (ClipboardHistoryEntry) -> Void)
+        -> [(title: String, rows: [CommandBarEntry])] {
+        guard AppFeature.clipboardHistory.isAvailable else { return [] }
+        let history = ClipboardHistoryService.shared
+        guard CommandBarClipboardAccess.canUseHistory(
+            captureEnabled: UserDefaults.standard.bool(forKey: DefaultsKey.clipboardHistoryEnabled),
+            hasSavedItems: !history.entries.isEmpty) else { return [] }
+        let imageLabel = clipboard.imageEntryLabel
+        return ClipboardHistorySections.sections(history.entries, pinnedTitle: clipboard.pin).map { section in
+            (section.title, section.entries.map {
+                clipboardRow($0, imageLabel: imageLabel, bar: bar, paste: paste)
+            })
         }
     }
 

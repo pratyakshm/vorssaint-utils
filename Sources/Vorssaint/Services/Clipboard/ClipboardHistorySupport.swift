@@ -53,6 +53,28 @@ enum ClipboardHistoryDateBucket: Int, CaseIterable {
     }
 }
 
+/// Sections for the inline history browser (and the history window): pinned
+/// entries first, then date buckets newest-first. Pure over the given
+/// entries so tests pin the order without touching the service.
+enum ClipboardHistorySections {
+    static func sections(_ entries: [ClipboardHistoryEntry],
+                         pinnedTitle: String,
+                         now: Date = Date(),
+                         calendar: Calendar = .current)
+        -> [(title: String, entries: [ClipboardHistoryEntry])] {
+        var sections: [(title: String, entries: [ClipboardHistoryEntry])] = []
+        let pinned = entries.filter(\.isPinned)
+        if !pinned.isEmpty {
+            sections.append((pinnedTitle, pinned))
+        }
+        for group in ClipboardHistoryDateBucket.bucketed(entries.filter({ !$0.isPinned }),
+                                                          now: now, calendar: calendar) {
+            sections.append((group.bucket.title, group.entries))
+        }
+        return sections
+    }
+}
+
 /// How the history window shows its entries: a list in a window that keeps
 /// the size the user gives it, or a shelf of cards along the bottom of the
 /// screen.
