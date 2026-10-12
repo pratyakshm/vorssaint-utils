@@ -370,8 +370,8 @@ final class AgentUsageStore {
     var showsClaudeTurn: Bool { turns.values.contains { $0.provider == .claude } }
 
     /// What is kept between launches: every counter the logs gave, and none
-    /// of their text. OpenCode's database is read again at each launch, so
-    /// nothing it gave is kept.
+    /// of their text. OpenCode's and Cursor's databases are read again at each
+    /// launch, so nothing they gave is kept.
     struct Saved: Equatable {
         struct Record: Equatable {
             let key: String
@@ -391,14 +391,14 @@ final class AgentUsageStore {
     var saved: Saved {
         var keys = [String](repeating: "", count: records.count)
         for (key, position) in index { keys[position] = key }
-        let kept = records.indices.filter { records[$0].provider != .opencode }.map {
+        let kept = records.indices.filter({ records[$0].provider != .opencode && records[$0].provider != .cursor }).map {
             Saved.Record(key: keys[$0], record: records[$0], billable: billables[$0], sources: sources[$0])
         }
         return Saved(records: kept,
-                     limits: limits.values.sorted { $0.provider.rawValue < $1.provider.rawValue },
-                     codexPlan: codexPlan, codexPlanObserved: codexPlanObserved,
-                     turns: turns.values.filter { $0.provider != .opencode }.sorted { $0.id < $1.id },
-                     waiting: waiting.values.filter { $0.provider != .opencode }.sorted { $0.id < $1.id })
+                      limits: limits.values.sorted { $0.provider.rawValue < $1.provider.rawValue },
+                      codexPlan: codexPlan, codexPlanObserved: codexPlanObserved,
+                      turns: turns.values.filter({ $0.provider != .opencode && $0.provider != .cursor }).sorted { $0.id < $1.id },
+                      waiting: waiting.values.filter({ $0.provider != .opencode && $0.provider != .cursor }).sorted { $0.id < $1.id })
     }
 
     convenience init(saved: Saved) {
@@ -475,7 +475,8 @@ struct AgentLogRoot: Equatable {
     static func all(home: URL = FileManager.default.homeDirectoryForCurrentUser) -> [AgentLogRoot] {
         [(AgentProvider.claude, ".claude/projects"), (.claude, ".config/claude/projects"),
          (.codex, ".codex/sessions"), (.codex, ".codex/archived_sessions"),
-         (.opencode, ".local/share/opencode"), (.copilot, ".copilot/session-state")].map { provider, path in
+         (.opencode, ".local/share/opencode"), (.copilot, ".copilot/session-state"),
+         (.cursor, "Library/Application Support/Cursor/User/globalStorage")].map { provider, path in
             AgentLogRoot(provider: provider, url: canonical(home.appending(path: path, directoryHint: .isDirectory)))
         }
     }
@@ -498,6 +499,7 @@ struct AgentLogRoot: Equatable {
         let prefix = url.path + "/"
         guard path.hasPrefix(prefix) else { return false }
         if provider == .opencode { return path == url.appending(path: AgentOpenCodeReader.database).path }
+        if provider == .cursor { return path == url.appending(path: AgentCursorReader.database).path }
         guard path.hasSuffix(".jsonl") else { return false }
         guard provider == .copilot else { return true }
         let parts = path.dropFirst(prefix.count).split(separator: "/", omittingEmptySubsequences: false)
@@ -671,7 +673,8 @@ enum AgentLogReader {
 
     static func isLog(_ path: String) -> Bool {
         let name = (path as NSString).lastPathComponent
-        if name == AgentOpenCodeReader.database || name == AgentOpenCodeReader.database + "-wal" { return true }
+        if name == AgentOpenCodeReader.database || name == AgentOpenCodeReader.database + "-wal"
+            || name == AgentCursorReader.database || name == AgentCursorReader.database + "-wal" { return true }
         return path.hasSuffix(".jsonl")
     }
 
@@ -719,10 +722,18 @@ enum AgentLogReader {
         }
         for root in roots where root.exists {
             // OpenCode keeps its database beside the snapshots, clones and
-            // logs of its data folder, which are never walked.
+            // logs of its data folder, which are never walked. Cursor keeps
+            // one database in its `globalStorage` folder.
             if root.provider == .opencode {
                 let path = root.url.appending(path: AgentOpenCodeReader.database).path
                 if let modified = AgentOpenCodeReader.modified(path), modified >= horizon {
+                    found.append((path, root.provider, modified, false))
+                }
+                continue
+            }
+            if root.provider == .cursor {
+                let path = root.url.appending(path: AgentCursorReader.database).path
+                if let modified = AgentCursorReader.modified(path), modified >= horizon {
                     found.append((path, root.provider, modified, false))
                 }
                 continue
@@ -757,6 +768,10 @@ enum AgentLogReader {
         guard shouldContinue() else { return }
         if cursor.provider == .opencode {
             AgentOpenCodeReader.readAppended(cursor, since: horizon, shouldContinue: shouldContinue, line: line)
+            return
+        }
+        if cursor.provider == .cursor {
+            AgentCursorReader.readAppended(cursor, since: horizon, shouldContinue: shouldContinue, line: line)
             return
         }
         var info = stat()

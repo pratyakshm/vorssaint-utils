@@ -587,6 +587,62 @@ enum AgentLogParser {
         }
     }
 
+    // MARK: Cursor
+
+    /// Cursor writes one user bubble per request into its desktop database.
+    /// The reader hands over only identifiers, time, model and context size
+    /// per bubble (see `AgentCursorReader`): the context size is the billed
+    /// input of the request, and the reply size is unknown, so the output
+    /// stays at zero and the cost is a lower bound. Each composer is a
+    /// session of its own; its turns end by going quiet, never by a word in
+    /// the database.
+    static func parseCursor(_ line: Data, state: inout AgentLogState, now: Date) -> [AgentLogEntry] {
+        guard contains(line, #""role":""#) || contains(line, #""type":"reset""#) else { return [] }
+        guard let json = object(line) else { return [] }
+        if json["type"] as? String == "reset" {
+            state.openCodeSessions.removeAll()
+            state.turnOpen = false
+            return [.reset(now)]
+        }
+        guard json["role"] as? String == "user",
+              let composer = json["session_id"] as? String, !composer.isEmpty,
+              let id = json["id"] as? String, !id.isEmpty else { return [] }
+        state.session = native(composer)
+        state.parentSession = ""
+        var sessionState = state.openCodeSessions[composer] ?? OpenCodeSessionState()
+        if let directory = json["directory"] as? String, !directory.isEmpty {
+            sessionState.project = projectName(directory)
+        }
+        let date = timestamp(json["time_created"]) ?? seconds(json["time_created"]) ?? now
+        sessionState.lastActivity = max(sessionState.lastActivity ?? date, date)
+        let model = native(json["model"] as? String ?? "")
+        if !model.isEmpty { sessionState.model = model }
+        let input = int(json["tokens"])
+        guard input > 0 else {
+            state.openCodeSessions[composer] = sessionState
+            return []
+        }
+        var entries: [AgentLogEntry] = []
+        if sessionState.turnOpen {
+            entries.append(.turnActive(date))
+        } else {
+            sessionState.turnOpen = true
+            sessionState.turnStarted = date
+            entries.append(.turnBegan(date))
+        }
+        let tokens = AgentTokens(input: input, cacheWrite: 0, cacheRead: 0, output: 0, reasoning: 0)
+        let billable = AgentBillable(tokens: tokens)
+        let priced = AgentPricing.cost(billable, model: sessionState.model)
+        entries.append(.usage(key: "cursor:\(composer):\(id)", record: AgentUsageRecord(
+            provider: .cursor, date: date, model: sessionState.model, project: sessionState.project,
+            session: composer, tokens: tokens, cost: priced.cost, savings: priced.savings), billable: billable))
+        state.openCodeSessions[composer] = sessionState
+        state.project = sessionState.project
+        state.model = sessionState.model
+        state.turnOpen = true
+        return entries
+    }
+
     /// Keeps a bounded number of message ids a session has settled.
     private static func remember(_ id: String, in ids: inout Set<String>) {
         if ids.count > 100 { ids.removeFirst() }

@@ -5,13 +5,13 @@ import Combine
 import Foundation
 import Network
 
-/// Reads Claude Code, Codex and GitHub Copilot usage from local session logs, and
+/// Reads Claude Code, Codex, Cursor and GitHub Copilot usage from local session logs, and
 /// OpenCode usage from its database, while the AI section is on, along with
 /// the plan limits the Claude app saves. The files are read where they are,
 /// incrementally, and nothing is copied or sent: only counters are kept, in
 /// memory and in the app's private folder so the next launch reads only what
-/// the agents wrote meanwhile. OpenCode's stay in memory only, and its
-/// database is read again at each launch. The one request it makes fetches
+/// the agents wrote meanwhile. OpenCode's and Cursor's stay in memory only, and their
+/// databases are read again at each launch. The one request it makes fetches
 /// the public price list, when the person keeps prices up to date.
 ///
 /// Reading happens on a private queue; the main thread and that queue hand
@@ -89,6 +89,8 @@ final class AgentUsageService: ObservableObject {
     private var claudeProfileModified: Date?
     private var claudeAppModified: Date?
     private var claudeAppSamples: [AgentClaudeAppUsage.Sample] = []
+    /// When Cursor's plan quota was last asked of its account.
+    private var cursorLimitsChecked = Date.distantPast
     private var shippedPrices: AgentPriceList?
     private var previousLimits: [AgentProvider: AgentLimits] = [:]
     /// Warned windows, each waiting for its renewal.
@@ -190,6 +192,7 @@ final class AgentUsageService: ObservableObject {
             claudeProfileModified = nil
             claudeAppModified = nil
             claudeAppSamples = []
+            cursorLimitsChecked = .distantPast
             savedMark = nil
             lastSave = .distantPast
         }
@@ -213,6 +216,7 @@ final class AgentUsageService: ObservableObject {
         queue.async { [self] in
             guard readerSession >= 0 else { return }
             readClaudeApp(now: Date())
+            readCursorLimits(now: Date())
             checkLimits()
             publish()
         }
@@ -261,6 +265,7 @@ final class AgentUsageService: ObservableObject {
             // The account Claude Code uses picks the Claude app's readings.
             readClaudePlan()
             readClaudeApp(now: now)
+            readCursorLimits(now: now)
             store.reportsTransitions = true
             previousLimits = store.limits
             // A budget already passed before launch is history, not news.
@@ -296,19 +301,19 @@ final class AgentUsageService: ObservableObject {
         guard mark != savedMark else { return }
         // A log that started over while running still counts what its old
         // contents gave. Left out, the next launch reads it as rewritten.
-        // Nothing from OpenCode's database is saved. Its open replies and
-        // sessions live only in memory, so each launch reads it again.
-        let kept = cursors.values.filter { !$0.restarted && $0.provider != .opencode }
+        // Nothing from OpenCode's or Cursor's database is saved. Their open replies and
+        // sessions live only in memory, so each launch reads them again.
+        let kept = cursors.values.filter { !$0.restarted && $0.provider != .opencode && $0.provider != .cursor }
         let contents = AgentUsageArchive.Contents(providers: enabled, store: store.saved, cursors: kept.map(\.saved))
         if AgentUsageArchive.save(contents) { savedMark = mark }
     }
 
-    /// Changes whenever a log is read further, replaced or let go. OpenCode,
-    /// which is never saved, leaves it alone.
+    /// Changes whenever a log is read further, replaced or let go. OpenCode and
+    /// Cursor, which are never saved, leave it alone.
     private var progressMark: Int {
-        let records = store.records.reduce(0) { $1.provider == .opencode ? $0 : $0 + 1 }
+        let records = store.records.reduce(0) { $1.provider == .opencode || $1.provider == .cursor ? $0 : $0 + 1 }
         return cursors.values.reduce(records) { mark, cursor in
-            guard cursor.provider != .opencode else { return mark }
+            guard cursor.provider != .opencode, cursor.provider != .cursor else { return mark }
             var hasher = Hasher()
             hasher.combine(cursor.path)
             hasher.combine(cursor.offset)
@@ -371,16 +376,18 @@ final class AgentUsageService: ObservableObject {
         // A turn gone quiet, as while it waits for an approval, is noticed
         // as soon as its work resumes.
         var working = Set(store.turns.keys).union(store.waiting.keys)
-        // An OpenCode turn is kept by database and session.
+        // An OpenCode or Cursor turn is kept by database and session.
         for key in working {
             if let mark = key.firstIndex(of: "#") { working.insert(String(key[..<mark])) }
         }
         var changed = false
         for (path, cursor) in cursors
         where working.contains(path) || now.timeIntervalSince(cursor.modified) < window {
-            if cursor.provider == .opencode {
+            if cursor.provider == .opencode || cursor.provider == .cursor {
                 // A database changes in place: its write-ahead log grows instead.
-                if let modified = AgentOpenCodeReader.modified(path), modified <= cursor.modified { continue }
+                let modified = cursor.provider == .opencode
+                    ? AgentOpenCodeReader.modified(path) : AgentCursorReader.modified(path)
+                if let modified, modified <= cursor.modified { continue }
                 if read(path, provider: cursor.provider) { changed = true }
                 continue
             }
@@ -450,11 +457,13 @@ final class AgentUsageService: ObservableObject {
             case .codex: entries = AgentLogParser.parseCodex(line, state: &cursor.state, now: now)
             case .opencode: entries = AgentLogParser.parseOpenCode(line, state: &cursor.state, now: now)
             case .copilot: entries = AgentLogParser.parseCopilot(line, state: &cursor.state, now: now)
+            case .cursor: entries = AgentLogParser.parseCursor(line, state: &cursor.state, now: now)
             }
             guard !entries.isEmpty else { return }
             changed = true
             let isSubagent = provider == .opencode && !cursor.state.parentSession.isEmpty
-            let turnFile = provider == .opencode && !cursor.state.session.isEmpty ? "\(path)#\(cursor.state.session)" : path
+            let turnFile = (provider == .opencode || provider == .cursor) && !cursor.state.session.isEmpty
+                ? "\(path)#\(cursor.state.session)" : path
             let tracksTurns = isSubagent ? false : cursor.tracksTurns
             let parent = isSubagent ? "\(path)#\(cursor.state.parentSession)" : cursor.parent
             let finished = store.apply(entries, file: turnFile, provider: provider, tracksTurns: tracksTurns,
@@ -541,6 +550,7 @@ final class AgentUsageService: ObservableObject {
                 readClaudePlan()
             }
             readClaudeApp(now: now)
+            readCursorLimits(now: now)
             checkLimits()
             reportRenewals(now: now)
             if now.timeIntervalSince(lastSave) >= Self.saveInterval { saveProgress() }
@@ -700,6 +710,28 @@ final class AgentUsageService: ObservableObject {
             store.setLimits(limits)
         } else if store.limits[.claude]?.source == .claudeApp {
             store.clearLimits(.claude)
+        }
+    }
+
+    /// Asks Cursor's account for its monthly request quota, at most every
+    /// quarter hour. A missed check keeps the last reading; switching Cursor
+    /// off drops it. Runs on `queue`; the answer returns to it.
+    private func readCursorLimits(now: Date) {
+        guard enabled.contains(.cursor) else {
+            if store.limits[.cursor]?.source == .account { store.clearLimits(.cursor) }
+            return
+        }
+        guard now.timeIntervalSince(cursorLimitsChecked) >= 15 * 60 else { return }
+        cursorLimitsChecked = now
+        let session = readerSession
+        AgentCursorUsage.fetch(now: now) { [weak self] limits in
+            guard let self, let limits else { return }
+            self.queue.async { [self] in
+                guard self.readerSession == session, session >= 0, self.enabled.contains(.cursor) else { return }
+                self.store.updateLimits(limits)
+                self.checkLimits()
+                self.schedulePublish()
+            }
         }
     }
 
