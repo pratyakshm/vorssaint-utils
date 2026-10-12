@@ -2093,7 +2093,7 @@ enum NotchTests {
                "horizontal reveals use the opening curve even when their height stays unchanged")
         suite.expect(NotchMotion.duration(from: roomy.notice, to: idle)
                <= NotchMotion.duration(from: idle, to: roomy.notice) + 0.05,
-               "closing settles within the same gentle spring as opening")
+                "closing settles within the same pace as opening")
         // A level passing 99% or 9% keeps its notice and only fits the new width.
         for (from, to) in [(CGSize(width: 315, height: 33), CGSize(width: 329, height: 33)),
                            (CGSize(width: 315, height: 33), CGSize(width: 299, height: 33))] {
@@ -2149,8 +2149,8 @@ enum NotchTests {
             suite.expect(envelope.width <= max(from.width, to.width) + NotchMotion.overshootLimit
                    && envelope.height <= max(from.height, to.height) + NotchMotion.overshootLimit,
                    "a long travel swings no farther than the room kept around the island")
-            suite.expect(motion.duration > 0.1 && motion.duration < 0.85,
-                   "the island settles on its gentle spring near 600 ms: \(motion.duration)")
+            suite.expect(motion.duration > 0.1 && motion.duration < 0.9,
+                   "the island settles on its snappy spring within ~800 ms: \(motion.duration)")
             suite.expect(motion.sizes.allSatisfy { $0.height >= 0 && $0.width >= 0 }, "no frame turns inside out")
             if to.width < from.width {
                 suite.expect(motion.sizes.allSatisfy { $0.width >= to.width - NotchMotion.overshootLimit - 0.001 },

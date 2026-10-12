@@ -608,7 +608,7 @@ struct NotchSettings: View {
         }
     }
 
-    /// The tuner's settling time at the saved values, e.g. "600 ms".
+    /// The tuner's settling time at the saved values, e.g. "800 ms".
     private var springDurationLabel: String {
         let ms = Int((NotchMotion.referenceSettlingDuration(mass: springMass, stiffness: springStiffness,
                                                             damping: springDamping) * 1000).rounded())

@@ -3,8 +3,9 @@
 
 import SwiftUI
 
-/// Tunes the island's gentle open/close spring (~600 ms at the defaults)
-/// with a live preview of how it moves, Figma-panel style.
+/// Tunes the island's open/close spring (duration ~0.63 s, bounce 0.2 at the
+/// defaults, Apple snappy territory) with a live preview of how it moves,
+/// Figma-panel style.
 struct NotchSpringTunerPopover: View {
     @AppStorage(DefaultsKey.notchSpringMass) private var mass = NotchMotion.defaultSpringMass
     @AppStorage(DefaultsKey.notchSpringStiffness) private var stiffness = NotchMotion.defaultSpringStiffness
@@ -50,7 +51,7 @@ struct NotchSpringTunerPopover: View {
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 8).padding(.vertical, 3)
                     .background(.quaternary.opacity(0.5), in: Capsule())
-                    .help("Settling time at these values; the defaults settle in about 600 ms.")
+                    .help("Settling time at these values; the defaults settle in about 800 ms.")
             }
             NotchSpringPreview(mass: sanitized.mass, stiffness: sanitized.stiffness, damping: sanitized.damping)
                 .frame(height: 132)
@@ -63,7 +64,7 @@ struct NotchSpringTunerPopover: View {
             slider("Damping", value: $damping, in: NotchMotion.springDampingRange, step: 0.5,
                    formatted: String(format: "%.1f", locale: locale, sanitized.damping))
             HStack {
-                Text("Gentle at the defaults; lower damping bounces more.")
+                Text("Snappy at the defaults, like the phone's island; lower damping bounces more.")
                     .font(.caption).foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: 8)

@@ -2524,11 +2524,15 @@ enum NotchMotion {
         }
     }
 
-    /// The tunable open/close spring. Defaults settle in ~600 ms with a
-    /// gentle overshoot: mass 1, stiffness 160, damping 17.
+    /// The tunable open/close spring, shaped like the phone's island: a long
+    /// perceptual glide with barely-there bounce. Defaults (mass 1,
+    /// stiffness 100, damping 16) land near duration 0.63 s, bounce 0.2 —
+    /// Apple's snappy territory (~15-20% bounce): the widening side
+    /// stretches a whisper past its size before settling, while a shrinking
+    /// side eases out cleanly without passing its target.
     static let defaultSpringMass = 1.0
-    static let defaultSpringStiffness = 160.0
-    static let defaultSpringDamping = 17.0
+    static let defaultSpringStiffness = 100.0
+    static let defaultSpringDamping = 16.0
     static let springMassRange: ClosedRange<Double> = 0.1...4.0
     static let springStiffnessRange: ClosedRange<Double> = 10...400
     static let springDampingRange: ClosedRange<Double> = 1...40
@@ -2536,7 +2540,7 @@ enum NotchMotion {
     /// damping ratio.
     static let springHeightStiffnessFactor = 1.35
     /// Baseline open/close time at the defaults, shown in the tuner.
-    static let springBaselineDuration: TimeInterval = 0.6
+    static let springBaselineDuration: TimeInterval = 0.63
     /// The width travel the tuner's millisecond badge is measured over.
     static let springReferenceTravel: CGFloat = 320
 
@@ -2566,8 +2570,8 @@ enum NotchMotion {
 
     /// A mass/stiffness/damping spring expressed in the duration/bounce
     /// terms the island animates with. duration = 2π/ω0, bounce = 1 − ζ,
-    /// so the defaults land near the previous gentle curve and settle in
-    /// about 600 ms.
+    /// so the defaults land near duration 0.63 s, bounce 0.2 and settle a
+    /// reference travel in about 800 ms.
     static func tunedSpring(width: Bool, in defaults: UserDefaults = .standard) -> Spring {
         let params = tunedSpringParameters(in: defaults)
         let mass = max(0.01, params.mass)
@@ -2610,7 +2614,9 @@ enum NotchMotion {
 
     /// A strip that stays on screen and only fits a new reading, as a level
     /// passing 99% or 9%, eases to its width without a swing, either way.
-    static let steadyWidth = Spring(duration: 0.5, bounce: 0)
+    /// Same pace as the island's spring but with no bounce, so it always
+    /// trails the island's early movement.
+    static let steadyWidth = Spring(duration: springBaselineDuration, bounce: 0)
     /// The farthest a side may pass its target. The display always keeps at
     /// least this much free around the island and its floating controls.
     static let overshootLimit: CGFloat = 12
@@ -2619,10 +2625,15 @@ enum NotchMotion {
 
     static func spring(from: CGFloat, to: CGFloat, width: Bool, steady: Bool = false) -> Spring {
         if steady && width { return steadyWidth }
-        // Opening and closing share one gentle tunable spring (~600 ms at
-        // the defaults); the height runs a little stiffer so it drops
-        // ahead of the width.
-        return tunedSpring(width: width).limited(travel: abs(to - from), limit: overshootLimit)
+        // Growing stretches a whisper past its size before settling, as the
+        // phone's island does. Shrinking keeps the same pace but never
+        // visibly passes its target: its swing is clamped to a sub-pixel
+        // settledDistance, so dipping below the resting pill reads as a
+        // clean ease-out, not a wobble. The height runs a little stiffer so
+        // it drops ahead of the width.
+        let tuned = tunedSpring(width: width)
+        if to < from { return tuned.limited(travel: abs(to - from), limit: settledDistance) }
+        return tuned.limited(travel: abs(to - from), limit: overshootLimit)
     }
 
     /// The spring carrying the island's sides, for controls that ride along them.
