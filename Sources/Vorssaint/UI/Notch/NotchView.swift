@@ -529,7 +529,7 @@ struct NotchView: View {
             // A subtle parallax while the page follows the swipe.
             .offset(x: canSwipeSections ? sectionSwipeOffset * 0.18 : 0)
             .contentShape(Rectangle())
-            .background {
+            .overlay {
                 if canSwipeSections {
                     NotchSectionSwipeCatcher(
                         enabled: canSwipeSections,
@@ -537,6 +537,8 @@ struct NotchView: View {
                         onCommit: { swipeCommitted($0) },
                         onCancelled: { swipeCancelled() }
                     )
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .allowsHitTesting(true)
                 }
             }
             .accessibilityAddTraits(.isHeader)

@@ -88,8 +88,8 @@ final class NotchSectionSwipeNSView: NSView {
 
     override var acceptsFirstResponder: Bool { false }
     override func hitTest(_ point: NSPoint) -> NSView? {
-        guard isEnabled else { return nil }
-        return super.hitTest(point) != nil ? self : nil
+        guard isEnabled, bounds.contains(point) else { return nil }
+        return self
     }
 
     override func scrollWheel(with event: NSEvent) {
