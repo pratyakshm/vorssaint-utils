@@ -197,6 +197,15 @@ struct ClipboardQuickPanelView: View {
             .id(Self.topAnchorID)
     }
 
+    /// Recents bucketed outside the result builder: a `let` plus a `for`
+    /// loop inside a `@ViewBuilder` does not compile.
+    private var bucketedRecents: [(offset: Int, bucket: ClipboardHistoryDateBucket,
+                                   entries: [ClipboardHistoryEntry])] {
+        ClipboardHistoryDateBucket.bucketed(history.recentEntries).enumerated().map {
+            (offset: $0.offset, bucket: $0.element.bucket, entries: $0.element.entries)
+        }
+    }
+
     /// Tinycast-style sections: Pinned, then Today / Yesterday / This Week /
     /// This Month / Earlier. A search lists its matches by relevance with no
     /// headers. No row dividers: selection is a rounded-rect fill.
@@ -205,10 +214,9 @@ struct ClipboardQuickPanelView: View {
         if history.quickQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             if layout == .list {
                 rows(title: text.pinned, entries: history.pinnedEntries, isFirst: true)
-                let bucketed = ClipboardHistoryDateBucket.bucketed(history.recentEntries)
-                for (offset, group) in bucketed.enumerated() {
+                ForEach(bucketedRecents, id: \.offset) { group in
                     rows(title: group.bucket.title, entries: group.entries,
-                         isFirst: history.pinnedEntries.isEmpty && offset == 0)
+                         isFirst: history.pinnedEntries.isEmpty && group.offset == 0)
                 }
             } else {
                 cards(history.pinnedEntries)

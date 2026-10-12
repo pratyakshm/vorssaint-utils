@@ -531,7 +531,7 @@ final class CommandBarService: ObservableObject {
             layer.add(fade, forKey: appearFadeKey)
         }
         guard !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion else { return }
-        let stretch = CASpring(keyPath: "transform.scale.x")
+        let stretch = CASpringAnimation(keyPath: "transform.scale.x")
         stretch.fromValue = presented.map { min(max($0, 1), 1.1) } ?? 1.1
         stretch.toValue = 1
         // Soft but quick: settles inside a third of a second with a whisper
