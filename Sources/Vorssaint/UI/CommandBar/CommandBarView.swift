@@ -181,7 +181,9 @@ struct CommandBarView: View {
                             emptyState
                         }
                     } else {
-                        if !showsCategoryChips { Divider() }
+                        // The minimal look hangs the list straight under the
+                        // field with no divider, the way launchers do.
+                        if !minimalLook, !showsCategoryChips { Divider() }
                         resultsList
                     }
                 case .argument(let entryID):
@@ -200,7 +202,7 @@ struct CommandBarView: View {
                     // The list stays up behind the floating menu, the way a
                     // popover keeps its parent visible instead of replacing it.
                     if !service.rows.isEmpty {
-                        Divider()
+                        if !minimalLook { Divider() }
                         resultsList
                     }
                 case .naming(let entryID):
@@ -337,9 +339,13 @@ struct CommandBarView: View {
                 .buttonStyle(.plain)
             }
         }
+        // The window header stands 44 points tall under 10 of top slack,
+        // the room the field needs to breathe; the island copies stay
+        // compact at the height their geometry is built around.
+        .frame(minHeight: shownAs == .window ? 44 : 0)
         .padding(.horizontal, 16)
         .padding(.top, 10)
-        .padding(.bottom, 10)
+        .padding(.bottom, minimalLook && shownAs == .window ? 6 : 10)
     }
 
     /// The collapsed bar has no footer, so the keys that still work (↓ to
@@ -619,14 +625,17 @@ struct CommandBarView: View {
                             // Every heading lives in the list, directly above
                             // the rows it names.
                             if let heading = service.sectionTitles[index] {
-                                sectionHeader(heading)
+                                sectionHeader(
+                                    heading,
+                                    isFirst: index == (service.sectionTitles.keys.min() ?? index))
                             }
                             row(entry, index: index)
                                 .id(entry.id)
                         }
                     }
                     .padding(.horizontal, 8)
-                    .padding(.vertical, 8)
+                    .padding(.top, minimalLook ? 4 : 8)
+                    .padding(.bottom, 8)
                 }
                 // A short list makes the panel exactly as tall as it needs to
                 // be. A long one is pinned to its ceiling instead: asking the
@@ -673,14 +682,15 @@ struct CommandBarView: View {
     }
 
     /// One section's label, in its own case and weight: a heading names the
-    /// rows under it instead of shouting over them.
-    private func sectionHeader(_ title: String) -> some View {
+    /// rows under it instead of shouting over them. The first hugs the top;
+    /// later ones get the spacing above, reading as the section's own.
+    private func sectionHeader(_ title: String, isFirst: Bool = false) -> some View {
         Text(title)
             .font(.subheadline.weight(.medium))
             .foregroundStyle(.secondary)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 8)
-            .padding(.top, 8)
+            .padding(.top, isFirst ? 4 : 12)
             .padding(.bottom, 4)
     }
 
@@ -769,7 +779,7 @@ struct CommandBarView: View {
                 }
             }
             .padding(.horizontal, minimalLook ? 8 : 9)
-            .padding(.vertical, entry.isAnswer ? 9 : (minimalLook ? 6 : 7))
+            .padding(.vertical, entry.isAnswer ? 9 : (minimalLook ? 8 : 7))
             .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
             .background(
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
@@ -1400,7 +1410,7 @@ struct CommandBarView: View {
                         keyCap("⌘")
                         keyCap("K")
                     }
-                    .padding(4)
+                    .padding(8)
                     .background(Capsule().fill(Color.primary.opacity(0.08)))
                 }
                 .buttonStyle(.plain)
