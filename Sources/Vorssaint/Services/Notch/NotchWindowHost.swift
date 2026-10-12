@@ -17,6 +17,13 @@ struct NotchFileDropActions {
 /// around it, fading out before the next content takes its place.
 enum NotchContentTransition { case none, reveal, dismiss, depart, replace }
 
+/// How arriving content rides the island: `spring` sampled over `duration`,
+/// from slightly small and above to identity.
+struct NotchContentArrival {
+    var duration: TimeInterval
+    var spring: NotchMotion.Spring
+}
+
 /// The window reserves the transition's bounds once. Core Animation moves
 /// the silhouette independently of SwiftUI layout and the application run loop.
 final class NotchWindowHost: NSObject, CAAnimationDelegate {
@@ -224,8 +231,18 @@ final class NotchWindowHost: NSObject, CAAnimationDelegate {
             if !isAnimating { quickAccessContainer?.motion.setVisible(quickAccessConfiguration != nil, animated: canAnimate) }
             return
         }
-        if canAnimate { canvas.transitionContent(revealing ? .reveal : transitionContent) }
-        else if animated && changesFrame && (revealing || transitionContent == .reveal) {
+        // Content arrives riding the shell's own spring; the shell motion is
+        // computed below, so an animated resize installs its content
+        // transition once that motion is known. A content-only refresh has
+        // no motion to ride and arrives on a synthesized spring.
+        var deferredContentTransition: NotchContentTransition? = nil
+        if canAnimate {
+            if changesFrame, revealing || transitionContent != .none {
+                deferredContentTransition = revealing ? .reveal : transitionContent
+            } else if transitionContent != .none {
+                canvas.transitionContent(transitionContent, arrival: nil)
+            }
+        } else if animated && changesFrame && (revealing || transitionContent == .reveal) {
             // Reduce Motion, or a panel that was ordered out, puts the island
             // at its new size at once. Shown at once, the page reached the
             // screen in the resting shape, flushed ahead of the resize, or
@@ -252,6 +269,8 @@ final class NotchWindowHost: NSObject, CAAnimationDelegate {
         currentGeometry = geometry
         resizeCount += 1
         guard canAnimate, sameScreen || revealing, let previousPath else {
+            // The shell lands at once, but its content still arrives.
+            if let contentKind = deferredContentTransition { canvas.transitionContent(contentKind, arrival: nil) }
             settle()
             return
         }
@@ -263,6 +282,13 @@ final class NotchWindowHost: NSObject, CAAnimationDelegate {
         // Each frame's centre, from the new one, even when only the shift changes.
         let startOffset = startShift - geometry.surfaceShift
         let motion = NotchMotion.frames(from: start, to: size, steady: steady, offset: startOffset)
+        if let contentKind = deferredContentTransition {
+            // The arrival plays over the shell's settle on the shell's own
+            // spring, so content visibly travels with the island and lands
+            // with it. A steady refit rides the steady spring instead.
+            let ride = steady ? NotchMotion.steadyWidth : NotchMotion.sideSpring(from: start, to: size)
+            canvas.transitionContent(contentKind, arrival: NotchContentArrival(duration: motion.duration, spring: ride))
+        }
         let offsets = motion.keyTimes.map {
             $0 == 1 ? 0 : NotchMotion.offset(at: motion.duration * $0, from: start, to: size, start: startOffset, steady: steady)
         }
@@ -1437,7 +1463,7 @@ private final class NotchCanvas: NSView {
 
     deinit { backdropDisplayLink?.invalidate() }
 
-    func transitionContent(_ kind: NotchContentTransition, shapeSnaps: Bool = false) {
+    func transitionContent(_ kind: NotchContentTransition, shapeSnaps: Bool = false, arrival plan: NotchContentArrival? = nil) {
         guard kind != .none else { return }
         let currentOpacity = contentVisibility.presentation()?.opacity ?? contentVisibility.opacity
         let presentedArrival = self.presentedArrival
@@ -1453,18 +1479,26 @@ private final class NotchCanvas: NSView {
             transition.duration = 0.18
             transition.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
             host.layer?.add(transition, forKey: kCATransition)
+            // A new page travels even when the shell stays put: it grows
+            // from slightly small and drops a little as it lands, on the
+            // shell's spring when it resized with one.
+            if !shapeSnaps {
+                let ride = plan ?? NotchContentArrival(duration: 0.4, spring: NotchMotion.Spring(duration: 0.4, bounce: 0.15))
+                beginArrival(kind: kind, keyTimes: [0, 0.25, 1], plan: ride, resuming: presentedArrival)
+            }
         } else {
             // Mask only the content pixels. A black overlay would obscure the
             // glass; alphaValue would remove the hosting view's AX/hit frame.
             let animation = CAKeyframeAnimation(keyPath: "opacity")
             let start: Float = kind == .dismiss || currentOpacity == 1 ? 0 : currentOpacity
-            // Give the silhouette a head start before revealing full-width
-            // content; content arriving small and out of focus can show
-            // sooner than sharp content could. Reversals continue from the
-            // opacity already on screen. A shape that snaps into place only
-            // needs its first frames drawn.
-            let keyTimes: [NSNumber] = kind == .dismiss ? [0, 0.65, 1] : shapeSnaps ? [0, 0.25, 1] : [0, 0.35, 1]
-            let duration: CFTimeInterval = kind == .dismiss ? 0.40 : shapeSnaps ? 0.2 : 0.45
+            // The shell gets a head start before content arrives; content
+            // arriving with the shell shows sooner than sharp content could.
+            // Reversals continue from the opacity already on screen. A shape
+            // that snaps into place only needs its first frames drawn.
+            let duration: CFTimeInterval = kind == .dismiss ? 0.40
+                : shapeSnaps ? 0.2 : plan?.duration ?? (kind == .reveal ? 0.55 : 0.4)
+            let keyTimes: [NSNumber] = kind == .dismiss ? [0, 0.65, 1]
+                : shapeSnaps ? [0, 0.25, 1] : kind == .reveal ? [0, 0.2, 1] : [0, 0.25, 1]
             animation.values = [start, start, 1]
             animation.keyTimes = keyTimes
             animation.duration = duration
@@ -1483,10 +1517,25 @@ private final class NotchCanvas: NSView {
             }
             contentVisibility.opacity = 1
             contentVisibility.add(animation, forKey: "notch.opacity")
-            // A fade is not motion; a shape that snaps into place brings no
-            // blur or growth, and departing content only leaves.
-            if !shapeSnaps, kind != .depart {
-                beginArrival(opening: kind == .reveal, keyTimes: keyTimes, duration: duration,
+            if kind == .dismiss {
+                // Leaving content recedes while hidden and is back to
+                // identity as it reappears, so nothing pops when the ride
+                // ends: the model never leaves identity.
+                if let layer = host.layer {
+                    let identity = NSValue(caTransform3D: CATransform3DIdentity)
+                    let shrink = CAKeyframeAnimation(keyPath: "transform")
+                    shrink.values = [identity, NSValue(caTransform3D: arrivalScaleTransform(0.93, in: layer)), identity]
+                    shrink.keyTimes = keyTimes
+                    shrink.calculationMode = .linear
+                    shrink.duration = duration
+                    layer.add(shrink, forKey: Self.arrivalScaleKey)
+                }
+            } else if !shapeSnaps, kind != .depart {
+                // A fade is not motion: arriving content travels, on the
+                // shell's own spring when it resized with one.
+                let ride = plan ?? NotchContentArrival(duration: duration,
+                                                       spring: NotchMotion.Spring(duration: duration, bounce: 0.15))
+                beginArrival(kind: kind, keyTimes: keyTimes, plan: ride,
                              resuming: start > 0 ? presentedArrival ?? (blur: 0, scale: 1) : nil)
             }
         }
@@ -1507,6 +1556,14 @@ private final class NotchCanvas: NSView {
         animation.timingFunction = CAMediaTimingFunction(name: .easeOut)
         contentVisibility.removeAnimation(forKey: "notch.opacity")
         contentVisibility.add(animation, forKey: "notch.opacity")
+        // The swapped view settles in rather than popping: a short ride
+        // from slightly small and above, starting as it reaches the screen.
+        if let layer = host.layer {
+            let spring = NotchMotion.Spring(duration: 0.32, bounce: 0.1)
+            layer.add(arrivalMotionKeyframes(fromScale: 0.95, fromDrift: 4, spring: spring, duration: 0.3,
+                                             begin: layer.convertTime(CACurrentMediaTime() + 0.06, from: nil), in: layer),
+                      forKey: Self.arrivalScaleKey)
+        }
         CATransaction.commit()
     }
 
@@ -1520,12 +1577,18 @@ private final class NotchCanvas: NSView {
         endArrival()
     }
 
-    /// Content arrives out of focus, and an opening page a little small, and
-    /// both settle with the island, as the phone's island brings its content in.
+    /// Content arrives travelling, and lands with the island: opening content
+    /// grows from slightly small, a new page does the same, less, and both
+    /// drop a little as they settle, as the phone's island brings its
+    /// content in.
     private struct Arrival {
         let begin: CFTimeInterval
         let duration: CFTimeInterval
+        /// Scale on screen when the ride was built; identity once landed.
         let scale: CGFloat
+        /// Points still above its place; 0 once landed.
+        let drift: CGFloat
+        let spring: NotchMotion.Spring
         /// The hosting layer's width the growth was centred for.
         var width: CGFloat = 0
     }
@@ -1557,12 +1620,13 @@ private final class NotchCanvas: NSView {
         return (CGFloat(blur?.doubleValue ?? 0), presentation.transform.m11)
     }
 
-    private func beginArrival(opening: Bool, keyTimes: [NSNumber], duration: CFTimeInterval,
+    private func beginArrival(kind: NotchContentTransition, keyTimes: [NSNumber], plan: NotchContentArrival,
                               resuming: (blur: CGFloat, scale: CGFloat)?) {
         guard let layer = host.layer else { return }
         arrivalGeneration += 1
         let generation = arrivalGeneration
         let begin = layer.convertTime(CACurrentMediaTime(), from: nil)
+        let opening = kind == .reveal
         let radius = resuming?.blur ?? (opening ? 12 : 6)
         if radius > 0, let filter = Self.makeArrivalBlur() {
             layer.filters = [filter]
@@ -1571,16 +1635,26 @@ private final class NotchCanvas: NSView {
             blur.keyTimes = keyTimes
             blur.timingFunctions = [CAMediaTimingFunction(name: .linear), CAMediaTimingFunction(name: .easeOut)]
             blur.beginTime = begin
-            blur.duration = duration
+            blur.duration = plan.duration
             layer.add(blur, forKey: Self.arrivalBlurKey)
         }
-        let scale = resuming?.scale ?? (opening ? 0.86 : 1)
-        if scale != 1 {
-            arrival = Arrival(begin: begin, duration: duration, scale: scale)
-            installArrivalScale()
+        // Opening content starts smaller; a new page restarts near its own
+        // size unless it interrupted a ride still below that. Either way the
+        // ride continues from what's on screen, never snapping back.
+        let defaultScale: CGFloat = opening ? 0.86 : 0.94
+        let defaultDrift: CGFloat = opening ? 10 : 6
+        let presented = resuming?.scale
+        let scaleFrom: CGFloat
+        if opening { scaleFrom = min(presented ?? defaultScale, 1) }
+        else { scaleFrom = min(presented ?? defaultScale, defaultScale) }
+        let travelled: CGFloat = defaultScale < 1 ? min(1, max(0, (scaleFrom - 1) / (defaultScale - 1))) : 0
+        let driftFrom = defaultDrift * (resuming == nil ? 1 : travelled)
+        if scaleFrom < 1 || driftFrom > 0 {
+            arrival = Arrival(begin: begin, duration: plan.duration, scale: scaleFrom, drift: driftFrom, spring: plan.spring)
+            installArrivalMotion(resuming: false)
         }
         // A filter left in place, even at no radius, keeps an extra render pass.
-        DispatchQueue.main.asyncAfter(deadline: .now() + duration) { [weak self] in
+        DispatchQueue.main.asyncAfter(deadline: .now() + plan.duration) { [weak self] in
             guard let self, self.arrivalGeneration == generation else { return }
             self.endArrival()
         }
@@ -1588,22 +1662,68 @@ private final class NotchCanvas: NSView {
 
     /// Content grows from the island's top centre, which moves within the
     /// hosting layer whenever the reserved area changes width, so the
-    /// growth is centred again for each width.
-    private func installArrivalScale() {
-        guard var arrival, let layer = host.layer,
-              layer.convertTime(CACurrentMediaTime(), from: nil) < arrival.begin + arrival.duration else { return }
+    /// growth is centred again for each width. A recentred growth continues
+    /// from what's on screen over the time that's left.
+    private func installArrivalMotion(resuming: Bool) {
+        guard var arrival, let layer = host.layer else { return }
+        let now = layer.convertTime(CACurrentMediaTime(), from: nil)
+        let remaining = arrival.begin + arrival.duration - now
+        guard remaining > 0.02 else { return }
+        var fromScale = arrival.scale
+        var fromDrift = arrival.drift
+        var begin = arrival.begin
+        if resuming, arrival.scale < 1, let presented = presentedArrival {
+            let travelled = min(1, max(0, (presented.scale - 1) / (arrival.scale - 1)))
+            fromScale = min(presented.scale, 1)
+            fromDrift = arrival.drift * travelled
+            begin = now
+        }
         arrival.width = layer.bounds.width
         self.arrival = arrival
-        let growth = CABasicAnimation(keyPath: "transform")
-        growth.fromValue = NSValue(caTransform3D: arrivalTransform(scale: arrival.scale, in: layer))
-        growth.toValue = NSValue(caTransform3D: CATransform3DIdentity)
-        growth.timingFunction = CAMediaTimingFunction(controlPoints: 0.22, 1, 0.36, 1)
-        growth.beginTime = arrival.begin
-        growth.duration = arrival.duration
-        layer.add(growth, forKey: Self.arrivalScaleKey)
+        layer.add(arrivalMotionKeyframes(fromScale: fromScale, fromDrift: fromDrift, spring: arrival.spring,
+                                        duration: remaining, begin: begin, in: layer),
+                  forKey: Self.arrivalScaleKey)
     }
 
-    private func arrivalTransform(scale: CGFloat, in layer: CALayer) -> CATransform3D {
+    /// The island's spring as content motion: from slightly small and above
+    /// to identity, sampled densely enough to play as given, so content
+    /// visibly travels outward as the island grows and lands with it.
+    private func arrivalMotionKeyframes(fromScale: CGFloat, fromDrift: CGFloat, spring: NotchMotion.Spring,
+                                        duration: CFTimeInterval, begin: CFTimeInterval, in layer: CALayer) -> CAKeyframeAnimation {
+        let anchor = CGPoint(x: layer.anchorPoint.x * layer.bounds.width, y: layer.anchorPoint.y * layer.bounds.height)
+        let top = layer.contentsAreFlipped() ? layer.bounds.minY : layer.bounds.maxY
+        let offset = CGPoint(x: layer.bounds.midX - anchor.x, y: top - anchor.y)
+        // Above its place, whichever way is up in this layer.
+        let driftSign: CGFloat = (top - anchor.y) >= 0 ? 1 : -1
+        let (fractions, keyTimes) = NotchMotion.keyframeProgress(spring: spring, duration: duration)
+        var transforms: [NSValue] = []
+        transforms.reserveCapacity(fractions.count)
+        for (index, fraction) in fractions.enumerated() {
+            if index == fractions.count - 1 {
+                transforms.append(NSValue(caTransform3D: CATransform3DIdentity))
+                continue
+            }
+            let scale = fromScale + (1 - fromScale) * CGFloat(fraction)
+            // The translation lands in scaled space; divide it back to points.
+            let drift = fromDrift * CGFloat(1 - fraction) * driftSign / max(0.2, scale)
+            var transform = CATransform3DScale(CATransform3DMakeTranslation(offset.x, offset.y, 0), scale, scale, 1)
+            transform = CATransform3DTranslate(transform, -offset.x, -offset.y, 0)
+            transform = CATransform3DTranslate(transform, 0, drift, 0)
+            transforms.append(NSValue(caTransform3D: transform))
+        }
+        let motion = CAKeyframeAnimation(keyPath: "transform")
+        motion.values = transforms
+        motion.keyTimes = keyTimes
+        motion.calculationMode = .linear
+        motion.beginTime = begin
+        motion.duration = duration
+        motion.fillMode = .both
+        return motion
+    }
+
+    /// Growth about the island's top centre for a single leap, as leaving
+    /// content recedes.
+    private func arrivalScaleTransform(_ scale: CGFloat, in layer: CALayer) -> CATransform3D {
         let anchor = CGPoint(x: layer.anchorPoint.x * layer.bounds.width, y: layer.anchorPoint.y * layer.bounds.height)
         let top = layer.contentsAreFlipped() ? layer.bounds.minY : layer.bounds.maxY
         let offset = CGPoint(x: layer.bounds.midX - anchor.x, y: top - anchor.y)
@@ -1749,7 +1869,7 @@ private final class NotchCanvas: NSView {
         if host.frame != hostFrame { host.frame = hostFrame }
         contentVisibility.frame = host.bounds
         layoutMascotBridge()
-        if let arrival, arrival.width != host.layer?.bounds.width { installArrivalScale() }
+        if let arrival, arrival.width != host.layer?.bounds.width { installArrivalMotion(resuming: true) }
         var backdropFrame = NotchStage.frame(stage, in: bounds)
         backdropFrame.origin.x = hostFrame.minX
         if backdrop.frame != backdropFrame { backdrop.frame = backdropFrame }

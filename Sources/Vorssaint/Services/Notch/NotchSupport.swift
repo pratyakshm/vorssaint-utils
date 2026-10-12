@@ -2708,6 +2708,22 @@ enum NotchMotion {
         return (sizes, keyTimes, duration)
     }
 
+    /// A spring's progress sampled densely for a keyframe animation, ending
+    /// exactly at 1, so arriving content rides the island's own curve — fast
+    /// attack, whisper of overshoot, shared settle — instead of a stock ease.
+    static func keyframeProgress(spring: Spring, duration: TimeInterval) -> (progress: [Double], keyTimes: [NSNumber]) {
+        let count = max(2, Int((duration * 60).rounded(.up)))
+        var progress: [Double] = []
+        var keyTimes: [NSNumber] = []
+        progress.reserveCapacity(count + 1)
+        for step in 0...count {
+            let share = Double(step) / Double(count)
+            progress.append(step == count ? 1 : spring.progress(at: duration * share))
+            keyTimes.append(NSNumber(value: share))
+        }
+        return (progress, keyTimes)
+    }
+
     /// Whole, equal margins around `size`, so the island keeps its exact
     /// pixels when the window returns to that size; half a point would round
     /// to a one-pixel jump on a standard-resolution display.

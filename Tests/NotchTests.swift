@@ -2181,7 +2181,13 @@ enum NotchTests {
         suite.expect(arrival > 0 && arrival < drop.duration
                && roomy.expanded.width - arrived.width <= (roomy.expanded.width - roomy.collapsed.width) * 0.01
                && roomy.expanded.height - arrived.height <= (roomy.expanded.height - roomy.collapsed.height) * 0.01,
-               "floating controls emerge once the island reaches its size, before its swing settles")
+                "floating controls emerge once the island reaches its size, before its swing settles")
+        let ride = NotchMotion.keyframeProgress(spring: NotchMotion.Spring(duration: 0.63, bounce: 0.2), duration: 0.8)
+        suite.expect(ride.progress.first == 0 && ride.progress.last == 1
+                && ride.keyTimes.first == 0 && ride.keyTimes.last == 1
+                && ride.progress.count == ride.keyTimes.count && ride.progress.count >= 24
+                && (ride.progress.max() ?? 0) > 1,
+                "arriving content samples the island's spring densely from rest to identity, overshoot included")
         let horizontal = NotchMotion.frames(from: idle, to: roomy.notice)
         suite.expect(horizontal.sizes.allSatisfy { $0.height == idle.height },
                "horizontal feedback never swings below the menu bar")
