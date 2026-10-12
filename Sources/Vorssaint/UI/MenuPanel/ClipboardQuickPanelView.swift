@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vorssaint
 
+import AppKit
 import SwiftUI
 
 struct ClipboardQuickPanelView: View {
@@ -75,8 +76,10 @@ struct ClipboardQuickPanelView: View {
     private var toolbar: some View {
         HStack(spacing: 8) {
             TextField(text.search, text: $history.quickQuery)
-                .textFieldStyle(.roundedBorder)
+                .textFieldStyle(.plain)
+                .font(.system(size: 20))
                 .focused($searchFocused)
+                .frame(height: 44)
             Button {
                 history.toggleQuickPreview()
             } label: {
@@ -194,16 +197,19 @@ struct ClipboardQuickPanelView: View {
             .id(Self.topAnchorID)
     }
 
-    /// Pinned entries first, then a rule, then the recent ones; the list
-    /// heads each group with its name. A search lists its matches by
-    /// relevance with no rule.
+    /// Tinycast-style sections: Pinned, then Today / Yesterday / This Week /
+    /// This Month / Earlier. A search lists its matches by relevance with no
+    /// headers. No row dividers: selection is a rounded-rect fill.
     @ViewBuilder
     private var sections: some View {
         if history.quickQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             if layout == .list {
-                rows(title: text.pinned, entries: history.pinnedEntries)
-                rows(title: text.recent, entries: history.recentEntries,
-                     followsSection: !history.pinnedEntries.isEmpty)
+                rows(title: text.pinned, entries: history.pinnedEntries, isFirst: true)
+                let bucketed = ClipboardHistoryDateBucket.bucketed(history.recentEntries)
+                for (offset, group) in bucketed.enumerated() {
+                    rows(title: group.bucket.title, entries: group.entries,
+                         isFirst: history.pinnedEntries.isEmpty && offset == 0)
+                }
             } else {
                 cards(history.pinnedEntries)
                 if !history.pinnedEntries.isEmpty, !history.recentEntries.isEmpty {
@@ -212,7 +218,7 @@ struct ClipboardQuickPanelView: View {
                 cards(history.recentEntries)
             }
         } else if layout == .list {
-            rows(title: nil, entries: filtered)
+            rows(title: nil, entries: filtered, isFirst: true)
         } else {
             cards(filtered)
         }
@@ -220,7 +226,7 @@ struct ClipboardQuickPanelView: View {
 
     @ViewBuilder
     private func rows(title: String?, entries: [ClipboardHistoryEntry],
-                      followsSection: Bool = false) -> some View {
+                      followsSection: Bool = false, isFirst: Bool = false) -> some View {
         if !entries.isEmpty {
             if followsSection {
                 Divider()
@@ -228,20 +234,16 @@ struct ClipboardQuickPanelView: View {
                     .padding(.vertical, 5)
             }
             if let title {
-                Text(title.uppercased())
-                    .font(.system(size: 9.5, weight: .semibold))
+                Text(title)
+                    .font(.subheadline.weight(.medium))
                     .foregroundStyle(.secondary)
-                    .tracking(0.6)
+                    .lineLimit(1)
                     .padding(.horizontal, 8)
-                    .padding(.vertical, 6)
+                    .padding(.top, isFirst ? 4 : 12)
+                    .padding(.bottom, 4)
             }
-            ForEach(Array(entries.enumerated()), id: \.element.id) { index, entry in
+            ForEach(entries, id: \.id) { entry in
                 entryView(entry)
-                if index < entries.count - 1 {
-                    Divider()
-                        .padding(.leading, 43)
-                        .padding(.trailing, 8)
-                }
             }
         }
     }
@@ -308,6 +310,13 @@ struct ClipboardQuickPanelView: View {
                 .modifier(ClipboardClearRecentConfirmation(entryIDs: $clearingIDs))
             }
             Spacer()
+            // Tinycast-style primary action: paste names the app it lands in.
+            if history.quickBatchCount == 0, history.selectedQuickEntry != nil {
+                Button("Paste to \(Self.pasteTargetName) ↵") {
+                    history.copySelectedQuickEntry()
+                }
+                .buttonStyle(.borderedProminent)
+            }
             HStack(spacing: 5) {
                 Image(systemName: "doc.on.clipboard")
                 Text("\(history.entries.count)")
@@ -322,6 +331,11 @@ struct ClipboardQuickPanelView: View {
 
     private func shortcutIndex(for entry: ClipboardHistoryEntry) -> Int? {
         filtered.prefix(9).firstIndex(where: { $0.id == entry.id })
+    }
+
+    /// The app a paste lands in, for the Tinycast-style "Paste to {app}" footer.
+    private static var pasteTargetName: String {
+        NSWorkspace.shared.frontmostApplication?.localizedName ?? "App"
     }
 
     private func scrollSelectedEntry(with proxy: ScrollViewProxy) {
@@ -444,23 +458,23 @@ private struct QuickEntryView: View, Equatable {
     }
 
     private var row: some View {
-        HStack(alignment: .center, spacing: 9) {
+        HStack(alignment: .center, spacing: 10) {
             selectionButton
             entryContent(entry)
-            Spacer(minLength: 8)
+            Spacer(minLength: 0)
             entryTrailing(entry, isHovered: isHovered)
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 6)
-        .frame(minHeight: 48)
+        .frame(minHeight: 38)
         .background(
-            RoundedRectangle(cornerRadius: 7, style: .continuous)
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
                 .fill(rowBackground(isSelected: isSelected,
                                     isBatchSelected: isBatchSelected,
                                     isHovered: isHovered))
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 7, style: .continuous)
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
                 .strokeBorder(isBatchSelected ? Color.accentColor.opacity(0.38)
                               : isSelected ? Color.accentColor.opacity(0.24) : Color.clear,
                               lineWidth: 1)
@@ -582,8 +596,8 @@ private struct QuickEntryView: View, Equatable {
                     ColorSwatch(color: color, size: 14)
                 }
                 SearchHighlightText.text(isRow ? entry.preview : entry.cardPreview, tokens: tokens, fontSize: 12)
-                    .font(.system(size: 12))
-                    .lineLimit(isRow ? 2 : 7)
+                    .font(.body)
+                    .lineLimit(isRow ? 1 : 7)
                     .truncationMode(.tail)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -686,16 +700,28 @@ private struct QuickEntryView: View, Equatable {
                 .fixedSize()
             }
         } else if isRow {
-            // A card shows these in its footer.
-            VStack(alignment: .trailing, spacing: 3) {
-                Text(entry.copiedAt, style: .time)
-                    .font(.system(size: 9.5))
-                    .foregroundStyle(.tertiary)
-                if let shortcutIndex {
-                    Text("⌘\(shortcutIndex + 1)")
-                        .font(.system(size: 9.5, weight: .semibold, design: .rounded))
-                        .foregroundStyle(.secondary)
+            // Tinycast parity: no timestamp. Pinned rows show their ⌘-digit
+            // slot; everything else keeps the trailing edge clean.
+            if entry.isPinned, let shortcutIndex {
+                HStack(spacing: 2) {
+                    Text("⌘")
+                        .font(.caption)
+                        .padding(.horizontal, 4)
+                        .frame(minWidth: 18, minHeight: 18)
+                        .background(
+                            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                .strokeBorder(Color.primary.opacity(0.2), lineWidth: 1)
+                        )
+                    Text("\(shortcutIndex + 1)")
+                        .font(.caption)
+                        .padding(.horizontal, 4)
+                        .frame(minWidth: 18, minHeight: 18)
+                        .background(
+                            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                .strokeBorder(Color.primary.opacity(0.2), lineWidth: 1)
+                        )
                 }
+                .foregroundStyle(.secondary)
             }
         } else if entry.isPinned, sourceApp != nil || showsFileIcon {
             // The app's or the file's icon took the pin's place on the left.

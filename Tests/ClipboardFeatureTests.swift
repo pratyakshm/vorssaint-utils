@@ -680,9 +680,9 @@ enum ClipboardFeatureTests {
             preview: false, savedWidth: 0, savedHeight: 0, visibleFrame: desktop)
         let previewSize = ClipboardHistoryWindowSizing.contentSize(
             preview: true, savedWidth: 0, savedHeight: 0, visibleFrame: desktop)
-        suite.expect(compactSize == NSSize(width: 560, height: 420)
-                && previewSize == NSSize(width: 840, height: 500),
-               "clipboard quick window retains its original compact and preview sizes by default")
+        suite.expect(compactSize == NSSize(width: 750, height: 475)
+                && previewSize == NSSize(width: 1030, height: 555),
+                "clipboard quick window retains its original compact and preview sizes by default")
         suite.expect(ClipboardHistoryWindowSizing.minimumSize(preview: false)
                 == NSSize(width: 560, height: 300)
                 && ClipboardHistoryWindowSizing.minimumSize(preview: true)
@@ -706,13 +706,33 @@ enum ClipboardFeatureTests {
         let smallScreen = NSRect(x: -800, y: 0, width: 800, height: 600)
         suite.expect(ClipboardHistoryWindowSizing.contentSize(
             preview: true, savedWidth: 0, savedHeight: 0, visibleFrame: smallScreen)
-                == NSSize(width: 768, height: 500),
-               "the preview fits a display narrower than its preferred minimum")
+                == NSSize(width: 768, height: 555),
+                "the preview fits a display narrower than its preferred minimum")
         let tinyScreen = NSRect(x: 0, y: 0, width: 540, height: 320)
         suite.expect(ClipboardHistoryWindowSizing.contentSize(
             preview: true, savedWidth: 1000, savedHeight: 900, visibleFrame: tinyScreen)
                 == NSSize(width: 508, height: 288),
-               "neither minimum dimension can push the window outside the visible display")
+                "neither minimum dimension can push the window outside the visible display")
+
+        // MARK: Clipboard history date buckets (Tinycast parity)
+
+        let bucketCalendar = Calendar(identifier: .gregorian)
+        let bucketNow = bucketCalendar.date(from: DateComponents(year: 2026, month: 10, day: 12, hour: 12))!
+        func bucketEntry(daysAgo: Int) -> ClipboardHistoryEntry {
+            let date = bucketCalendar.date(byAdding: .day, value: -daysAgo, to: bucketNow)!
+            return ClipboardHistoryEntry(text: "t\(daysAgo)", copiedAt: date)
+        }
+        let bucketed = ClipboardHistoryDateBucket.bucketed(
+            [bucketEntry(daysAgo: 0), bucketEntry(daysAgo: 1), bucketEntry(daysAgo: 60)],
+            now: bucketNow, calendar: bucketCalendar)
+        suite.expect(bucketed.map(\.bucket) == [.today, .yesterday, .earlier]
+                && bucketed.allSatisfy({ $0.entries.count == 1 }),
+                "recent clipboard entries bucket into Today / Yesterday / Earlier")
+        suite.expect(ClipboardHistoryDateBucket(for: bucketNow, now: bucketNow, calendar: bucketCalendar) == .today
+                && ClipboardHistoryDateBucket(
+                    for: bucketCalendar.date(byAdding: .day, value: -1, to: bucketNow)!,
+                    now: bucketNow, calendar: bucketCalendar) == .yesterday,
+                "the newest clipboard buckets read as Today then Yesterday")
 
         // MARK: Clipboard history window placement
 
@@ -732,9 +752,9 @@ enum ClipboardFeatureTests {
         placement.quickLayout = .list
         placement.position(placementPanel)
         suite.expect(placementPanel.styleMask.contains(.resizable)
-                     && placementPanel.frame.size == NSSize(width: 560, height: 420)
-                     && abs(placementPanel.frame.midX - placementScreen.midX) < 1,
-               "the list opens as a resizable window at its original size, centered: \(placementPanel.frame)")
+                      && placementPanel.frame.size == NSSize(width: 750, height: 475)
+                      && abs(placementPanel.frame.midX - placementScreen.midX) < 1,
+                "the list opens as a resizable window at its original size, centered: \(placementPanel.frame)")
         placementPanel.setFrame(NSRect(origin: placementPanel.frame.origin, size: NSSize(width: 700, height: 500)),
                                 display: false)
         placement.savePanelSize(placementPanel)

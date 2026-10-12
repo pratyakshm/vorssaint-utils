@@ -5,6 +5,54 @@ import AppKit
 import Carbon.HIToolbox
 import SwiftUI
 
+/// Date buckets for the history list, newest-first. Copied from Tinycast's
+/// `DateBucket` so the Vorssaint history reads the same: Pinned, Today,
+/// Yesterday, This Week, This Month, Earlier.
+enum ClipboardHistoryDateBucket: Int, CaseIterable {
+    case today, yesterday, thisWeek, thisMonth, earlier
+
+    var title: String {
+        switch self {
+        case .today: return "Today"
+        case .yesterday: return "Yesterday"
+        case .thisWeek: return "This Week"
+        case .thisMonth: return "This Month"
+        case .earlier: return "Earlier"
+        }
+    }
+
+    init(for date: Date, now: Date = Date(), calendar: Calendar = .current) {
+        if calendar.isDate(date, inSameDayAs: now) {
+            self = .today
+        } else if let yesterday = calendar.date(byAdding: .day, value: -1, to: now),
+                  calendar.isDate(date, inSameDayAs: yesterday) {
+            self = .yesterday
+        } else if calendar.isDate(date, equalTo: now, toGranularity: .weekOfYear) {
+            self = .thisWeek
+        } else if calendar.isDate(date, equalTo: now, toGranularity: .month) {
+            self = .thisMonth
+        } else {
+            self = .earlier
+        }
+    }
+
+    /// Groups unpinned entries newest-first, one bucket per date range.
+    /// Entries inside each bucket keep their incoming (newest-first) order.
+    static func bucketed(_ entries: [ClipboardHistoryEntry],
+                         now: Date = Date(),
+                         calendar: Calendar = .current) -> [(bucket: ClipboardHistoryDateBucket, entries: [ClipboardHistoryEntry])] {
+        var groups: [ClipboardHistoryDateBucket: [ClipboardHistoryEntry]] = [:]
+        var order: [ClipboardHistoryDateBucket] = []
+        for entry in entries {
+            let bucket = ClipboardHistoryDateBucket(for: entry.copiedAt, now: now, calendar: calendar)
+            if groups[bucket] == nil { order.append(bucket) }
+            groups[bucket, default: []].append(entry)
+        }
+        return order.sorted { $0.rawValue < $1.rawValue }
+            .compactMap { bucket in groups[bucket].map { (bucket, $0) } }
+    }
+}
+
 /// How the history window shows its entries: a list in a window that keeps
 /// the size the user gives it, or a shelf of cards along the bottom of the
 /// screen.
@@ -24,7 +72,7 @@ enum ClipboardHistoryLayout: String, CaseIterable {
 }
 
 enum ClipboardHistoryWindowSizing {
-    static let compactDefault = NSSize(width: 560, height: 420)
+    static let compactDefault = NSSize(width: 750, height: 475)
     static let compactMinimum = NSSize(width: 560, height: 300)
     static let previewExtra = NSSize(width: 280, height: 80)
 

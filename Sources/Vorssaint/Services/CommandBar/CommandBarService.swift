@@ -173,6 +173,7 @@ final class CommandBarService: ObservableObject {
     /// The raw scan is what gets cached; the rows are rebuilt on every open so
     /// the live dot and the running apps are never a stale picture.
     private var cachedApps: [InstalledApps.InstalledApp] = []
+    private var appsLoadedAt: Date?
     @Published private(set) var appsLoading = false
     private var pendingAppShortcut = CommandBarRowShortcuts.PendingAppLaunch()
     private var windowsLoading = false
@@ -265,20 +266,9 @@ final class CommandBarService: ObservableObject {
                                                   storageKey: DefaultsKey.commandBarShortcut)
         reloadPreferenceCaches()
         syncRowHotkeys()
-        if available {
-            // Build the one view tree after launch, outside the keystroke that
-            // asks to see it for the first time, and lay it out: a window draws
-            // itself before it first appears, and keys typed meanwhile would
-            // still reach the app in front.
-            DispatchQueue.main.async { [weak self] in
-                guard AppFeature.commandBar.isAvailable, let self else { return }
-                let panel = self.ensurePanel()
-                if !panel.isVisible {
-                    panel.contentViewController?.view.layoutSubtreeIfNeeded()
-                    panel.display()
-                }
-            }
-        }
+        // Idle-lean: the panel is built on the first open, not at launch.
+        // Pre-warming kept an NSPanel + NSHostingController + SwiftUI tree
+        // resident for a bar that may not open for hours.
         if !available {
             hide()
             panel = nil
@@ -410,14 +400,25 @@ final class CommandBarService: ObservableObject {
     }
 
     private func startBackgroundLoads(for id: UUID) {
+        // Lean-bar: a switched-off source costs no scan at all, so a minimal
+        // setup (apps + actions + clipboard + calculator + kill) skips the
+        // menus, windows, answers and file passes entirely.
         refreshAutomationStatus(for: id)
-        refreshStorageAnswer(for: id)
-        refreshWiFiState(for: id)
-        refreshSystemAnswers(for: id)
-        loadAppsIfNeeded(for: id)
+        if isEnabled(.answers) {
+            refreshStorageAnswer(for: id)
+            refreshWiFiState(for: id)
+            refreshSystemAnswers(for: id)
+        }
+        if isEnabled(.apps) || isEnabled(.quitApps) {
+            loadAppsIfNeeded(for: id)
+        }
         loadMacSettingsIfNeeded(for: id)
-        loadWindowsIfNeeded(for: id)
-        loadMenusIfNeeded(for: id)
+        if isEnabled(.windows) {
+            loadWindowsIfNeeded(for: id)
+        }
+        if isEnabled(.menus) {
+            loadMenusIfNeeded(for: id)
+        }
         loadSelection(for: id)
         loadKillProcessEntries(for: id)
         loadUninstallSelectionEntries(for: id)
@@ -665,6 +666,19 @@ final class CommandBarService: ObservableObject {
         }
         if !uninstallSelectionEntries.isEmpty {
             uninstallSelectionEntries = []
+            indexEntries()
+        }
+        // Free per-open scans: windows + menus are rebuilt on the next open.
+        // Keeps the closed bar to catalog + cached apps only.
+        if !windowEntries.isEmpty {
+            windowEntries = []
+            windowsLoadedAt = nil
+            indexEntries()
+        }
+        if !menuEntries.isEmpty {
+            menuEntries = []
+            menuOwnerPID = nil
+            menusLoadedAt = nil
             indexEntries()
         }
         // What was typed is remembered for the next opening, where the first
@@ -2943,6 +2957,13 @@ final class CommandBarService: ObservableObject {
 
     private func loadAppsIfNeeded(for id: UUID) {
         guard AppFeature.commandBar.isAvailable, !appsLoading else { return }
+        // Throttle the /Applications + mdfind scan: reopening within 30s
+        // reuses the cache instead of spawning another scan + icon pass.
+        if !cachedApps.isEmpty, let loadedAt = appsLoadedAt,
+           Date().timeIntervalSince(loadedAt) < 30 {
+            rebuildRunningEntries()
+            return
+        }
         appsLoading = true
         let listsUninstallable = AppFeature.uninstaller.isAvailable
             && UserDefaults.standard.bool(forKey: DefaultsKey.uninstallerCommandBarEnabled)
@@ -2959,6 +2980,7 @@ final class CommandBarService: ObservableObject {
                 self.appsLoading = false
                 guard AppFeature.commandBar.isAvailable else { return }
                 self.cachedApps = apps
+                self.appsLoadedAt = Date()
                 self.uninstallableAppIDs = uninstallable
                 self.rebuildRunningEntries()
                 if let key = self.pendingAppShortcut.take(in: self.rowShortcuts,
@@ -3035,6 +3057,14 @@ final class CommandBarService: ObservableObject {
     /// away from the main thread and kept per app for a few seconds. Nothing
     /// is read while the bar is closed, and nothing is read for our own app.
     private func loadMenusIfNeeded(for id: UUID) {
+        guard isEnabled(.menus) else {
+            if !menuEntries.isEmpty {
+                menuEntries = []
+                menuOwnerPID = nil
+                indexEntries()
+            }
+            return
+        }
         guard Permissions.shared.accessibility,
               let front = NSWorkspace.shared.frontmostApplication,
               front.bundleIdentifier != Bundle.main.bundleIdentifier,
@@ -3207,6 +3237,14 @@ final class CommandBarService: ObservableObject {
         // through AX when the window server withholds them, so asking for
         // Screen Recording here would demand the heaviest permission on the
         // Mac for nothing.
+        guard isEnabled(.windows) else {
+            if !windowEntries.isEmpty {
+                windowEntries = []
+                windowsLoadedAt = nil
+                indexEntries()
+            }
+            return
+        }
         let allowed = (AppFeature.switcher.isAvailable || AppFeature.windowLayout.isAvailable)
             && Permissions.shared.accessibility
         guard allowed else {

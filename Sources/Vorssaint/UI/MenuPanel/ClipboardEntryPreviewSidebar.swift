@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Vorssaint
 
+import AppKit
 import ImageIO
 import SwiftUI
 
@@ -32,6 +33,8 @@ struct ClipboardEntryPreviewSidebar: View {
                 } else {
                     contentScrollView(entry)
                 }
+                Divider()
+                ClipboardHistoryInfoSection(entry: entry)
                 Divider()
                 sidebarFooter(entry)
             } else {
@@ -377,5 +380,121 @@ struct ClipboardEntryPreviewSidebar: View {
     private func saveEditing(_ entry: ClipboardHistoryEntry) {
         guard ClipboardHistoryService.shared.updateText(entry, to: draft) else { return }
         cancelEditing()
+    }
+}
+
+/// Tinycast-style "Information" block: Source / Type / Characters+Words (or
+/// Dimensions / Size) / Copied. Disk-touching details stay off the row path;
+/// this view only reads what the entry already carries, plus file size.
+struct ClipboardHistoryInfoSection: View {
+    let entry: ClipboardHistoryEntry
+
+    private struct InfoRow: Identifiable {
+        let label: String
+        let value: String
+        var id: String { label }
+    }
+
+    static let copiedFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .medium
+        formatter.doesRelativeDateFormatting = true
+        return formatter
+    }()
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Information")
+                .font(.subheadline.weight(.medium))
+                .foregroundStyle(.secondary)
+            VStack(spacing: 0) {
+                let rows = self.rows
+                ForEach(rows) { row in
+                    if row.id != rows.first?.id { Divider() }
+                    HStack(spacing: 6) {
+                        Text(row.label).foregroundStyle(.secondary)
+                        Spacer(minLength: 12)
+                        if let icon = sourceIcon, row.label == "Source" {
+                            Image(nsImage: icon)
+                                .resizable()
+                                .frame(width: 20, height: 20)
+                        }
+                        Text(row.value).lineLimit(1).truncationMode(.middle)
+                    }
+                    .font(.callout)
+                    .padding(.vertical, 6)
+                }
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.top, 12)
+        .padding(.bottom, 4)
+    }
+
+    private var rows: [InfoRow] {
+        var rows: [InfoRow] = []
+        if let sourceName {
+            rows.append(InfoRow(label: "Source", value: sourceName))
+        }
+        switch entry.kind {
+        case .text:
+            let isColor = entry.color != nil
+            rows.append(InfoRow(label: "Type", value: isColor ? "Color" : "Text"))
+            if !isColor {
+                rows.append(InfoRow(label: "Characters", value: entry.text.count.formatted()))
+                rows.append(InfoRow(label: "Words", value: Self.wordCount(entry.text).formatted()))
+            }
+        case .image:
+            rows.append(InfoRow(label: "Type", value: "Image"))
+            if !entry.imageDimensionsLabel.isEmpty {
+                rows.append(InfoRow(label: "Dimensions", value: entry.imageDimensionsLabel))
+            }
+        case .files:
+            let path = entry.filePaths.first ?? ""
+            let ext = (path as NSString).pathExtension.lowercased()
+            rows.append(InfoRow(label: "Type", value: ext.isEmpty ? "File" : ext.uppercased()))
+            if entry.filePaths.count == 1 {
+                rows.append(InfoRow(label: "Path",
+                                    value: (path as NSString).abbreviatingWithTildeInPath))
+            } else {
+                rows.append(InfoRow(label: "Files", value: entry.filePaths.count.formatted()))
+            }
+            if let bytes = fileBytes {
+                rows.append(InfoRow(label: "Size",
+                                    value: Int64(bytes).formatted(.byteCount(style: .file))))
+            }
+        }
+        rows.append(InfoRow(label: "Copied",
+                            value: Self.copiedFormatter.string(from: entry.copiedAt)))
+        return rows
+    }
+
+    private var sourceName: String? {
+        guard let bundleID = entry.sourceBundleID else { return nil }
+        return InstalledApps.name(for: bundleID)
+    }
+
+    private var sourceIcon: NSImage? {
+        guard let bundleID = entry.sourceBundleID,
+              let url = InstalledApps.url(for: bundleID) else { return nil }
+        return NSWorkspace.shared.icon(forFile: url.path)
+    }
+
+    private var fileBytes: Int? {
+        guard entry.kind == .files, entry.filePaths.count == 1 else { return nil }
+        return try? FileManager.default
+            .attributesOfItem(atPath: entry.filePaths[0])[.size] as? Int
+    }
+
+    private nonisolated static func wordCount(_ text: String) -> Int {
+        var count = 0
+        var inWord = false
+        for scalar in text.unicodeScalars {
+            let separator = CharacterSet.whitespacesAndNewlines.contains(scalar)
+            if !separator, !inWord { count += 1 }
+            inWord = !separator
+        }
+        return count
     }
 }

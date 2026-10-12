@@ -1608,8 +1608,8 @@ enum ClipboardImageStore {
     /// thumbnail at once.
     private static let thumbnails: NSCache<NSString, NSImage> = {
         let cache = NSCache<NSString, NSImage>()
-        cache.countLimit = 120
-        cache.totalCostLimit = 48 * 1024 * 1024
+        cache.countLimit = 60
+        cache.totalCostLimit = 24 * 1024 * 1024
         return cache
     }()
 
