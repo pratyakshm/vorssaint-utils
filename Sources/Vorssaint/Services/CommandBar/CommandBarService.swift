@@ -491,8 +491,61 @@ final class CommandBarService: ObservableObject {
         installMonitors(for: panel)
         panel.alphaValue = 1
         panel.orderFrontRegardless()
+        // A fresh appearance stretches down to its width; showing again
+        // while already visible only clears a leftover stretch.
+        if reopening {
+            Self.cancelAppearStretch(in: panel)
+        } else {
+            Self.playAppearStretch(in: panel)
+        }
         panel.makeKey()
         focusField(in: panel)
+    }
+
+    /// The keys the appear motion is added under, so a new appearance
+    /// replaces the old one instead of stacking onto it.
+    private static let appearStretchKey = "appearStretch"
+    private static let appearFadeKey = "appearFade"
+
+    /// The window lands 10% wider and snaps to its width on a soft spring,
+    /// the way the system's own search arrives. Transform and opacity only,
+    /// so layout never re-runs; the field and rows ride the same layer, so
+    /// they stretch with the bar instead of after it. A rapid re-summon
+    /// retargets from wherever the last appear got to, and reduced motion
+    /// keeps the fade but drops the stretch.
+    private static func playAppearStretch(in panel: NSPanel) {
+        panel.contentView?.wantsLayer = true
+        guard let layer = panel.contentView?.layer else { return }
+        // The model value stays at identity throughout: only ever the
+        // presentation talks, so a missing one means a fresh start.
+        let presented = layer.presentation()?.value(forKeyPath: "transform.scale.x") as? Double
+        layer.removeAnimation(forKey: appearStretchKey)
+        if presented == nil {
+            layer.removeAnimation(forKey: appearFadeKey)
+            let fade = CABasicAnimation(keyPath: "opacity")
+            fade.fromValue = 0
+            fade.toValue = 1
+            fade.duration = 0.18
+            fade.timingFunction = CAMediaTimingFunction(name: .easeOut)
+            layer.add(fade, forKey: appearFadeKey)
+        }
+        guard !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion else { return }
+        let stretch = CASpring(keyPath: "transform.scale.x")
+        stretch.fromValue = presented.map { min(max($0, 1), 1.1) } ?? 1.1
+        stretch.toValue = 1
+        // Soft but quick: settles inside a third of a second with a whisper
+        // of overshoot, never a wobble.
+        stretch.stiffness = 400
+        stretch.damping = 28
+        stretch.mass = 1
+        stretch.duration = stretch.settlingDuration
+        layer.add(stretch, forKey: appearStretchKey)
+    }
+
+    /// Showing again while visible must never inherit a half-settled stretch.
+    private static func cancelAppearStretch(in panel: NSPanel) {
+        panel.contentView?.layer?.removeAnimation(forKey: appearStretchKey)
+        panel.contentView?.layer?.removeAnimation(forKey: appearFadeKey)
     }
 
     /// Below the island, centred on it, where the drop lands.
@@ -3326,7 +3379,7 @@ final class CommandBarService: ObservableObject {
     /// away from that spot is added on, so the choice survives the close.
     private func position(_ panel: NSPanel, animated: Bool = false) {
         panel.contentViewController?.view.layoutSubtreeIfNeeded()
-        let size = panel.contentViewController?.view.fittingSize ?? NSSize(width: 560, height: 380)
+        let size = panel.contentViewController?.view.fittingSize ?? NSSize(width: CommandBarView.windowWidth, height: 380)
         // Decided once, here: moving the pointer to another display while
         // typing must not clamp the panel against a screen it is not on.
         let screen = NSScreen.pointerVisibleFrame
