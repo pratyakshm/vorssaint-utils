@@ -15,6 +15,7 @@ struct NotchView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     @State private var headerHovered = false
+    @State private var sectionSwipeOffset: CGFloat = 0
     private var text: NotchStrings { FeatureStrings.notch(l10n.language) }
 
     var body: some View {
@@ -294,6 +295,56 @@ struct NotchView: View {
 
     private var showsDetail: Bool { service.showingAppPanel || service.selectedMetric != nil }
 
+    /// The title swipe only runs on a plain section page: not over the
+    /// sections gallery, a detail, the command bar or capture controls,
+    /// and only when another section exists to go to.
+    private var canSwipeSections: Bool {
+        service.expanded && !service.showingSections && !showsDetail
+            && !service.showingCommandBar && service.captureControls == nil
+            && service.modules.count > 1
+    }
+
+    private func swipeTarget(_ direction: NotchSectionSwipeDirection) -> NotchModule? {
+        NotchSectionSwipeLogic.target(from: service.selected, modules: service.modules,
+                                      direction: direction)
+    }
+
+    private func swipeChanged(_ offset: CGFloat) {
+        guard canSwipeSections else { return }
+        sectionSwipeOffset = offset
+    }
+
+    private func swipeCancelled() {
+        guard sectionSwipeOffset != 0 else { return }
+        if reduceMotion {
+            sectionSwipeOffset = 0
+        } else {
+            withAnimation(.spring(duration: 0.5, bounce: 0.2)) { sectionSwipeOffset = 0 }
+        }
+    }
+
+    private func swipeCommitted(_ direction: NotchSectionSwipeDirection) {
+        guard canSwipeSections, let target = swipeTarget(direction) else {
+            swipeCancelled()
+            return
+        }
+        guard target != service.selected else {
+            swipeCancelled()
+            return
+        }
+        service.provideHapticFeedback()
+        if reduceMotion {
+            sectionSwipeOffset = 0
+            service.select(target)
+            return
+        }
+        service.select(target)
+        sectionSwipeOffset = direction == .next
+            ? service.contentSize.width
+            : -service.contentSize.width
+        withAnimation(.spring(duration: 0.5, bounce: 0.2)) { sectionSwipeOffset = 0 }
+    }
+
     private var expanded: some View {
         VStack(spacing: NotchLayout.spacing) {
             header.zIndex(1)
@@ -317,6 +368,13 @@ struct NotchView: View {
             .frame(width: service.contentSize.width, height: service.contentSize.height, alignment: .top)
             .clipShape(NotchPageClip(top: service.expandedGeometry.headerTopInset
                                         + service.expandedGeometry.headerRowHeight + NotchLayout.spacing))
+            // The page follows a title swipe, then springs to the next one.
+            .offset(x: canSwipeSections ? sectionSwipeOffset : 0)
+            .opacity(canSwipeSections ? 1 - min(0.25, abs(sectionSwipeOffset) / max(1, service.contentSize.width) * 0.6) : 1)
+            .onChange(of: canSwipeSections) { _, enabled in
+                guard !enabled else { return }
+                sectionSwipeOffset = 0
+            }
         }
         .padding(.horizontal, NotchLayout.horizontalInset)
         .padding(.top, service.expandedGeometry.headerTopInset)
@@ -412,10 +470,7 @@ struct NotchView: View {
                     if !quickActions.contains(.explore) {
                         NotchIconButton(symbol: "square.grid.2x2", title: text.sectionsTitle, action: service.toggleSections)
                     }
-                    Text(service.selected.title(l10n.language))
-                        .font(Font(NotchLayout.headerTitleFont as CTFont))
-                        .lineLimit(1)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                    sectionTitle
                 }
             }
             .frame(width: service.expandedGeometry.headerCameraGap > 0 ? (service.contentSize.width - service.expandedGeometry.headerCameraGap) / 2 : nil)
@@ -461,6 +516,31 @@ struct NotchView: View {
         // Collapsing under the pointer takes the row away without a final
         // hover(false); the next opening starts with the actions out of sight.
         .onDisappear { headerHovered = false }
+    }
+
+    /// The open section title. A horizontal swipe here moves to
+    /// the next or previous section. The page follows the fingers and
+    /// springs into the new section, with a haptic on the change.
+    private var sectionTitle: some View {
+        Text(service.selected.title(l10n.language))
+            .font(Font(NotchLayout.headerTitleFont as CTFont))
+            .lineLimit(1)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            // A subtle parallax while the page follows the swipe.
+            .offset(x: canSwipeSections ? sectionSwipeOffset * 0.18 : 0)
+            .contentShape(Rectangle())
+            .background {
+                if canSwipeSections {
+                    NotchSectionSwipeCatcher(
+                        enabled: canSwipeSections,
+                        onChanged: { swipeChanged($0) },
+                        onCommit: { swipeCommitted($0) },
+                        onCancelled: { swipeCancelled() }
+                    )
+                }
+            }
+            .accessibilityAddTraits(.isHeader)
+            .accessibilityHint(text.switchSection)
     }
 
     /// The island's history page shows only the cards, so its clear action
