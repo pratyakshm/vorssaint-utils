@@ -492,13 +492,11 @@ final class CommandBarService: ObservableObject {
         installMonitors(for: panel)
         panel.alphaValue = 1
         panel.orderFrontRegardless()
-        // A fresh appearance stretches down to its width; showing again
-        // while already visible only clears a leftover stretch.
-        if reopening {
-            Self.cancelAppearStretch(in: panel)
-        } else {
-            Self.playAppearStretch(in: panel)
-        }
+        // Every appearance stretches down to its width, first or fiftieth:
+        // leftover motion is cleared so the new one always starts clean
+        // instead of being swallowed by a still-attached animation.
+        Self.cancelAppearStretch(in: panel)
+        Self.playAppearStretch(in: panel)
         panel.makeKey()
         focusField(in: panel)
     }
