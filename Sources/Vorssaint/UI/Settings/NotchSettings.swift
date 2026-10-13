@@ -1042,7 +1042,7 @@ private struct NotchMediaExposureSettings: View {
                         Toggle(source.displayName ?? source.bundleIdentifier, isOn: Binding(
                             get: { !hidden },
                             set: { shown in
-                                NotchMediaExposure.setHidden(!shown, bundleIdentifier: source.bundleIdentifier)
+                                NotchMediaExposureStore.setHidden(!shown, bundleIdentifier: source.bundleIdentifier)
                                 hiddenApps = UserDefaults.standard.stringArray(forKey: DefaultsKey.notchMediaHiddenApps) ?? []
                                 music.refreshMediaExposure()
                             }))
@@ -1077,7 +1077,7 @@ private struct NotchMediaExposureSettings: View {
                             Text(bundle).font(.caption).foregroundStyle(.secondary).lineLimit(1)
                             Spacer(minLength: 4)
                             Button("Show") {
-                                NotchMediaExposure.setHidden(false, bundleIdentifier: bundle)
+                                NotchMediaExposureStore.setHidden(false, bundleIdentifier: bundle)
                                 hiddenApps = UserDefaults.standard.stringArray(forKey: DefaultsKey.notchMediaHiddenApps) ?? []
                                 music.refreshMediaExposure()
                             }

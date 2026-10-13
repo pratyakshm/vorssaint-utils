@@ -3,26 +3,17 @@
 
 import Foundation
 
-/// Per-app media exposure: bundle identifiers the island never shows.
-/// Stored as a string array under `DefaultsKey.notchMediaHiddenApps`.
+/// Per-app media exposure helpers. Pure by design: this file also compiles
+/// into the Now Playing adapter (`build.sh`), which never sees `DefaultsKey`,
+/// so the hidden set is always passed in by app-side callers. Zero stored
+/// state, zero cost when nothing is hidden.
 enum NotchMediaExposure {
-    static var hiddenBundleIDs: Set<String> {
-        Set(UserDefaults.standard.stringArray(forKey: DefaultsKey.notchMediaHiddenApps) ?? [])
-    }
-
-    static func isHidden(bundleIdentifier: String?) -> Bool {
+    static func isHidden(bundleIdentifier: String?, hidden: Set<String>) -> Bool {
         guard let bundleIdentifier, !bundleIdentifier.isEmpty else { return false }
-        return hiddenBundleIDs.contains(bundleIdentifier)
+        return hidden.contains(bundleIdentifier)
     }
 
-    static func setHidden(_ hidden: Bool, bundleIdentifier: String) {
-        var current = hiddenBundleIDs
-        if hidden { current.insert(bundleIdentifier) } else { current.remove(bundleIdentifier) }
-        UserDefaults.standard.set(current.sorted(), forKey: DefaultsKey.notchMediaHiddenApps)
-    }
-
-    static func excludingHidden(_ sources: [NotchPlaybackSource]) -> [NotchPlaybackSource] {
-        let hidden = hiddenBundleIDs
+    static func excludingHidden(_ sources: [NotchPlaybackSource], hidden: Set<String>) -> [NotchPlaybackSource] {
         guard !hidden.isEmpty else { return sources }
         return sources.filter { !hidden.contains($0.bundleIdentifier) }
     }

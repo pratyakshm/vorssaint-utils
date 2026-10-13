@@ -260,10 +260,12 @@ final class NotchMusicService: ObservableObject {
         let first = awaitingPlayback
         // Per-app exposure: hidden apps never surface, even if the adapter
         // still reports them. A hidden current player reads as nothing playing.
-        let visibleSources = NotchMediaExposure.excludingHidden(reading.sources)
+        // Read once per reply: no observers, no cache, nothing at rest.
+        let hidden = NotchMediaExposureStore.hidden()
+        let visibleSources = NotchMediaExposure.excludingHidden(reading.sources, hidden: hidden)
         let visiblePlayback: NotchPlayback? = {
             guard let candidate = reading.playback else { return nil }
-            guard !NotchMediaExposure.isHidden(bundleIdentifier: candidate.track.appBundleIdentifier) else { return nil }
+            guard !NotchMediaExposure.isHidden(bundleIdentifier: candidate.track.appBundleIdentifier, hidden: hidden) else { return nil }
             return candidate
         }()
         if trackChange.isNewSong(visiblePlayback, first: first) { trackChanges.send() }
@@ -286,10 +288,11 @@ final class NotchMusicService: ObservableObject {
     /// Re-applies exposure filtering to the current state at once, so hiding
     /// an app in Settings hides its playback without waiting for the next reply.
     func refreshMediaExposure() {
-        let visibleSources = NotchMediaExposure.excludingHidden(sources)
+        let hidden = NotchMediaExposureStore.hidden()
+        let visibleSources = NotchMediaExposure.excludingHidden(sources, hidden: hidden)
         var visiblePlayback = playback
         if let candidate = visiblePlayback,
-           NotchMediaExposure.isHidden(bundleIdentifier: candidate.track.appBundleIdentifier) {
+           NotchMediaExposure.isHidden(bundleIdentifier: candidate.track.appBundleIdentifier, hidden: hidden) {
             visiblePlayback = nil
             updateArtwork(nil, tint: nil, playback: nil)
         }
