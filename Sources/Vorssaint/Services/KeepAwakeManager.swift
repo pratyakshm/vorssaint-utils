@@ -68,6 +68,17 @@ final class KeepAwakeManager: ObservableObject {
         }
     }
 
+    /// Persistent preference: sleeps every display when the lid closes while
+    /// the closed-lid mode is actually in effect. The Mac keeps running under
+    /// its power assertions; any key, click or lid open wakes the screens.
+    @Published var sleepDisplaysOnLidClose: Bool {
+        didSet {
+            guard sleepDisplaysOnLidClose != oldValue else { return }
+            UserDefaults.standard.set(sleepDisplaysOnLidClose, forKey: DefaultsKey.sleepDisplaysOnLidClose)
+            syncLidDimmingObserver()
+        }
+    }
+
     var onSessionEnded: ((EndReason) -> Void)?
 
     private var systemAssertion = IOPMAssertionID(0)
@@ -113,6 +124,7 @@ final class KeepAwakeManager: ObservableObject {
     private init() {
         clamshellPreferred = UserDefaults.standard.bool(forKey: DefaultsKey.clamshellPreferred)
         dimScreenOnLidClose = UserDefaults.standard.bool(forKey: DefaultsKey.dimScreenOnLidClose)
+        sleepDisplaysOnLidClose = UserDefaults.standard.bool(forKey: DefaultsKey.sleepDisplaysOnLidClose)
         refreshPasswordlessStatus()
         // Every settings write announces itself, including the ones made from
         // inside this class, so a burst folds into a single reply on the next
@@ -1005,19 +1017,23 @@ final class KeepAwakeManager: ObservableObject {
         syncLidDimmingObserver()
     }
 
-    // MARK: - Closed-lid screen dimming
+    // MARK: - Closed-lid screen dimming and display sleep
 
-    /// Runs whenever the closed-lid mode or the dimming preference changes.
-    /// An `IOPMrootDomain` general-interest notification is cheaper than
-    /// polling and is already how `BrightnessService` watches the lid for
-    /// its own deferred-restoration case; this registers its own interest
-    /// independently since the two features dim different things for
-    /// different reasons. A restore still owed keeps the observer armed past
-    /// the mode ending, the same way `BrightnessService`'s own deferred
-    /// display restoration outlives whatever asked for it.
+    /// Runs whenever the closed-lid mode or either lid-close preference
+    /// changes. An `IOPMrootDomain` general-interest notification is cheaper
+    /// than polling and is already how `BrightnessService` watches the lid
+    /// for its own deferred-restoration case; this registers its own
+    /// interest independently since the two features dim different things
+    /// for different reasons. A restore still owed keeps the observer armed
+    /// past the mode ending, the same way `BrightnessService`'s own
+    /// deferred display restoration outlives whatever asked for it. The
+    /// sleep-displays option shares the same observer: it only needs to be
+    /// awake for the lid-close transition itself.
     private func syncLidDimmingObserver() {
-        let armed = clamshellActive && dimScreenOnLidClose
-        if !armed { applyDimmingAction(LidDimmingSupport.restoring(saved: savedDisplayBrightness)) }
+        let dimArmed = clamshellActive && dimScreenOnLidClose
+        let sleepArmed = clamshellActive && sleepDisplaysOnLidClose
+        let armed = dimArmed || sleepArmed
+        if !dimArmed { applyDimmingAction(LidDimmingSupport.restoring(saved: savedDisplayBrightness)) }
         guard armed || savedDisplayBrightness != nil else {
             if lidDimmingNotification != 0 { IOObjectRelease(lidDimmingNotification) }
             lidDimmingNotification = 0
@@ -1026,7 +1042,14 @@ final class KeepAwakeManager: ObservableObject {
             lidClosedForDimming = nil
             return
         }
-        guard lidDimmingNotificationPort == nil else { return }
+        guard lidDimmingNotificationPort == nil else {
+            // The sleep option can be switched on while the lid is already
+            // shut and the observer is already up for dimming. No transition
+            // follows in that case, so sleep now rather than waiting for the
+            // next close.
+            if sleepArmed, lidClosedForDimming == true { sleepDisplaysForLidClose() }
+            return
+        }
         let root = IOServiceGetMatchingService(kIOMainPortDefault, IOServiceMatching("IOPMrootDomain"))
         guard root != 0 else { return }
         defer { IOObjectRelease(root) }
@@ -1044,11 +1067,14 @@ final class KeepAwakeManager: ObservableObject {
         lidDimmingNotificationPort = port
         IONotificationPortSetDispatchQueue(port, DispatchQueue.main)
         lidClosedForDimming = BrightnessService.lidClosed()
-        // The option can be enabled from an external display while the lid is
-        // already shut. No transition follows registration in that case.
-        if armed, lidClosedForDimming == true, savedDisplayBrightness == nil {
-            applyDimmingAction(LidDimmingSupport.lidClosed(
-                currentBrightness: LidDisplayDimmer.currentBrightness()))
+        // Either option can be enabled from an external display while the lid
+        // is already shut. No transition follows registration in that case.
+        if lidClosedForDimming == true {
+            if dimArmed, savedDisplayBrightness == nil {
+                applyDimmingAction(LidDimmingSupport.lidClosed(
+                    currentBrightness: LidDisplayDimmer.currentBrightness()))
+            }
+            if sleepArmed { sleepDisplaysForLidClose() }
         }
     }
 
@@ -1058,7 +1084,9 @@ final class KeepAwakeManager: ObservableObject {
     /// callback already queued when the feature was torn down: it lands here
     /// as a no-op instead of acting on a mode that already ended.
     private func lidStateMayHaveChangedForDimming() {
-        guard (clamshellActive && dimScreenOnLidClose) || savedDisplayBrightness != nil else { return }
+        guard (clamshellActive && dimScreenOnLidClose)
+            || (clamshellActive && sleepDisplaysOnLidClose)
+            || savedDisplayBrightness != nil else { return }
         let closed = BrightnessService.lidClosed() ?? false
         guard closed != lidClosedForDimming else { return }
         lidClosedForDimming = closed
@@ -1066,8 +1094,18 @@ final class KeepAwakeManager: ObservableObject {
             if clamshellActive, dimScreenOnLidClose {
                 applyDimmingAction(LidDimmingSupport.lidClosed(currentBrightness: LidDisplayDimmer.currentBrightness()))
             }
+            if clamshellActive, sleepDisplaysOnLidClose { sleepDisplaysForLidClose() }
         } else {
             applyDimmingAction(LidDimmingSupport.restoring(saved: savedDisplayBrightness))
+        }
+    }
+
+    /// Sleeps every display because the lid just closed. Off the main thread:
+    /// the tool can block briefly, and this is called from lid notifications.
+    private func sleepDisplaysForLidClose() {
+        Self.log.log("lid closed: sleeping all displays")
+        DispatchQueue.global(qos: .utility).async {
+            DisplaySleep.sleepNow()
         }
     }
 

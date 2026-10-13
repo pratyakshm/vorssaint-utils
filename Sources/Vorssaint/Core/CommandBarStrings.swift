@@ -92,6 +92,10 @@ struct CommandBarFeatureStrings {
     let powerShutDownConfirm: String
     let powerLogOut: String
     let powerLogOutConfirm: String
+    /// English until the translators follow. Defaulted so the per-language
+    /// initializers below keep compiling untouched.
+    let powerSleepDisplays: String = "Sleep Displays"
+    let powerSleepDisplaysKeywords: String = "display screen turn off sleep displays"
     let wifiOn: String
     let wifiOff: String
     let kindEmoji: String

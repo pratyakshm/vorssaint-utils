@@ -46,26 +46,30 @@ enum CommandBarExtras {
 
     /// What the Mac itself can be told to do. Everything below sleep asks
     /// first, in the bar, because losing unsaved work to a search field would
-    /// be unforgivable.
+    /// be unforgivable. Sleeping the displays is instant and harmless like
+    /// sleep: the Mac keeps running with the screens off.
     enum PowerAction: String, CaseIterable {
-        case sleep, restart, shutDown, logOut
+        case sleep, sleepDisplays, restart, shutDown, logOut
 
         var symbolName: String {
             switch self {
             case .sleep: return "moon.zzz"
+            case .sleepDisplays: return "display.slash"
             case .restart: return "arrow.clockwise.circle"
             case .shutDown: return "power"
             case .logOut: return "rectangle.portrait.and.arrow.right"
             }
         }
 
-        /// Sleep is instant and harmless; the rest close everything, so they
-        /// are confirmed on the row before anything happens.
-        var needsConfirmation: Bool { self != .sleep }
+        /// Sleep and sleeping the displays are instant and harmless; the rest
+        /// close everything, so they are confirmed on the row before anything
+        /// happens.
+        var needsConfirmation: Bool { self != .sleep && self != .sleepDisplays }
 
         fileprivate var appleScript: String? {
             switch self {
             case .sleep: return nil
+            case .sleepDisplays: return nil
             case .restart: return "tell application \"System Events\" to restart"
             case .shutDown: return "tell application \"System Events\" to shut down"
             case .logOut: return "tell application \"System Events\" to log out"
@@ -74,11 +78,24 @@ enum CommandBarExtras {
     }
 
     /// Runs the action. Sleep goes through pmset, which needs no permission
-    /// at all; the others go through the system's own Apple Event, the same
+    /// at all; sleeping the displays goes through pmset displaysleepnow, the
+    /// same route as the Quick toggles "Turn off the display" row, so the Mac
+    /// keeps running (notably under a Keep Awake session) with the screens
+    /// off; the others go through the system's own Apple Event, the same
     /// one the Apple menu uses, and it asks the person to confirm on its own
     /// screen as well.
     static func run(_ action: PowerAction) {
         DispatchQueue.global(qos: .userInitiated).async {
+            switch action {
+            case .sleepDisplays:
+                DisplaySleep.sleepNow()
+                return
+            case .sleep:
+                _ = Shell.run("/usr/bin/pmset", ["sleepnow"])
+                return
+            default:
+                break
+            }
             guard let script = action.appleScript else {
                 _ = Shell.run("/usr/bin/pmset", ["sleepnow"])
                 return

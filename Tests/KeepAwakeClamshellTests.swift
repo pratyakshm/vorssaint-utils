@@ -14,6 +14,7 @@ extension KeepAwakeLidSleepContract {
         static let sleepDisabledFlag = "disabled"
         static let keepAwakePauseWhenLocked = "pause"
         static let dimScreenOnLidClose = "dimScreen"
+        static let sleepDisplaysOnLidClose = "sleepDisplays"
         static let dimmedDisplaySavedBrightness = "dimmedDisplaySavedBrightness"
         static let defaultDuration = "defaultDuration"
         static let keepAwakeSwitchUsesUntil = "switchUsesUntil"
@@ -108,6 +109,14 @@ extension KeepAwakeLidSleepContract {
         static func run(_ executable: String, _ arguments: [String]) -> (status: Int32, output: String) {
             (status, output ?? "SleepDisabled \(Sudoers.disabled ? 1 : 0)")
         }
+    }
+    /// Counts display-sleep requests from the lid-close option. The
+    /// production `DisplaySleep` type is not in the test target; the
+    /// extracted observer body resolves this fixture instead.
+    enum DisplaySleep {
+        static var sleeps = 0
+        @discardableResult
+        static func sleepNow() -> Bool { sleeps += 1; return true }
     }
     static var onSleep: (() -> Void)?
     static func drain() {

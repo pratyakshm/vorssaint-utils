@@ -139,5 +139,36 @@ enum KeepAwakeDimmingTests {
         expect(C.LidDisplayDimmer.written == [0, 0.6] && exhausted.savedDisplayBrightness == nil
                && C.DimmingObserver.destroyedPorts == 1,
                "the lid actually opening finishes the owed restore and only then releases the observer")
+
+        // Sleeping the displays on lid close shares the same observer: it
+        // fires on the close while the closed-lid mode is active, and stays
+        // quiet while the mode is off or the lid never moved.
+        let sleeper = C.reset()
+        C.BrightnessService.lid = false
+        sleeper.isActive = true
+        sleeper.clamshellActive = true
+        sleeper.sleepDisplaysOnLidClose = true
+        C.BrightnessService.lid = true
+        C.DimmingObserver.callback?()
+        C.drain()
+        expect(C.DisplaySleep.sleeps == 1,
+               "closing the lid sleeps every display while the option is armed")
+        C.BrightnessService.lid = false
+        C.DimmingObserver.callback?()
+        C.drain()
+        C.BrightnessService.lid = true
+        C.DimmingObserver.callback?()
+        C.drain()
+        expect(C.DisplaySleep.sleeps == 2,
+               "each new lid close sleeps the displays again")
+        sleeper.sleepDisplaysOnLidClose = false
+        C.BrightnessService.lid = false
+        C.DimmingObserver.callback?()
+        C.drain()
+        C.BrightnessService.lid = true
+        C.DimmingObserver.callback?()
+        C.drain()
+        expect(C.DisplaySleep.sleeps == 2,
+               "switching the option off stops sleeping the displays on lid close")
     }
 }

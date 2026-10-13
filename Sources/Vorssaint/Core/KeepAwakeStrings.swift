@@ -42,6 +42,11 @@ struct KeepAwakeAutomationStrings {
 struct KeepAwakeDisplaySleepStrings {
     let allowDisplaySleep: String
     let allowDisplaySleepCaption: String
+    /// English until the translators follow. Defaulted so the per-language
+    /// initializers above keep compiling untouched.
+    let sleepDisplaysOnLidClose: String = "Sleep displays on lid close"
+    let sleepDisplaysOnLidCloseCaption: String =
+        "Puts every display to sleep when the lid closes while closed-lid mode is active. The Mac keeps running."
 }
 
 extension FeatureStrings {

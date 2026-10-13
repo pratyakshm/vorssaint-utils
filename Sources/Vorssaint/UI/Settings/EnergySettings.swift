@@ -285,6 +285,12 @@ struct EnergySettings: View {
                         .labelsHidden()
                 }
                 .padding(.leading, settingsRowTextInset)
+                SettingsRow(symbol: "display.slash", title: displaySleepStrings.sleepDisplaysOnLidClose,
+                            caption: displaySleepStrings.sleepDisplaysOnLidCloseCaption) {
+                    Toggle(displaySleepStrings.sleepDisplaysOnLidClose, isOn: $awake.sleepDisplaysOnLidClose)
+                        .labelsHidden()
+                }
+                .padding(.leading, settingsRowTextInset)
             }
         }
     }

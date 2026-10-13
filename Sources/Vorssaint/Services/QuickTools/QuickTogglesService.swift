@@ -168,8 +168,8 @@ final class QuickTogglesService: ObservableObject {
     func turnDisplayOff() {
         guard available, beginRun(.displayOff) else { return }
         workQueue.async {
-            let result = Shell.run("/usr/bin/pmset", ["displaysleepnow"])
-            self.finishRun(.displayOff, state: result.status == 0 ? nil : .failed)
+            let ok = DisplaySleep.sleepNow()
+            self.finishRun(.displayOff, state: ok ? nil : .failed)
         }
     }
 

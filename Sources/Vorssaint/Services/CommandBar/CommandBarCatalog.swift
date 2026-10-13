@@ -607,6 +607,7 @@ enum CommandBarCatalog {
                 id: "action.displayOff",
                 title: togglesText.displayOffTitle,
                 subtitle: togglesArea,
+                keywords: bar.powerSleepDisplaysKeywords,
                 icon: .symbol("display"),
                 run: { _ in afterBeat { QuickTogglesService.shared.turnDisplayOff() } }))
             entries.append(CommandBarEntry(
@@ -785,21 +786,28 @@ enum CommandBarCatalog {
             subtitle: bar.sourceActions,
             icon: .symbol("arrow.clockwise"),
             run: { _ in FeatureRuntime.shared.relaunchApp() }))
-        // What people try on day one: put the Mac to sleep, restart it, turn
-        // Wi-Fi off. Everything but sleep confirms on the row first.
+        // What people try on day one: put the Mac to sleep, sleep the
+        // displays while it keeps running, restart it, turn Wi-Fi off.
+        // Everything but sleep confirms on the row first.
         for action in CommandBarExtras.PowerAction.allCases {
             let title: String
+            let keywords: String
             let confirmation: String?
             switch action {
-            case .sleep: title = bar.powerSleep; confirmation = nil
-            case .restart: title = bar.powerRestart; confirmation = bar.powerRestartConfirm
-            case .shutDown: title = bar.powerShutDown; confirmation = bar.powerShutDownConfirm
-            case .logOut: title = bar.powerLogOut; confirmation = bar.powerLogOutConfirm
+            case .sleep:
+                title = bar.powerSleep; keywords = ""; confirmation = nil
+            case .sleepDisplays:
+                title = bar.powerSleepDisplays; keywords = bar.powerSleepDisplaysKeywords
+                confirmation = nil
+            case .restart: title = bar.powerRestart; keywords = ""; confirmation = bar.powerRestartConfirm
+            case .shutDown: title = bar.powerShutDown; keywords = ""; confirmation = bar.powerShutDownConfirm
+            case .logOut: title = bar.powerLogOut; keywords = ""; confirmation = bar.powerLogOutConfirm
             }
             entries.append(CommandBarEntry(
                 id: "action.power.\(action.rawValue)",
                 title: title,
                 subtitle: s.tabGeneral,
+                keywords: keywords,
                 icon: .symbol(action.symbolName),
                 confirmationPrompt: confirmation,
                 run: { _ in CommandBarExtras.run(action) }))

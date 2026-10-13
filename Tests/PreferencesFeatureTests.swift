@@ -126,6 +126,10 @@ enum PreferencesFeatureTests {
                "right-click Keep Awake preference follows settings backups")
         suite.expect(SettingsBackupSupport.exportKeys().contains(DefaultsKey.keepAwakeAllowDisplaySleep),
                "display sleep preference follows settings backups")
+        suite.expect(registeredDefaults[DefaultsKey.sleepDisplaysOnLidClose] as? Bool == false,
+               "sleeping the displays on lid close is opt-in")
+        suite.expect(SettingsBackupSupport.exportKeys().contains(DefaultsKey.sleepDisplaysOnLidClose),
+               "the lid-close display sleep preference follows settings backups")
         suite.expect(registeredDefaults[DefaultsKey.keepAwakeExternalDisplay] as? Bool == false,
                "external-display Keep Awake is opt-in")
         suite.expect(registeredDefaults[DefaultsKey.keepAwakeConnectedToPower] as? Bool == false,

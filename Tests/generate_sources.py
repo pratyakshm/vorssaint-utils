@@ -1577,6 +1577,7 @@ def main():
         "    private func recoverDimmedDisplayIfNeeded(",
         "    private func syncLidDimmingObserver(",
         "    private func lidStateMayHaveChangedForDimming(",
+        "    private func sleepDisplaysForLidClose(",
         "    private func applyDimmingAction(",
         "    private func attemptDisplayRestore(",
     ]
@@ -1604,7 +1605,8 @@ def main():
                 .replace("@Published private(set) ", "", 1)
           + declaration(keep_awake, "    @Published var clamshellPreferred:").replace("@Published ", "", 1)
           + declaration(keep_awake, "    @Published var dimScreenOnLidClose: Bool {").replace("@Published ", "", 1)
-          + "init() { clamshellPreferred = true; dimScreenOnLidClose = false }\n"
+          + declaration(keep_awake, "    @Published var sleepDisplaysOnLidClose: Bool {").replace("@Published ", "", 1)
+          + "init() { clamshellPreferred = true; dimScreenOnLidClose = false; sleepDisplaysOnLidClose = false }\n"
           + "func syncScreenLockMonitoring() {}\nfunc applyAssertions() { assertionsHeld = true }\n"
           + "func releaseAssertions() { assertionsHeld = false }\nfunc scheduleEnd(at date: Date) {}\n"
           + "func startBatteryWatch() {}\nfunc stopBatteryWatch() {}\nfunc syncMouseJiggleTimer() {}\n"
