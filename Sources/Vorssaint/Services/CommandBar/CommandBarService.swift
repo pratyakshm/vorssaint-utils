@@ -492,11 +492,11 @@ final class CommandBarService: ObservableObject {
         installMonitors(for: panel)
         panel.alphaValue = 1
         panel.orderFrontRegardless()
-        // Every appearance stretches down to its width, first or fiftieth:
-        // leftover motion is cleared so the new one always starts clean
-        // instead of being swallowed by a still-attached animation.
+        // Every fresh appearance stretches down to its width, first or
+        // fiftieth; showing again while already visible only retargets a
+        // stretch that is still in flight, never flashing a settled bar.
         Self.cancelAppearStretch(in: panel)
-        Self.playAppearStretch(in: panel)
+        Self.playAppearStretch(in: panel, fresh: !reopening)
         panel.makeKey()
         focusField(in: panel)
     }
@@ -512,14 +512,20 @@ final class CommandBarService: ObservableObject {
     /// they stretch with the bar instead of after it. A rapid re-summon
     /// retargets from wherever the last appear got to, and reduced motion
     /// keeps the fade but drops the stretch.
-    private static func playAppearStretch(in panel: NSPanel) {
+    private static func playAppearStretch(in panel: NSPanel, fresh: Bool) {
         panel.contentView?.wantsLayer = true
         guard let layer = panel.contentView?.layer else { return }
         // The model value stays at identity throughout: only ever the
-        // presentation talks, so a missing one means a fresh start.
-        let presented = layer.presentation()?.value(forKeyPath: "transform.scale.x") as? Double
+        // presentation talks.
         layer.removeAnimation(forKey: appearStretchKey)
-        if presented == nil {
+        let from: Double
+        if fresh {
+            // Every fresh appearance starts from the same place. The
+            // presentation layer must not be consulted here: past the first
+            // open it reports the settled (or stale) scale of 1, which used
+            // to collapse the spring into a 1-to-1 no-op and skip the fade on
+            // every later open.
+            from = 1.1
             layer.removeAnimation(forKey: appearFadeKey)
             let fade = CABasicAnimation(keyPath: "opacity")
             fade.fromValue = 0
@@ -527,10 +533,18 @@ final class CommandBarService: ObservableObject {
             fade.duration = 0.18
             fade.timingFunction = CAMediaTimingFunction(name: .easeOut)
             layer.add(fade, forKey: appearFadeKey)
+        } else if let presented = layer.presentation()?.value(forKeyPath: "transform.scale.x") as? Double,
+                  presented > 1.01 {
+            // Already visible with the stretch still in flight: pick it up
+            // where it is. Anything at or below ~1 is settled (or stale) and
+            // means leaving the visible bar alone instead of flashing it.
+            from = min(presented, 1.1)
+        } else {
+            return
         }
         guard !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion else { return }
         let stretch = CASpringAnimation(keyPath: "transform.scale.x")
-        stretch.fromValue = presented.map { min(max($0, 1), 1.1) } ?? 1.1
+        stretch.fromValue = from
         stretch.toValue = 1
         // Soft but quick: settles inside a third of a second with a whisper
         // of overshoot, never a wobble.
