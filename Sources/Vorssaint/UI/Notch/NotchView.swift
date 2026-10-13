@@ -471,10 +471,15 @@ struct NotchView: View {
                         NotchIconButton(symbol: "square.grid.2x2", title: text.sectionsTitle, action: service.toggleSections)
                     }
                     sectionTitle
+                        // Edge to edge in this side of the row: fill the full
+                        // height and width so the swipe starts anywhere here.
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+                        .contentShape(Rectangle())
                 }
             }
             .frame(width: service.expandedGeometry.headerCameraGap > 0 ? (service.contentSize.width - service.expandedGeometry.headerCameraGap) / 2 : nil)
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
             // Keep search mounted so a media key never discards its focus.
             .opacity(headerFeedback == nil ? 1 : 0)
             .allowsHitTesting(headerFeedback == nil)
@@ -518,14 +523,16 @@ struct NotchView: View {
         .onDisappear { headerHovered = false }
     }
 
-    /// The open section title. A horizontal swipe here moves to
-    /// the next or previous section. The page follows the fingers and
-    /// springs into the new section, with a haptic on the change.
+    /// The open section title. A horizontal swipe anywhere across this side
+    /// of the header row moves to the next or previous section. The page
+    /// follows the fingers and springs into the new section, with a haptic
+    /// on the change.
     private var sectionTitle: some View {
         Text(service.selected.title(l10n.language))
             .font(Font(NotchLayout.headerTitleFont as CTFont))
             .lineLimit(1)
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
             // A subtle parallax while the page follows the swipe.
             .offset(x: canSwipeSections ? sectionSwipeOffset * 0.18 : 0)
             .contentShape(Rectangle())

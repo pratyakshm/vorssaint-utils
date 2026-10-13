@@ -258,20 +258,44 @@ final class NotchMusicService: ObservableObject {
 
     private func apply(_ reading: Reading) {
         let first = awaitingPlayback
-        if trackChange.isNewSong(reading.playback, first: first) { trackChanges.send() }
-        else if !first, let current = playback, NotchTrackChange.isBetweenSongs(reading.playback, after: current) {
+        // Per-app exposure: hidden apps never surface, even if the adapter
+        // still reports them. A hidden current player reads as nothing playing.
+        let visibleSources = NotchMediaExposure.excludingHidden(reading.sources)
+        let visiblePlayback: NotchPlayback? = {
+            guard let candidate = reading.playback else { return nil }
+            guard !NotchMediaExposure.isHidden(bundleIdentifier: candidate.track.appBundleIdentifier) else { return nil }
+            return candidate
+        }()
+        if trackChange.isNewSong(visiblePlayback, first: first) { trackChanges.send() }
+        else if !first, let current = playback, NotchTrackChange.isBetweenSongs(visiblePlayback, after: current) {
             trackEnds.send()
         }
-        updateArtwork(reading.artwork, tint: reading.tint, playback: reading.playback)
-        playback = reading.playback
-        sources = reading.sources
-        NotchPreferredPlayer.remember(reading.playback, in: reading.sources)
+        updateArtwork(visiblePlayback == nil ? nil : reading.artwork,
+                      tint: visiblePlayback == nil ? nil : reading.tint, playback: visiblePlayback)
+        playback = visiblePlayback
+        sources = visibleSources
+        NotchPreferredPlayer.remember(visiblePlayback, in: visibleSources)
         sourceIsAutomatic = reading.automatic ?? true
         selectedSourcePID = reading.selectedPID
         awaitingPlayback = false
-        updateAutomation(for: reading.playback)
-        NotchLyricsService.shared.playbackChanged(reading.playback)
+        updateAutomation(for: visiblePlayback)
+        NotchLyricsService.shared.playbackChanged(visiblePlayback)
         updateQueue()
+    }
+
+    /// Re-applies exposure filtering to the current state at once, so hiding
+    /// an app in Settings hides its playback without waiting for the next reply.
+    func refreshMediaExposure() {
+        let visibleSources = NotchMediaExposure.excludingHidden(sources)
+        var visiblePlayback = playback
+        if let candidate = visiblePlayback,
+           NotchMediaExposure.isHidden(bundleIdentifier: candidate.track.appBundleIdentifier) {
+            visiblePlayback = nil
+            updateArtwork(nil, tint: nil, playback: nil)
+        }
+        playback = visiblePlayback
+        sources = visibleSources
+        NotchPreferredPlayer.remember(visiblePlayback, in: visibleSources)
     }
 
     private func connectionEnded() {

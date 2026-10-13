@@ -3,9 +3,9 @@
 
 import SwiftUI
 
-/// The history as a vertical list of cards, with everything the panel's list
-/// and the quick panel offer on each: paste or copy, pin, move, delete, and
-/// the recent ones cleared in one go from the search row.
+/// Raycast-style history: single-line rows with a leading kind icon, the
+/// preview truncated to one line, and hover-only actions behind a selected
+/// fill, instead of the panel's stacked cards.
 struct NotchClipboardView: View {
     @ObservedObject var service: NotchService
     let size: CGSize
@@ -19,6 +19,7 @@ struct NotchClipboardView: View {
     /// The card the arrow keys chose from the search field, or the top result
     /// of a typed search; Return uses it the way a click would.
     @State private var highlightedID: UUID?
+    @State private var hoveredID: UUID?
     @FocusState private var searching: Bool
     @Environment(\.notchSettingsPreview) private var preview
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -104,12 +105,13 @@ struct NotchClipboardView: View {
             } else {
                 ScrollViewReader { proxy in
                     ScrollView {
-                        LazyVStack(spacing: 8) {
+                        LazyVStack(spacing: 4) {
                             ForEach(Array(entries.enumerated()), id: \.element.id) { index, entry in
-                                card(entry, place: index).frame(height: NotchLayout.clipboardCardHeight)
+                                row(entry, place: index)
                                     .id(entry.id)
                             }
                         }
+                        .padding(.vertical, 2)
                     }
                     .scrollIndicators(.automatic)
                     .onChange(of: highlightedID) { _, id in
@@ -149,53 +151,78 @@ struct NotchClipboardView: View {
         }
     }
 
-    /// The entry fills the card; its actions sit in the bottom row.
-    private func card(_ entry: ClipboardHistoryEntry, place: Int) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Button { activate(entry) } label: {
-                preview(entry)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                    .clipped()
-                    .contentShape(Rectangle())
+    /// Raycast-style row: icon, single-line preview, time/shortcut hint,
+    /// hover-only actions, selected fill when highlighted or pinned.
+    /// The row itself is a tap surface; inner buttons stay separate so they
+    /// keep their own clicks instead of nesting inside an outer Button.
+    private func row(_ entry: ClipboardHistoryEntry, place: Int) -> some View {
+        let selected = highlightedID == entry.id || hoveredID == entry.id
+        let showActions = hoveredID == entry.id || highlightedID == entry.id
+        return HStack(spacing: 10) {
+            Image(systemName: entry.isPinned ? "pin.fill"
+                    : entry.kind == .image ? "photo"
+                    : entry.kind == .files ? "folder" : "doc.text")
+                .font(.system(size: 13))
+                .foregroundStyle(entry.isPinned ? .yellow : .secondary)
+                .frame(width: 22, alignment: .center)
+            rowPreview(entry)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+                .onTapGesture { activate(entry) }
+                .help(permissions.accessibility ? text.clickRowShortcut : text.copy)
+            if showActions {
+                HStack(spacing: 2) {
+                    if entry.kind == .image, AppFeature.screenshot.isAvailable {
+                        NotchIconButton(symbol: "pencil", title: text.edit) { history.editImage(entry) }
+                    }
+                    NotchIconButton(symbol: copiedID == entry.id ? "checkmark" : "doc.on.doc",
+                                    title: copiedID == entry.id ? text.copied : text.copy) { copy(entry) }
+                    NotchIconButton(symbol: entry.isPinned ? "pin.fill" : "pin",
+                                    title: entry.isPinned ? text.unpin : text.pin) {
+                        history.togglePin(entry)
+                    }
+                    NotchIconButton(symbol: "trash", title: text.delete) { remove(entry) }
+                }
+                .transition(.opacity)
+            } else {
+                HStack(spacing: 6) {
+                    Text(entry.copiedAt, style: .time)
+                        .font(.system(size: 11)).foregroundStyle(.tertiary).lineLimit(1)
+                    if place < 9, service.panelIsKey {
+                        Text("⌘\(place + 1)")
+                            .font(.system(size: 11, weight: .medium)).monospacedDigit()
+                            .foregroundStyle(.tertiary)
+                            .accessibilityHidden(true)
+                    } else if entry.isPinned {
+                        Image(systemName: "pin.fill")
+                            .font(.system(size: 9)).foregroundStyle(.tertiary.opacity(0.7))
+                            .accessibilityHidden(true)
+                    }
+                }
             }
-            .buttonStyle(NotchButtonStyle(lifts: false))
-            .help(permissions.accessibility ? text.clickRowShortcut : text.copy)
-            HStack(spacing: 4) {
-                Image(systemName: entry.kind == .image ? "photo" : entry.kind == .files ? "doc" : "text.alignleft")
-                    .font(.system(size: 10)).foregroundStyle(.secondary)
-                Text(entry.copiedAt, style: .time)
-                    .font(.system(size: 9.5)).foregroundStyle(.tertiary).lineLimit(1)
-                Spacer(minLength: 0)
-                if place < 9, service.panelIsKey {
-                    Text("⌘\(place + 1)")
-                        .font(.system(size: 9.5, weight: .medium)).monospacedDigit()
-                        .foregroundStyle(.tertiary)
-                        .accessibilityHidden(true)
-                }
-                if entry.kind == .image, AppFeature.screenshot.isAvailable {
-                    NotchIconButton(symbol: "pencil", title: text.edit) { history.editImage(entry) }
-                }
-                NotchIconButton(symbol: copiedID == entry.id ? "checkmark" : "doc.on.doc",
-                                title: copiedID == entry.id ? text.copied : text.copy) { copy(entry) }
-                NotchIconButton(symbol: entry.isPinned ? "pin.fill" : "pin",
-                                title: entry.isPinned ? text.unpin : text.pin) {
-                    history.togglePin(entry)
-                }
-                NotchIconButton(symbol: "trash", title: text.delete) { remove(entry) }
-            }
-            .frame(height: 28)
         }
-        .padding(.horizontal, 10).padding(.top, 10).padding(.bottom, 4)
-        .modifier(NotchControlSurface(cornerRadius: 14, selected: entry.isPinned))
+        .padding(.horizontal, 10)
+        .frame(maxWidth: .infinity, minHeight: 38, alignment: .leading)
+        .background {
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(selected ? .white.opacity(0.1) : .clear)
+        }
         .overlay {
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .strokeBorder(.white.opacity(highlightedID == entry.id ? 0.34 : 0), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .strokeBorder(.white.opacity(selected ? 0.18 : 0), lineWidth: 1)
                 .allowsHitTesting(false)
         }
-        .clipped()
+        .contentShape(Rectangle())
+        .onTapGesture { activate(entry) }
+        .onHover { hovering in hoveredID = hovering ? entry.id : (hoveredID == entry.id ? nil : hoveredID) }
         .contextMenu { actions(entry) }
         .accessibilityAction(named: Text(text.moveUp)) { move(entry, .up) }
         .accessibilityAction(named: Text(text.moveDown)) { move(entry, .down) }
+    }
+
+    /// Backwards-compatible alias; the island no longer uses cards.
+    private func card(_ entry: ClipboardHistoryEntry, place: Int) -> some View {
+        row(entry, place: place)
     }
 
     /// The quick panel's row menu: paste when the app may type, copy, pin,
@@ -324,6 +351,59 @@ struct NotchClipboardView: View {
                     .multilineTextAlignment(.leading)
             }
             .frame(maxWidth: .infinity, alignment: .topLeading)
+        }
+    }
+
+    /// Single-line Raycast preview for the row: thumbnail plus name on one
+    /// line, never a tall card.
+    @ViewBuilder private func rowPreview(_ entry: ClipboardHistoryEntry) -> some View {
+        switch entry.kind {
+        case .image:
+            HStack(spacing: 8) {
+                if let name = entry.imageFile {
+                    ClipboardThumbnailImage(source: .stored(name: name),
+                                            aspectRatio: entry.imageAspectRatio,
+                                            failureText: "")
+                        .frame(width: 28, height: 28)
+                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                }
+                searchText("\(text.imageEntryLabel) · \(entry.imageDimensionsLabel)", matching: searchTokens)
+                    .font(.system(size: 13))
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        case .files:
+            HStack(spacing: 8) {
+                if entry.filePaths.count == 1, let path = entry.filePaths.first,
+                   ClipboardImageStore.isImageFile(atPath: path) {
+                    ClipboardThumbnailImage(source: .file(path: path),
+                                            failureText: "")
+                        .frame(width: 28, height: 28)
+                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                }
+                searchText(entry.filePaths.count == 1
+                               ? (entry.fileNames.first ?? entry.preview)
+                               : String(format: text.fileCountFormat, entry.filePaths.count),
+                           matching: entry.filePaths.count == 1 ? searchTokens : [])
+                    .font(.system(size: 13))
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .help(entry.filePaths.joined(separator: "\n"))
+        case .text:
+            HStack(alignment: .firstTextBaseline, spacing: 7) {
+                if let color = entry.color {
+                    ColorSwatch(color: color, size: 12)
+                        .alignmentGuide(.firstTextBaseline) { $0[.bottom] - 1 }
+                }
+                searchText(entry.preview.replacingOccurrences(of: "\n", with: " "), matching: searchTokens)
+                    .font(.system(size: 13))
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 }

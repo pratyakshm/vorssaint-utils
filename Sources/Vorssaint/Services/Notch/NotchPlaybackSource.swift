@@ -3,6 +3,57 @@
 
 import Foundation
 
+/// Per-app media exposure: bundle identifiers the island never shows.
+/// Stored as a string array under `DefaultsKey.notchMediaHiddenApps`.
+enum NotchMediaExposure {
+    static var hiddenBundleIDs: Set<String> {
+        Set(UserDefaults.standard.stringArray(forKey: DefaultsKey.notchMediaHiddenApps) ?? [])
+    }
+
+    static func isHidden(bundleIdentifier: String?) -> Bool {
+        guard let bundleIdentifier, !bundleIdentifier.isEmpty else { return false }
+        return hiddenBundleIDs.contains(bundleIdentifier)
+    }
+
+    static func setHidden(_ hidden: Bool, bundleIdentifier: String) {
+        var current = hiddenBundleIDs
+        if hidden { current.insert(bundleIdentifier) } else { current.remove(bundleIdentifier) }
+        UserDefaults.standard.set(current.sorted(), forKey: DefaultsKey.notchMediaHiddenApps)
+    }
+
+    static func excludingHidden(_ sources: [NotchPlaybackSource]) -> [NotchPlaybackSource] {
+        let hidden = hiddenBundleIDs
+        guard !hidden.isEmpty else { return sources }
+        return sources.filter { !hidden.contains($0.bundleIdentifier) }
+    }
+
+    /// Common browsers and their helpers, for one-tap hiding.
+    static let knownBrowsers: [String] = [
+        "com.apple.Safari",
+        "com.google.Chrome",
+        "org.mozilla.firefox",
+        "com.microsoft.edgemac",
+        "com.brave.Browser",
+        "com.arc.net",
+        "com.operasoftware.Opera",
+        "org.chromium.Chromium",
+        "app.zen-browser.zen",
+        "com.vivaldi.Vivaldi",
+    ]
+
+    static func isBrowser(bundleIdentifier: String?) -> Bool {
+        guard let bundleIdentifier else { return false }
+        let lower = bundleIdentifier.lowercased()
+        if lower.contains("safari") || lower.contains("webkit.webcontent") { return true }
+        if lower.contains("chrome") || lower.contains("chromium") { return true }
+        if lower.contains("firefox") { return true }
+        if lower.contains("edge") && lower.contains("microsoft") { return true }
+        if lower.contains("brave") || lower.contains("arc.net") || lower.contains("opera")
+            || lower.contains("vivaldi") || lower.contains("zen-browser") { return true }
+        return knownBrowsers.contains(bundleIdentifier)
+    }
+}
+
 struct NotchPlaybackSource: Equatable {
     struct Selection: Equatable {
         let pid: Int32

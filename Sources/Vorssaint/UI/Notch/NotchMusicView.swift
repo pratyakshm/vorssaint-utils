@@ -18,10 +18,10 @@ struct NotchMusicView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.notchSettingsPreview) private var preview
     private var text: RadialMenuFeatureStrings { FeatureStrings.radialMenu(l10n.language) }
-    /// The cover's own colour, used for its halo and for the moving parts that
-    /// belong to this track. Neutral covers keep the panel white.
+    /// The cover's own colour, used for the moving parts that belong to this
+    /// track. Neutral covers keep the panel white. The cover itself casts no
+    /// tinted glow over the island.
     private var accent: Color { service.artworkTint?.color ?? .white }
-    private var halo: Color { service.artworkTint?.color ?? .clear }
     private var showsLyrics: Bool { lyricsEnabled && AppFeature.notchLyrics.isAvailable }
     private var showsQueue: Bool { queueEnabled && AppFeature.notchQueue.isAvailable }
     private var hasControlsRow: Bool { AppFeature.mixer.isAvailable || showsLyrics || showsQueue }
@@ -184,10 +184,7 @@ struct NotchMusicView: View {
             Button { RadialNowPlayingApplication.open(playback.track) } label: {
                 NotchArtwork(image: service.artwork, size: height)
                     .scaleEffect(playback.isPlaying || reduceMotion ? 1 : 0.94)
-                    .shadow(color: halo.opacity(0.42), radius: 20, y: 7)
-                    .shadow(color: halo.opacity(0.2), radius: 42, y: 14)
                     .animation(reduceMotion ? nil : .smooth(duration: 0.3), value: playback.isPlaying)
-                    .animation(reduceMotion ? nil : .smooth(duration: 0.45), value: halo)
             }
             .buttonStyle(NotchButtonStyle(cornerRadius: 24))
             .help(text.mediaNowPlaying)
@@ -400,17 +397,22 @@ private struct NotchMusicTransport: View {
 
     /// The player's own glyphs, white on the island with no plate behind
     /// them, as on the lock screen. Play and pause stand out by size.
+    /// Buttons animate in and out and the toggle pops on every change.
     private var transportButtons: some View {
         HStack(spacing: compact ? 12 : 18) {
             if !service.lacksTrackSkipping(.previous) {
                 playbackButton("backward.fill", title: text.mediaPrevious, command: .previous)
+                    .transition(.scale(scale: 0.6).combined(with: .opacity))
             }
             toggleButton
             if !service.lacksTrackSkipping(.next) {
                 playbackButton("forward.fill", title: text.mediaNext, command: .next)
+                    .transition(.scale(scale: 0.6).combined(with: .opacity))
             }
         }
         .frame(height: height)
+        .animation(reduceMotion ? nil : .spring(response: 0.32, dampingFraction: 0.78), value: service.lacksTrackSkipping(.previous))
+        .animation(reduceMotion ? nil : .spring(response: 0.32, dampingFraction: 0.78), value: service.lacksTrackSkipping(.next))
     }
 
     private var toggleButton: some View {
@@ -426,7 +428,9 @@ private struct NotchMusicTransport: View {
                 .font(.system(size: compact ? 22 : 26, weight: .semibold))
                 .foregroundStyle(.white)
                 .contentTransition(.symbolEffect(.replace))
-                .animation(reduceMotion ? nil : .smooth(duration: 0.22), value: showsPlaying)
+                .scaleEffect(showsPlaying ? 1 : 0.88)
+                .rotationEffect(.degrees(showsPlaying ? 0 : -12))
+                .animation(reduceMotion ? nil : .spring(response: 0.28, dampingFraction: 0.7), value: showsPlaying)
                 .frame(width: height, height: height)
                 .contentShape(Circle())
         }
@@ -455,6 +459,7 @@ private struct NotchMusicTransport: View {
             Image(systemName: symbol)
                 .font(.system(size: compact ? 16 : 19, weight: .semibold))
                 .foregroundStyle(.white)
+                .contentTransition(.symbolEffect(.replace))
                 .frame(width: height, height: height)
                 .contentShape(Circle())
         }

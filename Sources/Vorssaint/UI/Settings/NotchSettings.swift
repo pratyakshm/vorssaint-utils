@@ -418,6 +418,7 @@ struct NotchSettings: View {
             let music = FeatureStrings.notchMusicExtras(l10n.language)
             switchRow("music.note", text.playingMusic, isOn: $showPlayingMusic)
             switchRow("play.rectangle", music.includeOtherPlayers, isOn: $includeOtherPlayers)
+            NotchMediaExposureSettings()
             SettingsRow(symbol: "arrow.up.forward.app", title: music.preferredPlayer, caption: music.preferredPlayerHint) {
                 Picker(music.preferredPlayer, selection: $preferredPlayer) {
                     Text(music.automaticSource).tag(NotchPreferredPlayer.automatic)
@@ -1024,6 +1025,74 @@ struct NotchSettings: View {
 }
 
 extension NotchControlItem: PanelOrderItem {}
+
+/// Per-app media exposure: hide chosen apps (for example browsers) from the
+/// island's Now Playing, without turning off other players entirely.
+private struct NotchMediaExposureSettings: View {
+    @ObservedObject private var music = NotchMusicService.shared
+    @State private var hiddenApps: [String] = UserDefaults.standard.stringArray(forKey: DefaultsKey.notchMediaHiddenApps) ?? []
+
+    var body: some View {
+        SettingsRow(symbol: "eye.slash", title: "Hidden apps",
+                    caption: "Never show playback from these apps in the island.") {
+            VStack(alignment: .leading, spacing: 8) {
+                if !music.sources.isEmpty {
+                    ForEach(music.sources, id: \.pid) { source in
+                        let hidden = hiddenApps.contains(source.bundleIdentifier)
+                        Toggle(source.displayName ?? source.bundleIdentifier, isOn: Binding(
+                            get: { !hidden },
+                            set: { shown in
+                                NotchMediaExposure.setHidden(!shown, bundleIdentifier: source.bundleIdentifier)
+                                hiddenApps = UserDefaults.standard.stringArray(forKey: DefaultsKey.notchMediaHiddenApps) ?? []
+                                music.refreshMediaExposure()
+                            }))
+                            .toggleStyle(.switch)
+                            .help(source.bundleIdentifier)
+                    }
+                }
+                HStack(spacing: 8) {
+                    Button("Hide browsers") {
+                        var current = Set(hiddenApps)
+                        for browser in NotchMediaExposure.knownBrowsers { current.insert(browser) }
+                        // Also hide browser helpers already seen.
+                        for source in music.sources where NotchMediaExposure.isBrowser(bundleIdentifier: source.bundleIdentifier) {
+                            current.insert(source.bundleIdentifier)
+                        }
+                        hiddenApps = current.sorted()
+                        UserDefaults.standard.set(hiddenApps, forKey: DefaultsKey.notchMediaHiddenApps)
+                        music.refreshMediaExposure()
+                    }
+                    if !hiddenApps.isEmpty {
+                        Button("Show all") {
+                            hiddenApps = []
+                            UserDefaults.standard.set([String](), forKey: DefaultsKey.notchMediaHiddenApps)
+                            music.refreshMediaExposure()
+                        }
+                    }
+                }
+                .buttonStyle(.link)
+                if !hiddenApps.isEmpty {
+                    ForEach(hiddenApps, id: \.self) { bundle in
+                        HStack(spacing: 6) {
+                            Text(bundle).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                            Spacer(minLength: 4)
+                            Button("Show") {
+                                NotchMediaExposure.setHidden(false, bundleIdentifier: bundle)
+                                hiddenApps = UserDefaults.standard.stringArray(forKey: DefaultsKey.notchMediaHiddenApps) ?? []
+                                music.refreshMediaExposure()
+                            }
+                            .buttonStyle(.link)
+                        }
+                    }
+                }
+            }
+        }
+        .onAppear {
+            hiddenApps = UserDefaults.standard.stringArray(forKey: DefaultsKey.notchMediaHiddenApps) ?? []
+        }
+        .onChange(of: hiddenApps) { _, _ in music.refreshMediaExposure() }
+    }
+}
 
 /// A standard menu bar on a display without a camera, at half size, with
 /// the resting island in it.
