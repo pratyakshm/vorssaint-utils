@@ -24,7 +24,7 @@ struct KeepAwakeEndTimePicker: View {
         Button {
             if activeEnd != nil { onStop() } else { isPresented.toggle() }
         } label: {
-            HStack(spacing: 3) {
+            HStack(spacing: DS.Space.xxSmall) {
                 Image(systemName: "clock")
                 // Both labels hold their width, so starting or stopping never
                 // resizes the chip and moves the row between one and two lines.
@@ -47,10 +47,10 @@ struct KeepAwakeEndTimePicker: View {
     }
 
     private var editor: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: DS.Space.small) {
             HStack {
                 Text(l10n.s.keepAwakeUntilLabel)
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(DS.Font.panelFloorEmphasis)
                 Spacer()
                 DatePicker(l10n.s.keepAwakeUntilLabel, selection: $selection,
                            displayedComponents: .hourAndMinute)
@@ -60,7 +60,7 @@ struct KeepAwakeEndTimePicker: View {
                     .fixedSize()
             }
 
-            HStack(spacing: 4) {
+            HStack(spacing: DS.Space.xxSmall) {
                 TimeDigitWheel(title: labels.hour, range: 24, value: part(.hour))
                 Text(":")
                     .font(.system(size: 24, weight: .medium))
@@ -72,7 +72,7 @@ struct KeepAwakeEndTimePicker: View {
             HStack {
                 TimelineView(.periodic(from: .now, by: 30)) { context in
                     Text(endSummary(now: context.date))
-                        .font(.system(size: 10))
+                        .font(DS.Font.panelFloor)
                         .foregroundStyle(.secondary)
                 }
                 Spacer()
@@ -85,7 +85,7 @@ struct KeepAwakeEndTimePicker: View {
                 .keyboardShortcut(.defaultAction)
             }
         }
-        .padding(10)
+        .padding(DS.Space.medium)
         .frame(width: 224)
     }
 
@@ -183,7 +183,7 @@ private struct TimeDigitWheel: View {
 
     private func neighbour(_ offset: Int) -> some View {
         Text(String(format: "%02d", wrapped(value + offset)))
-            .font(.system(size: 12))
+            .font(DS.Font.panelBody)
             .monospacedDigit()
             .foregroundStyle(.secondary)
             .frame(width: 52, height: 20)

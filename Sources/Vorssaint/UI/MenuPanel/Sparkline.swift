@@ -93,10 +93,10 @@ private struct GraphCeilingLabel: ViewModifier {
                 // Over the oldest samples, so the newest stay clear.
                 .overlay(alignment: .topLeading) {
                     Text(text)
-                        .font(.system(size: 9))
+                        .font(DS.Font.panelFloor)
                         .monospacedDigit()
                         .foregroundStyle(.secondary)
-                        .padding(.horizontal, 3)
+                        .padding(.horizontal, DS.Space.xxSmall)
                         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 3))
                         .alignmentGuide(.top) { $0[VerticalAlignment.center] }
                         .allowsHitTesting(false)

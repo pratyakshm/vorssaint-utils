@@ -11,7 +11,7 @@ struct FanControlCurveEditor: View {
     let disabled: Bool
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 9) {
+        VStack(alignment: .leading, spacing: DS.Space.medium) {
             ForEach(curves.indices, id: \.self) { index in
                 curveRule(at: index)
                 if index < curves.count - 1 { Divider().opacity(0.55) }
@@ -36,8 +36,8 @@ struct FanControlCurveEditor: View {
     @ViewBuilder
     private func curveRule(at curveIndex: Int) -> some View {
         let curve = curveBinding(at: curveIndex)
-        VStack(alignment: .leading, spacing: 7) {
-            HStack(spacing: 6) {
+        VStack(alignment: .leading, spacing: DS.Space.rowTitleGap) {
+            HStack(spacing: DS.Space.xSmall) {
                 Picker(strings.sensor, selection: curve.sensor) {
                     ForEach(sourceOptions(at: curveIndex)) { source in
                         Text(sourceName(source)).tag(source)
@@ -48,11 +48,11 @@ struct FanControlCurveEditor: View {
                 .controlSize(.small)
                 .disabled(disabled)
 
-                Spacer(minLength: 4)
+                Spacer(minLength: DS.Space.xxSmall)
 
                 if let temperature = temperature(for: curve.wrappedValue.sensor) {
                     Text(formattedTemperature(temperature))
-                        .font(.system(size: 10, weight: .semibold).monospacedDigit())
+                        .font(DS.Font.panelFloorEmphasis.monospacedDigit())
                         .foregroundStyle(.secondary)
                 }
 
@@ -81,7 +81,7 @@ struct FanControlCurveEditor: View {
                 Text(strings.fanSpeed)
                 Spacer().frame(width: 20)
             }
-            .font(.system(size: 9.5))
+            .font(DS.Font.panelFloor)
             .foregroundStyle(.secondary)
 
             ForEach(curve.wrappedValue.points.indices, id: \.self) { pointIndex in
@@ -105,9 +105,9 @@ struct FanControlCurveEditor: View {
 
     private func pointRow(curveIndex: Int, pointIndex: Int) -> some View {
         let point = curves[curveIndex].points[pointIndex]
-        return HStack(spacing: 5) {
+        return HStack(spacing: DS.Space.xSmall) {
             Text(formattedTemperature(Double(point.temperature)))
-                .font(.system(size: 10).monospacedDigit())
+                .font(DS.Font.panelFloor.monospacedDigit())
                 .frame(width: 42, alignment: .trailing)
             Stepper(strings.temperature,
                     value: temperatureBinding(curveIndex: curveIndex,
@@ -118,10 +118,10 @@ struct FanControlCurveEditor: View {
                 .accessibilityValue(formattedTemperature(Double(point.temperature)))
                 .disabled(disabled)
 
-            Spacer(minLength: 4)
+            Spacer(minLength: DS.Space.xxSmall)
 
             Text("\(point.coolingLevel)%")
-                .font(.system(size: 10).monospacedDigit())
+                .font(DS.Font.panelFloor.monospacedDigit())
                 .frame(width: 34, alignment: .trailing)
             Stepper(strings.fanSpeed,
                     value: levelBinding(curveIndex: curveIndex,
@@ -139,7 +139,7 @@ struct FanControlCurveEditor: View {
                 curves[curveIndex].points = points
             } label: {
                 Image(systemName: "xmark")
-                    .font(.system(size: 8, weight: .bold))
+                    .font(DS.Font.panelFloorEmphasis)
             }
             .buttonStyle(.plain)
             .foregroundStyle(.secondary)

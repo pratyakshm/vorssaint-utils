@@ -41,14 +41,14 @@ struct ClipboardSettings: View {
                             ClipboardHistoryService.shared.syncWithPreferences()
                         }
                     Text(text.caption)
-                        .font(.caption)
+                        .font(DS.Font.caption)
                         .foregroundStyle(.secondary)
                     Text(text.localNote)
-                        .font(.caption2)
+                        .font(DS.Font.footnote)
                         .foregroundStyle(.tertiary)
                     if enabled, history.isRunning {
                         Label(text.active, systemImage: "checkmark.circle.fill")
-                            .font(.caption)
+                            .font(DS.Font.caption)
                             .foregroundStyle(.green)
                     }
                 }
@@ -61,12 +61,12 @@ struct ClipboardSettings: View {
                     Toggle(text.includeImagesFiles, isOn: $includeImagesFiles)
                         .disabled(!enabled)
                     Text(text.includeImagesFilesCaption)
-                        .font(.caption)
+                        .font(DS.Font.caption)
                         .foregroundStyle(.secondary)
                     Toggle(text.skipSensitive, isOn: $skipSensitive)
                         .disabled(!enabled)
                     Text(text.skipSensitiveCaption)
-                        .font(.caption)
+                        .font(DS.Font.caption)
                         .foregroundStyle(.secondary)
                     ClipboardIgnoredAppsList()
                         .disabled(!enabled)
@@ -96,7 +96,7 @@ struct ClipboardSettings: View {
                             FinderCutPaste.shared.syncWithPreferences()
                         }
                     Text(text.pasteImageAsFileCaption)
-                        .font(.caption)
+                        .font(DS.Font.caption)
                         .foregroundStyle(.secondary)
                     if pasteImageAsFile, !permissions.accessibility {
                         PermissionRow(kind: .accessibility)
@@ -111,7 +111,7 @@ struct ClipboardSettings: View {
                             PastePlainService.shared.syncWithPreferences()
                         }
                     Text(l10n.s.pastePlainCaption)
-                        .font(.caption)
+                        .font(DS.Font.caption)
                         .foregroundStyle(.secondary)
                     ShortcutPreferenceRow(role: .pastePlain,
                                           isEnabled: pastePlainEnabled) {
@@ -119,7 +119,7 @@ struct ClipboardSettings: View {
                     }
                     if pastePlainEnabled, pastePlain.shortcutRegistrationFailed {
                         Text(l10n.s.shortcutUnavailable)
-                            .font(.caption)
+                            .font(DS.Font.caption)
                             .foregroundStyle(.orange)
                     }
                     if pastePlainEnabled, !permissions.accessibility {
@@ -175,11 +175,11 @@ struct ClipboardSettings: View {
             }
             if enabled, shortcutEnabled, history.shortcutRegistrationFailed {
                 Text(l10n.s.shortcutUnavailable)
-                    .font(.caption)
+                    .font(DS.Font.caption)
                     .foregroundStyle(.orange)
             }
             Text(text.shortcutCaption)
-                .font(.caption)
+                .font(DS.Font.caption)
                 .foregroundStyle(.secondary)
             // Not disabled with capture off: the window still opens on the
             // saved items, like the button below.
@@ -209,7 +209,7 @@ struct ClipboardSettings: View {
             }
             .disabled(!enabled || !menuBarPreview)
             Text(text.menuBarPreviewCaption)
-                .font(.caption)
+                .font(DS.Font.caption)
                 .foregroundStyle(.secondary)
         }
     }
@@ -255,7 +255,7 @@ struct ClipboardSettings: View {
                     ClipboardAutoClearService.shared.syncWithPreferences()
                 }
             Text(text.autoClearCaption)
-                .font(.caption)
+                .font(DS.Font.caption)
                 .foregroundStyle(.secondary)
         }
     }

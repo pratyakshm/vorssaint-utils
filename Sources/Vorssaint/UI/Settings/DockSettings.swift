@@ -30,8 +30,8 @@ struct DockSettings: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                VStack(alignment: .leading, spacing: 5) {
+            VStack(alignment: .leading, spacing: DS.Space.xLarge) {
+                VStack(alignment: .leading, spacing: DS.Space.xSmall) {
                     Text(pages.dockTitle).font(.title2.bold())
                     Text(pages.dockDescription)
                         .font(.callout)
@@ -94,7 +94,7 @@ struct DockSettings: View {
                 }
                 SettingsRow(symbol: "timer", title: l10n.s.dockPreviewOpenDelay,
                             caption: l10n.s.dockPreviewOpenDelayCaption) {
-                    HStack(spacing: 6) {
+                    HStack(spacing: DS.Space.xSmall) {
                         TextField("", value: dockPreviewOpenDelayBinding,
                                   formatter: Self.dockPreviewOpenDelayFormatter)
                             .textFieldStyle(.roundedBorder)
@@ -111,13 +111,13 @@ struct DockSettings: View {
                             caption: dockPreviewBackgroundIsGlass
                                 ? l10n.s.dockPreviewBackgroundOpacityGlassCaption
                                 : l10n.s.dockPreviewBackgroundOpacityCaption) {
-                    HStack(spacing: 8) {
+                    HStack(spacing: DS.Space.rowTitleGap) {
                         Slider(value: dockPreviewBackgroundOpacityBinding,
                                in: DockPreviewSupport.backgroundOpacityRange,
                                step: 0.05)
                             .frame(width: 140)
                         Text("\(dockPreviewBackgroundOpacityPercent)%")
-                            .font(.caption.monospacedDigit())
+                            .font(DS.Font.caption.monospacedDigit())
                             .foregroundStyle(.secondary)
                             .frame(width: 44, alignment: .trailing)
                     }
@@ -137,7 +137,7 @@ struct DockSettings: View {
                                 dockPreview.syncWithPreferences()
                             }
                     }
-                    .padding(.top, 6)
+                    .padding(.top, DS.Space.small)
                     SettingsRow(symbol: "clock.arrow.circlepath", title: l10n.s.dockPreviewOrderByCreation,
                                 caption: l10n.s.dockPreviewOrderByCreationCaption) {
                         Toggle(l10n.s.dockPreviewOrderByCreation, isOn: $dockPreviewOrderByCreation).labelsHidden()

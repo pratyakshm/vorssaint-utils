@@ -74,12 +74,33 @@ Full `swift build` not verified (same pre-existing `SwiftUIMacros`
 CommandLineTools-only toolchain failure); all touched files pass
 `swiftc -parse`.
 
+### 2026-10-14 — third slice (clipboard leftovers, panel tail, launcher)
+
+Done (token swaps only, no layout reflows; each file passes
+`swiftc -parse`):
+
+- `Settings/ClipboardSettings.swift` (11× `.caption` → `DS.Font.caption`,
+  1× `.caption2` → `footnote`; Form shell owns spacing).
+- `MenuPanel/ClipboardQuickPanelView.swift` (sub-11pt → floor, 11.5 →
+  footnote, 12 → panelBody, row radius → `DS.Radius.row`; search-field
+  and glyph display sizes kept).
+- `MenuPanel/Sparkline.swift` (ceiling label 9pt → floor; chart geometry
+  kept pixel-exact), `MenuPanel/PanelLayout.swift`,
+  `MenuPanel/KeepAwakeEndTimePicker.swift` (wheel digits kept),
+  `MenuPanel/FanControlCurveEditor.swift` (graph geometry kept).
+- `QuickLauncher/QuickLauncherView.swift` (18 hardcoded fonts swapped;
+  frames/chrome kept). `OverlayPanel.swift` and `NonModalAlert.swift`
+  reviewed — AppKit-only, no SwiftUI literals.
+- `Settings/DockSettings.swift`.
+
+Full `swift build` not verified (same pre-existing `SwiftUIMacros`
+toolchain failure); all touched files pass `swiftc -parse`.
+
 ## Remaining
 
 ### Settings detail pages (shell is done; per-file literals remain)
 
-- `ClipboardSettings.swift` (foreign work landed as `26e52ce0` — migrate
-  next), `DockSettings.swift`, `QuickToolsSettings.swift`,
+- `QuickToolsSettings.swift`,
   `NotchSettings.swift` + sub-editors (`NotchLayoutEditor`,
   `NotchContentEditor`, `NotchAgentsSettings`, `NotchSpringTuner`,
   `PanelLayoutEditor`), `FeatureHubSettings.swift` (Features page),
@@ -89,10 +110,11 @@ CommandLineTools-only toolchain failure); all touched files pass
 
 ### Menu panel sections
 
-- `Sparkline.swift`, `KeepAwakeEndTimePicker.swift`,
-  `FanControlCurveEditor.swift`, `PanelLayout.swift`.
-- NOTE: `ClipboardQuickPanelView.swift` foreign work landed as `26e52ce0`
-  — migrate it next.
+Done — all migrated (`PanelClipboardView` + previews,
+`ClipboardQuickPanelView`, `QuickToggles`, `System`, `Mixer`, `Network`,
+`Power`, `Disk`, `Brightness`, `MetricDetailView`, `CPUCoreMatrix`,
+`ProcessUsageRow`, `Sparkline`, `KeepAwakeEndTimePicker`,
+`FanControlCurveEditor`, `PanelLayout`).
 
 ### Command Bar
 
@@ -106,7 +128,12 @@ reviewed (no SwiftUI literals).
 
 ### Other active-feature UI
 
-- `UI/QuickLauncher/`, `UI/NonModalAlert.swift`, `UI/OverlayPanel.swift`.
+Done — `UI/KillProcess/`, `UI/CleaningMode/`, `UI/ColorSwatch.swift`
+(reviewed, no literals), `UI/KeepAwakeAutomationView.swift`,
+`UI/KeepAwakeIconPicker.swift`, `UI/MenuBarMetricsPreview.swift`,
+`UI/Onboarding/` + `UI/UpdateHighlightsView.swift`, `UI/SharedUI.swift`,
+`UI/QuickLauncher/QuickLauncherView.swift`, `UI/NonModalAlert.swift`
+(reviewed, AppKit-only), `UI/OverlayPanel.swift` (reviewed, AppKit-only).
 
 ### Disabled on this machine (skip unless re-enabled)
 

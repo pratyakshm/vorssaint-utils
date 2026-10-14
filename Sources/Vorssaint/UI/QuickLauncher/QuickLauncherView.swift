@@ -25,11 +25,11 @@ struct QuickLauncherView: View {
     @AppStorage(DefaultsKey.clipboardHistoryLimit) private var clipboardLimit = 50
 
     private var columns: [GridItem] {
-        Array(repeating: GridItem(.flexible(), spacing: notchSize == nil ? 10 : 6), count: notchSize == nil ? QuickLauncherService.columns : NotchSupport.toolColumns)
+        Array(repeating: GridItem(.flexible(), spacing: notchSize == nil ? DS.Space.medium : DS.Space.xSmall), count: notchSize == nil ? QuickLauncherService.columns : NotchSupport.toolColumns)
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: DS.Space.medium) {
             // In the notch the surrounding chrome already titles the panel and
             // offers the customize toggle, so the launcher's own header would
             // only add an empty band. It stays for the floating panel and for
@@ -54,7 +54,7 @@ struct QuickLauncherView: View {
             }
             if notchSize == nil { footer }
         }
-        .padding(notchSize == nil ? 16 : 0)
+        .padding(notchSize == nil ? DS.Space.large : 0)
         .frame(width: notchSize?.width ?? 420)
         .background { if notchSize == nil { HUDBackdrop(cornerRadius: 22, contrast: .high) } }
         .clipShape(RoundedRectangle(cornerRadius: notchSize == nil ? 22 : 0, style: .continuous))
@@ -115,7 +115,7 @@ struct QuickLauncherView: View {
     }
 
     private var header: some View {
-        VStack(spacing: 6) {
+        VStack(spacing: DS.Space.xSmall) {
             ZStack {
                 // The same transparent mark the menu panel shows, centered.
                 if notchSize == nil { BrandMark(width: 52, tint: colorScheme == .light ? Color(white: 0.03) : .white)
@@ -138,7 +138,7 @@ struct QuickLauncherView: View {
                             }
                         } label: {
                             Image(systemName: launcher.isEditing ? "checkmark.circle.fill" : "slider.horizontal.3")
-                                .font(.system(size: 15, weight: .semibold))
+                                .font(DS.Font.cardTitle)
                                 .foregroundStyle(launcher.isEditing ? Color.accentColor : Color.secondary)
                                 .frame(width: 26, height: 26)
                         }
@@ -156,7 +156,7 @@ struct QuickLauncherView: View {
 
     private var editHint: some View {
         Text(l10n.s.launcherEditHint)
-            .font(.system(size: 9.5))
+            .font(DS.Font.footnote)
             .foregroundStyle(.secondary)
             .frame(maxWidth: .infinity, alignment: .center)
             .multilineTextAlignment(.center)
@@ -168,7 +168,7 @@ struct QuickLauncherView: View {
             launcher.hide()
         } label: {
             Image(systemName: "xmark.circle.fill")
-                .font(.system(size: 15, weight: .semibold))
+                .font(DS.Font.cardTitle)
                 .foregroundStyle(.secondary)
                 .frame(width: 26, height: 26)
         }
@@ -182,7 +182,7 @@ struct QuickLauncherView: View {
             launcher.closeUtility()
         } label: {
             Image(systemName: "chevron.backward.circle.fill")
-                .font(.system(size: 15, weight: .semibold))
+                .font(DS.Font.cardTitle)
                 .foregroundStyle(.secondary)
                 .frame(width: 26, height: 26)
         }
@@ -208,7 +208,7 @@ struct QuickLauncherView: View {
                 cell(item).frame(height: NotchLayout.toolHeight)
             }
         } else {
-            LazyVGrid(columns: columns, spacing: notchSize == nil ? 10 : 6) {
+            LazyVGrid(columns: columns, spacing: notchSize == nil ? DS.Space.medium : DS.Space.xSmall) {
                 ForEach(launcher.visibleItems) { item in
                     PanelReorderableItem(item: item,
                                          isEnabled: launcher.isEditing,
@@ -241,14 +241,14 @@ struct QuickLauncherView: View {
                 launcher.run(item)
             }
         } label: {
-            VStack(spacing: notchSize == nil ? 7 : 6) {
+            VStack(spacing: notchSize == nil ? DS.Space.rowTitleGap : DS.Space.xSmall) {
                 ZStack(alignment: .topTrailing) {
-                    RoundedRectangle(cornerRadius: notchSize == nil ? 12 : 16, style: .continuous)
+                    RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous)
                         .fill(iconBackground(item, isSelected: isSelected, isHovered: isHovered))
                         .frame(width: notchSize == nil ? 46 : 32, height: notchSize == nil ? 46 : 32)
                         .overlay(
                             Image(systemName: icon(for: item))
-                                .font(.system(size: notchSize == nil ? 19 : 16, weight: .semibold))
+                                .font(DS.Font.cardTitle)
                                 .foregroundStyle(iconColor(item))
                         )
                     if launcher.isEditing {
@@ -258,7 +258,7 @@ struct QuickLauncherView: View {
                             }
                         } label: {
                             Image(systemName: "minus.circle.fill")
-                                .font(.system(size: 14))
+                                .font(DS.Font.rowTitle)
                                 .foregroundStyle(.white, Color.red)
                         }
                         .buttonStyle(.plain)
@@ -267,7 +267,7 @@ struct QuickLauncherView: View {
                         .accessibilityLabel(l10n.s.panelHideItem)
                         if hasQuickOptions(item) {
                             Image(systemName: "gearshape.circle.fill")
-                                .font(.system(size: 14))
+                                .font(DS.Font.rowTitle)
                                 .foregroundStyle(.white, optionsItem == item ? Color.accentColor : Color.secondary)
                                 .frame(width: notchSize == nil ? 46 : 32, height: notchSize == nil ? 46 : 32, alignment: .topLeading)
                                 .offset(x: -7, y: -7)
@@ -286,7 +286,7 @@ struct QuickLauncherView: View {
                         // the only hint that shortcut exists.
                         if notchSize == nil, let index, index < 9 {
                             Image(systemName: "\(index + 1).circle.fill")
-                                .font(.system(size: 13))
+                                .font(DS.Font.rowIcon)
                                 .foregroundStyle(.white, isSelected ? Color.accentColor : Color.secondary.opacity(0.8))
                                 .frame(width: notchSize == nil ? 46 : 22, height: notchSize == nil ? 46 : 22, alignment: .topLeading)
                                 .offset(x: -6, y: -6)
@@ -296,27 +296,27 @@ struct QuickLauncherView: View {
                     }
                 }
                 Text(title(for: item))
-                    .font(.system(size: notchSize == nil ? 10.5 : 10, weight: .medium))
+                    .font(DS.Font.panelFloorEmphasis)
                     .foregroundStyle(.primary)
                     .multilineTextAlignment(.center)
                     .lineLimit(2, reservesSpace: true)
                     .fixedSize(horizontal: false, vertical: true)
             }
             .frame(maxWidth: .infinity)
-            .padding(.vertical, notchSize == nil ? 9 : 4)
+            .padding(.vertical, notchSize == nil ? DS.Space.rowTitleGap : DS.Space.xxSmall)
             .background(
-                RoundedRectangle(cornerRadius: 13, style: .continuous)
+                RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous)
                     .fill(notchSize != nil ? .clear : isSelected ? Color.accentColor.opacity(0.14)
                           : isHovered ? Color.primary.opacity(0.07)
                           : Color.primary.opacity(0.035))
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 13, style: .continuous)
+                RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous)
                     .strokeBorder(notchSize != nil ? .clear
                                   : isSelected ? Color.accentColor.opacity(0.55) : Color.clear,
                                   lineWidth: 1.2)
             )
-            .contentShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous))
         }
         .buttonStyle(.plain)
         .accessibilityLabel(title(for: item))
@@ -329,12 +329,12 @@ struct QuickLauncherView: View {
     }
 
     private var hiddenTray: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: DS.Space.xSmall) {
             Text(l10n.s.launcherAddSection.uppercased())
-                .font(.system(size: 9, weight: .bold))
+                .font(DS.Font.section)
                 .foregroundStyle(.secondary)
                 .tracking(0.5)
-            FlowLayoutLite(spacing: 6) {
+            FlowLayoutLite(spacing: DS.Space.xSmall) {
                 ForEach(launcher.hiddenItems) { item in
                     Button {
                         withAnimation(.easeOut(duration: 0.15)) {
@@ -342,9 +342,9 @@ struct QuickLauncherView: View {
                         }
                     } label: {
                         Label(title(for: item), systemImage: "plus.circle.fill")
-                            .font(.system(size: 10, weight: .medium))
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
+                            .font(DS.Font.panelFloorEmphasis)
+                            .padding(.horizontal, DS.Space.small)
+                            .padding(.vertical, DS.Space.xxSmall)
                             .background(
                                 Capsule(style: .continuous).fill(notchSize != nil ? .black : Color.accentColor.opacity(0.13))
                             )
@@ -357,7 +357,7 @@ struct QuickLauncherView: View {
 
     private var emptyState: some View {
         Text(l10n.s.launcherEmptyState)
-            .font(.system(size: 11))
+            .font(DS.Font.panelFloor)
             .foregroundStyle(.secondary)
             .multilineTextAlignment(.center)
             .frame(maxWidth: .infinity)
@@ -365,16 +365,16 @@ struct QuickLauncherView: View {
     }
 
     private var footer: some View {
-        HStack(spacing: 5) {
+        HStack(spacing: DS.Space.xSmall) {
             Image(systemName: "keyboard")
-                .font(.system(size: 8.5))
+                .font(DS.Font.panelFloor)
                 .foregroundStyle(.tertiary)
             Text(GlobalShortcutRole.quickLauncher.savedShortcut.displayString)
-                .font(.system(size: 9, weight: .semibold, design: .rounded))
+                .font(DS.Font.panelFloorEmphasis)
                 .foregroundStyle(.tertiary)
             Spacer()
             Text("Esc")
-                .font(.system(size: 9, weight: .semibold, design: .rounded))
+                .font(DS.Font.panelFloorEmphasis)
                 .foregroundStyle(.tertiary)
         }
     }
@@ -395,17 +395,17 @@ struct QuickLauncherView: View {
     /// popover on purpose: popovers never present from this borderless
     /// non-activating panel, and the card keeps the whole flow inside the HUD.
     private func optionsCard(_ item: QuickLauncherItem) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: DS.Space.medium) {
             HStack {
                 Label(title(for: item), systemImage: icon(for: item))
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(DS.Font.panelFloorEmphasis)
                     .foregroundStyle(.secondary)
                 Spacer()
                 Button {
                     withAnimation(.easeOut(duration: 0.15)) { launcher.editingOptionsItem = nil }
                 } label: {
                     Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 12))
+                        .font(DS.Font.panelBody)
                         .foregroundStyle(.secondary)
                 }
                 .buttonStyle(.plain)
@@ -463,12 +463,12 @@ struct QuickLauncherView: View {
                 EmptyView()
             }
         }
-        .font(.system(size: 11))
+        .font(DS.Font.panelFloor)
         .toggleStyle(.switch)
         .controlSize(.small)
-        .padding(10)
+        .padding(DS.Space.medium)
         .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
+            RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous)
                 .fill(notchSize != nil ? .black : Color.primary.opacity(0.05))
         )
     }
@@ -546,7 +546,7 @@ struct QuickLauncherView: View {
 
 /// Minimal wrapping layout for the hidden-item chips.
 struct FlowLayoutLite: Layout {
-    var spacing: CGFloat = 6
+    var spacing: CGFloat = DS.Space.xSmall
 
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
         let width = proposal.width ?? 380

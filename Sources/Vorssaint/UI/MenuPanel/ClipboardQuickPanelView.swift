@@ -74,7 +74,7 @@ struct ClipboardQuickPanelView: View {
     }
 
     private var toolbar: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: DS.Space.rowTitleGap) {
             TextField(text.search, text: $history.quickQuery)
                 .textFieldStyle(.plain)
                 .font(.system(size: 20))
@@ -96,7 +96,7 @@ struct ClipboardQuickPanelView: View {
                 history.hideHistoryWindow()
             } label: {
                 Image(systemName: "xmark")
-                    .font(.system(size: 10.5, weight: .semibold))
+                    .font(DS.Font.panelFloorEmphasis)
                     .foregroundStyle(.secondary)
                     .frame(width: 22, height: 22)
             }
@@ -104,8 +104,8 @@ struct ClipboardQuickPanelView: View {
             .help(l10n.s.menuClose)
             .accessibilityLabel(l10n.s.menuClose)
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 9)
+        .padding(.horizontal, DS.Space.medium)
+        .padding(.vertical, DS.Space.medium)
     }
 
     @ViewBuilder
@@ -129,7 +129,7 @@ struct ClipboardQuickPanelView: View {
                                 LazyVStack(alignment: .leading, spacing: 0) { topAnchor; sections }
                             }
                         }
-                        .padding(.horizontal, 10)
+                        .padding(.horizontal, DS.Space.medium)
                         .padding(.bottom, Self.listVerticalInset)
                         .frame(maxWidth: .infinity, alignment: .leading)
                     }
@@ -159,7 +159,7 @@ struct ClipboardQuickPanelView: View {
     /// every entry.
     private static let eagerRowLimit = 300
 
-    private static let listVerticalInset: CGFloat = 6
+    private static let listVerticalInset: CGFloat = DS.Space.xSmall
 
     /// The list's top inset, above the first section's header that
     /// scrolling to the first row would leave cut off. Scrolling it into
@@ -203,17 +203,17 @@ struct ClipboardQuickPanelView: View {
         if !entries.isEmpty {
             if followsSection {
                 Divider()
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 5)
+                    .padding(.horizontal, DS.Space.xSmall)
+                    .padding(.vertical, DS.Space.xSmall)
             }
             if let title {
                 Text(title)
-                    .font(.subheadline.weight(.medium))
+                    .font(DS.Font.panelTitle)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
-                    .padding(.horizontal, 8)
-                    .padding(.top, isFirst ? 4 : 12)
-                    .padding(.bottom, 4)
+                    .padding(.horizontal, DS.Space.rowTitleGap)
+                    .padding(.top, isFirst ? DS.Space.xxSmall : DS.Space.medium)
+                    .padding(.bottom, DS.Space.xxSmall)
             }
             ForEach(entries, id: \.id) { entry in
                 entryView(entry)
@@ -239,12 +239,12 @@ struct ClipboardQuickPanelView: View {
     }
 
     private func emptyState(_ message: String) -> some View {
-        VStack(spacing: 10) {
+        VStack(spacing: DS.Space.medium) {
             Image(systemName: "doc.on.clipboard")
                 .font(.system(size: 27, weight: .light))
                 .foregroundStyle(.tertiary)
             Text(message)
-                .font(.system(size: 12, weight: .medium))
+                .font(DS.Font.panelBody)
                 .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -252,7 +252,7 @@ struct ClipboardQuickPanelView: View {
 
 
     private var footer: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: DS.Space.rowTitleGap) {
             if history.quickBatchCount > 0 {
                 Button(String(format: text.pasteSelectedFormat, history.quickBatchCount)) {
                     history.copySelectedQuickEntry()
@@ -284,16 +284,16 @@ struct ClipboardQuickPanelView: View {
                 }
                 .buttonStyle(.borderedProminent)
             }
-            HStack(spacing: 5) {
+            HStack(spacing: DS.Space.xSmall) {
                 Image(systemName: "doc.on.clipboard")
                 Text("\(history.entries.count)")
             }
-            .font(.system(size: 10.5, weight: .medium))
+            .font(DS.Font.panelFloor)
             .foregroundStyle(.secondary)
         }
         .controlSize(.small)
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
+        .padding(.horizontal, DS.Space.medium)
+        .padding(.vertical, DS.Space.small)
     }
 
     private func shortcutIndex(for entry: ClipboardHistoryEntry) -> Int? {
@@ -420,23 +420,23 @@ private struct QuickEntryView: View, Equatable {
     }
 
     private var row: some View {
-        HStack(alignment: .center, spacing: 10) {
+        HStack(alignment: .center, spacing: DS.Space.medium) {
             selectionButton
             entryContent(entry)
             Spacer(minLength: 0)
             entryTrailing(entry, isHovered: isHovered)
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 6)
+        .padding(.horizontal, DS.Space.rowTitleGap)
+        .padding(.vertical, DS.Space.xSmall)
         .frame(minHeight: 38)
         .background(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
+            RoundedRectangle(cornerRadius: DS.Radius.row, style: .continuous)
                 .fill(rowBackground(isSelected: isSelected,
                                     isBatchSelected: isBatchSelected,
                                     isHovered: isHovered))
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
+            RoundedRectangle(cornerRadius: DS.Radius.row, style: .continuous)
                 .strokeBorder(isBatchSelected ? Color.accentColor.opacity(0.38)
                               : isSelected ? Color.accentColor.opacity(0.24) : Color.clear,
                               lineWidth: 1)
@@ -459,18 +459,18 @@ private struct QuickEntryView: View, Equatable {
     private func entryContent(_ entry: ClipboardHistoryEntry) -> some View {
         switch entry.kind {
         case .text:
-            HStack(alignment: .center, spacing: 8) {
+            HStack(alignment: .center, spacing: DS.Space.rowTitleGap) {
                 if let color = entry.color {
                     ColorSwatch(color: color, size: 14)
                 }
                 SearchHighlightText.text(entry.preview, tokens: tokens, fontSize: 12)
-                    .font(.body)
+                    .font(DS.Font.panelBody)
                     .lineLimit(1)
                     .truncationMode(.tail)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         case .image:
-            HStack(alignment: .center, spacing: 8) {
+            HStack(alignment: .center, spacing: DS.Space.rowTitleGap) {
                 if let name = entry.imageFile {
                     ClipboardThumbnailImage(source: .stored(name: name),
                                             aspectRatio: entry.imageAspectRatio)
@@ -479,7 +479,7 @@ private struct QuickEntryView: View, Equatable {
                 }
                 SearchHighlightText.text("\(text.imageEntryLabel) · \(entry.imageDimensionsLabel)",
                                          tokens: tokens, fontSize: 11.5)
-                    .font(.system(size: 11.5))
+                    .font(DS.Font.footnote)
                     .foregroundStyle(.secondary)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -488,19 +488,19 @@ private struct QuickEntryView: View, Equatable {
             if entry.filePaths.count == 1,
                let path = entry.filePaths.first,
                ClipboardImageStore.isImageFile(atPath: path) {
-                HStack(alignment: .center, spacing: 8) {
+                HStack(alignment: .center, spacing: DS.Space.rowTitleGap) {
                     ClipboardThumbnailImage(source: .file(path: path),
                                             aspectRatio: ClipboardImageStore.imageAspectRatio(atPath: path))
                         .frame(maxWidth: 240, maxHeight: 120)
                         .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
                     VStack(alignment: .leading, spacing: 2) {
                         SearchHighlightText.text(entry.fileNames.first ?? entry.preview, tokens: tokens, fontSize: 12)
-                            .font(.system(size: 12))
+                            .font(DS.Font.panelBody)
                             .lineLimit(1)
                             .truncationMode(.middle)
                         if let dim = ClipboardImageStore.imageDimensionsLabel(atPath: path) {
                             Text("\(text.imageEntryLabel) · \(dim)")
-                                .font(.system(size: 11.5))
+                                .font(DS.Font.footnote)
                                 .foregroundStyle(.secondary)
                         }
                     }
@@ -513,12 +513,12 @@ private struct QuickEntryView: View, Equatable {
                     SearchHighlightText.text(fileTitle(entry),
                                              tokens: entry.filePaths.count == 1 ? tokens : [],
                                              fontSize: 12)
-                        .font(.system(size: 12))
+                        .font(DS.Font.panelBody)
                         .lineLimit(1)
                         .truncationMode(.middle)
                     if entry.filePaths.count > 1 {
                         SearchHighlightText.text(entry.preview, tokens: tokens, fontSize: 10)
-                            .font(.system(size: 10))
+                            .font(DS.Font.panelFloor)
                             .foregroundStyle(.tertiary)
                             .lineLimit(1)
                             .truncationMode(.tail)
@@ -533,11 +533,11 @@ private struct QuickEntryView: View, Equatable {
     @ViewBuilder
     private func entryTrailing(_ entry: ClipboardHistoryEntry, isHovered: Bool) -> some View {
         if isHovered {
-            HStack(spacing: 4) {
+            HStack(spacing: DS.Space.rowTextStack) {
                 if entry.kind == .image, AppFeature.screenshot.isAvailable {
                     Button { history.editImage(entry) } label: {
                         Image(systemName: "pencil")
-                            .font(.system(size: 10.5, weight: .semibold))
+                            .font(DS.Font.panelFloorEmphasis)
                             .frame(width: 24, height: 24)
                             .background(Color.primary.opacity(0.07), in: RoundedRectangle(cornerRadius: 6))
                     }
@@ -549,7 +549,7 @@ private struct QuickEntryView: View, Equatable {
                     history.copyOnlyQuickEntry(entry)
                 } label: {
                     Image(systemName: "doc.on.doc")
-                        .font(.system(size: 10.5, weight: .semibold))
+                        .font(DS.Font.panelFloorEmphasis)
                         .frame(width: 24, height: 24)
                         .background(Color.primary.opacity(0.07), in: RoundedRectangle(cornerRadius: 6))
                 }
@@ -559,7 +559,7 @@ private struct QuickEntryView: View, Equatable {
                     entryActions(entry)
                 } label: {
                     Image(systemName: "ellipsis")
-                        .font(.system(size: 11, weight: .semibold))
+                        .font(DS.Font.panelFloorEmphasis)
                         .frame(width: 24, height: 24)
                         .background(Color.primary.opacity(0.07), in: RoundedRectangle(cornerRadius: 6))
                 }
@@ -573,16 +573,16 @@ private struct QuickEntryView: View, Equatable {
             if entry.isPinned, let shortcutIndex {
                 HStack(spacing: 2) {
                     Text("⌘")
-                        .font(.caption)
-                        .padding(.horizontal, 4)
+                        .font(DS.Font.panelBody)
+                        .padding(.horizontal, DS.Space.xxSmall)
                         .frame(minWidth: 18, minHeight: 18)
                         .background(
                             RoundedRectangle(cornerRadius: 6, style: .continuous)
                                 .strokeBorder(Color.primary.opacity(0.2), lineWidth: 1)
                         )
                     Text("\(shortcutIndex + 1)")
-                        .font(.caption)
-                        .padding(.horizontal, 4)
+                        .font(DS.Font.panelBody)
+                        .padding(.horizontal, DS.Space.xxSmall)
                         .frame(minWidth: 18, minHeight: 18)
                         .background(
                             RoundedRectangle(cornerRadius: 6, style: .continuous)
@@ -659,7 +659,7 @@ private struct QuickEntryView: View, Equatable {
                   let path = entry.filePaths.first,
                   ClipboardImageStore.isImageFile(atPath: path) {
             Image(systemName: entry.isPinned ? "pin.fill" : "photo")
-                .font(.system(size: 11, weight: .semibold))
+                .font(DS.Font.panelFloorEmphasis)
                 .foregroundStyle(entry.isPinned ? Color.accentColor : Color.secondary)
                 .frame(width: 25, height: 25)
         } else if let icon = fileIcon(for: entry) {
@@ -669,7 +669,7 @@ private struct QuickEntryView: View, Equatable {
                 .frame(width: 25, height: 25)
         } else {
             Image(systemName: entry.isPinned ? "pin.fill" : kindSymbol(entry.kind))
-                .font(.system(size: 11, weight: .semibold))
+                .font(DS.Font.panelFloorEmphasis)
                 .foregroundStyle(entry.isPinned ? Color.accentColor : Color.secondary)
                 .frame(width: 25, height: 25)
         }

@@ -238,7 +238,7 @@ struct PanelSection<Content: View>: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: DS.Space.small) {
             header
 
             if !collapsible || !collapsed {
@@ -248,10 +248,10 @@ struct PanelSection<Content: View>: View {
     }
 
     private var header: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: DS.Space.xSmall) {
             if collapsible {
                 Button(action: toggle) {
-                    HStack(spacing: 6) {
+                    HStack(spacing: DS.Space.xSmall) {
                         sectionTitle(title)
                         Spacer(minLength: 0)
                         collapseIcon
@@ -280,7 +280,7 @@ struct PanelSection<Content: View>: View {
 
     private var collapseIcon: some View {
         Image(systemName: "chevron.right")
-            .font(.system(size: 9, weight: .semibold))
+            .font(DS.Font.panelFloorEmphasis)
             .foregroundStyle(.tertiary)
             .rotationEffect(.degrees(collapsed ? 0 : 90))
     }
@@ -289,14 +289,14 @@ struct PanelSection<Content: View>: View {
         Button(action: toggleEditing) {
             if isEditing {
                 Label("OK", systemImage: "checkmark")
-                    .font(.system(size: 10.5, weight: .bold))
+                    .font(DS.Font.panelFloorEmphasis)
                     .labelStyle(.titleAndIcon)
-                    .padding(.horizontal, 8)
+                    .padding(.horizontal, DS.Space.small)
                     .frame(height: 24)
                     .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
             } else {
                 Image(systemName: "slider.horizontal.3")
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(DS.Font.panelFloorEmphasis)
                     .frame(width: 22, height: 18)
                     .contentShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
             }
@@ -315,7 +315,7 @@ struct PanelSection<Content: View>: View {
             action()
         } label: {
             Image(systemName: "arrow.counterclockwise")
-                .font(.system(size: 10.5, weight: .semibold))
+                .font(DS.Font.panelFloorEmphasis)
                 .frame(width: 22, height: 22)
                 .contentShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
         }
@@ -347,7 +347,7 @@ struct PanelSection<Content: View>: View {
 struct PanelDragHandle: View {
     var body: some View {
         Image(systemName: "line.3.horizontal")
-            .font(.system(size: 11, weight: .semibold))
+            .font(DS.Font.panelFloorEmphasis)
             .foregroundStyle(.tertiary)
             .frame(width: PanelRowMetrics.dragHandleWidth, height: 22)
             .contentShape(Rectangle())
@@ -429,7 +429,7 @@ struct PanelInlineHideButton: View {
             isVisible.toggle()
         } label: {
             Image(systemName: isVisible ? "eye.slash.fill" : "eye.fill")
-                .font(.system(size: 11, weight: .bold))
+                .font(DS.Font.panelFloorEmphasis)
                 .foregroundStyle(isVisible ? Color.secondary : Color.accentColor)
                 .frame(width: 24, height: 22)
                 .background(
@@ -448,10 +448,10 @@ struct PanelHiddenBadge: View {
 
     var body: some View {
         Label(l10n.s.panelHiddenItem, systemImage: "eye.slash.fill")
-            .font(.system(size: 9.5, weight: .bold))
+            .font(DS.Font.panelFloorEmphasis)
             .foregroundStyle(.secondary)
-            .padding(.horizontal, 7)
-            .padding(.vertical, 3)
+            .padding(.horizontal, DS.Space.small)
+            .padding(.vertical, DS.Space.xxSmall)
             .background(
                 Capsule()
                     .fill(Color.primary.opacity(0.08))
@@ -465,21 +465,21 @@ struct PanelHiddenItemRow: View {
     @Binding var isVisible: Bool
 
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: DS.Space.small) {
             Image(systemName: systemImage)
-                .font(.system(size: 11, weight: .semibold))
+                .font(DS.Font.panelFloorEmphasis)
                 .foregroundStyle(.tertiary)
                 .frame(width: 16)
             Text(title)
-                .font(.system(size: 11, weight: .semibold))
+                .font(DS.Font.panelFloorEmphasis)
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
             Spacer(minLength: 0)
             PanelHiddenBadge()
             PanelInlineHideButton(isVisible: $isVisible)
         }
-        .padding(.vertical, 3)
-        .padding(.horizontal, 6)
+        .padding(.vertical, DS.Space.xxSmall)
+        .padding(.horizontal, DS.Space.xSmall)
         .background(
             RoundedRectangle(cornerRadius: 7, style: .continuous)
                 .fill(Color.primary.opacity(0.035))
