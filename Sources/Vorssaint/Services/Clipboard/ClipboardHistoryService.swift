@@ -1189,8 +1189,7 @@ final class ClipboardHistoryService: ObservableObject {
         guard presented != quickPreviewPresented else { return }
         quickPreviewPresented = presented
         UserDefaults.standard.set(presented, forKey: DefaultsKey.clipboardHistoryQuickPreview)
-        // The list window grows to make room for the preview. The shelf keeps
-        // its frame and gives the preview part of the strip.
+        // The window grows to make room for the preview.
         guard quickLayout == .list, let panel, panel.isVisible else { return }
         let previousFrame = panel.frame
         resize(panel, to: preferredPanelSize(visibleFrame: panel.screen?.visibleFrame
@@ -1212,6 +1211,9 @@ final class ClipboardHistoryService: ObservableObject {
         let panel = ensurePanel()
         rememberPasteTarget()
         refreshQuickLayout()
+        // Single UI: every opening lands on the two-column list with its
+        // preview pane, no matter where it was invoked from.
+        setQuickPreviewPresented(true)
         quickWindowPresentationID = UUID()
         quickQuery = ""
         clearQuickBatchSelection()
@@ -1332,15 +1334,14 @@ final class ClipboardHistoryService: ObservableObject {
         return panel
     }
 
-    /// Read on every opening, so a layout picked in Settings applies the next
-    /// time the window opens.
+    /// The window always opens as the two-column list with its preview;
+    /// the cards shelf is gone, so there is no stored layout to re-read.
     private func refreshQuickLayout() {
-        let layout = ClipboardHistoryLayout.current(in: UserDefaults.standard)
-        if quickLayout != layout { quickLayout = layout }
+        if quickLayout != .list { quickLayout = .list }
     }
 
     /// The list keeps room for the batch actions and the preview while the
-    /// user resizes it. The shelf does not resize.
+    /// user resizes it.
     private func panelMinimumContentSize() -> NSSize? {
         quickLayout == .list ? ClipboardHistoryWindowSizing.minimumSize(preview: quickPreviewPresented) : nil
     }
@@ -1365,30 +1366,19 @@ final class ClipboardHistoryService: ObservableObject {
     }
 
     /// Placed again on every open, so a changed display never strands it.
-    /// Cards make a shelf along the bottom of the screen the pointer is on.
-    /// The list is a window of the size the user last gave it, centered
-    /// toward the top.
+    /// A window of the size the user last gave it, centered toward the top.
     private func position(_ panel: NSPanel) {
         let screen = NSScreen.pointerVisibleFrame
-        switch quickLayout {
-        case .cards:
-            panel.styleMask.remove(.resizable)
-            panel.setFrame(NSRect(x: screen.minX + 16, y: screen.minY + 8,
-                                  width: screen.width - 32, height: min(318, screen.height - 16)),
-                           display: true,
-                           animate: false)
-        case .list:
-            panel.styleMask.insert(.resizable)
-            let size = preferredPanelSize(visibleFrame: screen)
-            let x = screen.midX - size.width / 2
-            let y = min(screen.maxY - size.height - 54, screen.midY - size.height / 2)
-            panel.setFrame(NSRect(x: max(screen.minX + 16, min(x, screen.maxX - size.width - 16)),
-                                  y: max(screen.minY + 16, y),
-                                  width: size.width,
-                                  height: size.height),
-                           display: true,
-                           animate: false)
-        }
+        panel.styleMask.insert(.resizable)
+        let size = preferredPanelSize(visibleFrame: screen)
+        let x = screen.midX - size.width / 2
+        let y = min(screen.maxY - size.height - 54, screen.midY - size.height / 2)
+        panel.setFrame(NSRect(x: max(screen.minX + 16, min(x, screen.maxX - size.width - 16)),
+                              y: max(screen.minY + 16, y),
+                              width: size.width,
+                              height: size.height),
+                       display: true,
+                       animate: false)
     }
 
     private func resize(_ panel: NSPanel, to contentSize: NSSize,

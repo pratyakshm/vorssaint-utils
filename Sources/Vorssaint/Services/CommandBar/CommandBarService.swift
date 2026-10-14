@@ -1078,8 +1078,10 @@ final class CommandBarService: ObservableObject {
     }
 
     /// The chip order. Fixed, so the row never reshuffles under a pointer.
+    /// Clipboard stays out: its entry opens the two-column history window
+    /// instead of browsing inline.
     private static let chipOrder: [CommandBarSource] = [
-        .actions, .apps, .clipboard, .windows, .menus, .settingsPages, .macSettings,
+        .actions, .apps, .windows, .menus, .settingsPages, .macSettings,
         .snippets, .emoji, .folders, .links,
     ]
 

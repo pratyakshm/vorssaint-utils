@@ -387,14 +387,11 @@ enum CommandBarCatalog {
                 shortcut: keepsHistory ? roleShortcut(.clipboard) : nil,
                 trouble: canUseHistory ? nil
                     : .needsSetup(featureTitle: clipboard.title, page: .clipboard),
-                // Inline history: the bar stays open and becomes the clipboard
-                // browser instead of handing off to a separate panel.
-                keepsBarOpen: true,
-                run: { _ in
-                    let service = CommandBarService.shared
-                    service.query = ""
-                    service.setCategory(.clipboard)
-                }))
+                // Single UI: close the bar and open the two-column history
+                // window with its preview, wherever it was invoked from.
+                run: { _ in afterBeat(0.1) {
+                    ClipboardHistoryService.shared.showHistoryWindow()
+                } }))
             // Counted when the bar lists it: a copy made before confirming is kept.
             let recentIDs = ClipboardHistoryService.shared.recentEntriesSnapshot
             entries.append(CommandBarEntry(
