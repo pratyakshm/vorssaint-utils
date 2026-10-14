@@ -46,17 +46,17 @@ struct ProcessUsageRow: View {
     }
 
     private var content: some View {
-        HStack(spacing: 7) {
+        HStack(spacing: DS.Space.rowTitleGap) {
             Image(nsImage: ResponsibleProcess.icon(for: row.pid))
                 .resizable()
                 .frame(width: iconSize, height: iconSize)
             Text(row.name)
-                .font(.system(size: 10.5))
+                .font(DS.Font.panelFloor)
                 .lineLimit(1)
                 .truncationMode(.middle)
             Spacer(minLength: 0)
             Text(value)
-                .font(.system(size: 10.5, weight: .medium))
+                .font(DS.Font.panelFloorEmphasis)
                 .monospacedDigit()
                 .foregroundStyle(.secondary)
         }

@@ -36,55 +36,77 @@ Commit `2ea65f8e`, pushed to `main`. Full `swift build` not verified in
 this environment (pre-existing `SwiftUIMacros` toolchain failure, clean
 tree fails identically); files pass `swiftc -parse`.
 
+### 2026-10-14 — second slice (settings details, clipboard panel, notch, menu sections)
+
+Done (token swaps only, no layout reflows; each file passes
+`swiftc -parse`):
+
+- Settings: `GeneralSettings.swift`, `MonitorSettings.swift`,
+  `MonitorAlertsControls.swift`, `MonitorPanelConfig.swift`,
+  `EnergySettings.swift` (Keep awake + Bluetooth on sleep),
+  `CommandBarSettings.swift` (rest).
+- Clipboard panel: `PanelClipboardView.swift`,
+  `ClipboardTextPreview.swift`, `ClipboardThumbnailImage.swift`,
+  `ClipboardEntryPreviewSidebar.swift`. `ClipboardClearRecentConfirmation.swift`
+  reviewed — alert-only, no literals.
+- Command Bar: `CommandBarDroplet.swift` reviewed — AppKit/CALayer only,
+  no SwiftUI font/spacing literals.
+- Notch core: `NotchView.swift`, `NotchSectionsView.swift`,
+  `NotchComponents.swift`, `NotchCapsuleViews.swift`.
+- Notch strips: `NotchMusicStrip`, `NotchAgentStrip`, `NotchTimerStrip`,
+  `NotchCalendarStrip`, `NotchDownloadsView`, `NotchLyricsView`,
+  `NotchQueueView`. `NotchKeepAwakeStrip` reviewed — no hardcoded literals.
+- Menu sections: `QuickTogglesSection.swift`, `SystemSection.swift`,
+  `MixerSection.swift`, `NetworkSection.swift`, `PowerSection.swift`,
+  `DiskSection.swift`, `BrightnessSection.swift`, `MetricDetailView.swift`,
+  `CPUCoreMatrix.swift`, `ProcessUsageRow.swift`.
+- Other: `KillProcess/KillProcessView.swift`,
+  `CleaningMode/CleaningOverlayView.swift`,
+  `KeepAwakeAutomationView.swift`, `KeepAwakeIconPicker.swift`,
+  `Onboarding/OnboardingView.swift`, `Onboarding/WhatsNewView.swift`,
+  `UpdateHighlightsView.swift`, `SharedUI.swift`,
+  `MenuBarMetricsPreview.swift` (chrome only — miniature renderer sizes
+  kept pixel-exact). `ColorSwatch.swift` reviewed — no literals.
+
+Skipped: `Settings/ClipboardSettings.swift` (foreign uncommitted work at
+the time; landed as `26e52ce0` mid-slice — still to migrate).
+Full `swift build` not verified (same pre-existing `SwiftUIMacros`
+CommandLineTools-only toolchain failure); all touched files pass
+`swiftc -parse`.
+
 ## Remaining
 
 ### Settings detail pages (shell is done; per-file literals remain)
 
-- `GeneralSettings.swift`, `MonitorSettings.swift`, `EnergySettings.swift`
-  (Keep awake + Bluetooth on sleep), `ClipboardSettings.swift`,
-  `CommandBarSettings.swift` (rest), `DockSettings.swift`,
-  `QuickToolsSettings.swift`, `NotchSettings.swift` + sub-editors
-  (`NotchLayoutEditor`, `NotchContentEditor`, `NotchAgentsSettings`,
-  `NotchSpringTuner`, `PanelLayoutEditor`), `FeatureHubSettings.swift`
-  (Features page), `ShortcutsSettings.swift`, `AdvancedSettings.swift`,
+- `ClipboardSettings.swift` (foreign work landed as `26e52ce0` — migrate
+  next), `DockSettings.swift`, `QuickToolsSettings.swift`,
+  `NotchSettings.swift` + sub-editors (`NotchLayoutEditor`,
+  `NotchContentEditor`, `NotchAgentsSettings`, `NotchSpringTuner`,
+  `PanelLayoutEditor`), `FeatureHubSettings.swift` (Features page),
+  `ShortcutsSettings.swift`, `AdvancedSettings.swift`,
   `AutoQuitSettings.swift`, `URLCleanerSettings.swift`,
-  `DisplayBrightnessShortcutControls.swift`, `MonitorAlertsControls.swift`,
-  `MonitorPanelConfig.swift`.
+  `DisplayBrightnessShortcutControls.swift`.
 
 ### Menu panel sections
 
-- `PanelClipboardView.swift` (+ `ClipboardTextPreview`,
-  `ClipboardThumbnailImage`, `ClipboardEntryPreviewSidebar`,
-  `ClipboardClearRecentConfirmation`), `QuickTogglesSection.swift`,
-  `SystemSection.swift`, `MixerSection.swift`, `NetworkSection.swift`,
-  `PowerSection.swift`, `DiskSection.swift`, `BrightnessSection.swift`,
-  `MetricDetailView.swift`, `CPUCoreMatrix.swift`, `ProcessUsageRow.swift`,
-  `Sparkline.swift`, `KeepAwakeEndTimePicker.swift`,
+- `Sparkline.swift`, `KeepAwakeEndTimePicker.swift`,
   `FanControlCurveEditor.swift`, `PanelLayout.swift`.
-- NOTE: `ClipboardQuickPanelView.swift` has uncommitted work in the tree
-  (2026-10-14) — migrate it after that work lands.
+- NOTE: `ClipboardQuickPanelView.swift` foreign work landed as `26e52ce0`
+  — migrate it next.
 
 ### Command Bar
 
-- `CommandBarView.swift` floor done; `CommandBarDroplet.swift` remaining.
+Done — `CommandBarView.swift` floor plus `CommandBarDroplet.swift`
+reviewed (no SwiftUI literals).
 
-### Dynamic Island / Notch (all 42 files remaining)
+### Dynamic Island / Notch (core + strips done)
 
-- `NotchView.swift`, `NotchSectionsView.swift`, `NotchComponents.swift`,
-  `NotchCapsuleViews.swift`, strips (`NotchMusicStrip`,
-  `NotchAgentStrip`, `NotchTimerStrip`, `NotchKeepAwakeStrip`,
-  `NotchCalendarStrip`), `NotchDownloadsView`, `NotchLyricsView`,
-  `NotchQueueView`, `NotchClipboardView`, `NotchControlsView`,
-  `NotchMixerView`, `NotchSystemView`, rest of `UI/Notch/`.
+- `NotchClipboardView`, `NotchControlsView`, `NotchMixerView`,
+  `NotchSystemView`, rest of `UI/Notch/`.
 
 ### Other active-feature UI
 
-- `UI/KillProcess/`, `UI/CleaningMode/`, `UI/ColorSwatch.swift`,
-  `UI/KeepAwakeAutomationView.swift`, `UI/KeepAwakeIconPicker.swift`,
-  `UI/MenuBarMetricsPreview.swift` (Menu bar page),
-  `UI/Onboarding/` + `UI/UpdateHighlightsView.swift`,
-  `UI/SharedUI.swift` (`KeyCap`, notes), `UI/QuickLauncher/`,
-  `UI/NonModalAlert.swift`, `UI/OverlayPanel.swift`.
+- `UI/QuickLauncher/`, `UI/NonModalAlert.swift`, `UI/OverlayPanel.swift`.
 
 ### Disabled on this machine (skip unless re-enabled)
 

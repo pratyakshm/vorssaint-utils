@@ -34,8 +34,8 @@ struct ClipboardTextPreview: NSViewRepresentable {
         textView.isRichText = false
         textView.font = font
         context.coordinator.font = font
-        textView.textContainerInset = NSSize(width: 8, height: 12)
-        textView.textContainer?.lineFragmentPadding = 4
+        textView.textContainerInset = NSSize(width: DS.Space.small, height: DS.Space.medium)
+        textView.textContainer?.lineFragmentPadding = DS.Space.xxSmall
         textView.textContainer?.widthTracksTextView = true
         textView.string = text
         return scroll

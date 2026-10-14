@@ -24,7 +24,7 @@ struct GeneralSettings: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
+            VStack(alignment: .leading, spacing: DS.Space.xLarge) {
                 Text(l10n.s.tabGeneral).font(.title2.bold())
                 basicsCard
                 appearanceCard
@@ -63,7 +63,7 @@ struct GeneralSettings: View {
             }
             if loginRegistration == .needsApproval {
                 Text(l10n.s.launchAtLoginNeedsApproval)
-                    .font(.caption)
+                    .font(DS.Font.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
                 Button(l10n.s.permissionOpenSettings) {
@@ -71,7 +71,7 @@ struct GeneralSettings: View {
                 }
             } else if let loginError {
                 Text(loginError)
-                    .font(.caption)
+                    .font(DS.Font.caption)
                     .foregroundStyle(.red)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -90,7 +90,7 @@ struct GeneralSettings: View {
 
     private var appearanceCard: some View {
         SettingsCard(title: appearanceStrings.label) {
-            HStack(spacing: 10) {
+            HStack(spacing: DS.Space.medium) {
                 ForEach(AppAppearance.allCases) { option in
                     AppearanceChoice(option: option,
                                      title: option.title(appearanceStrings),
@@ -100,7 +100,7 @@ struct GeneralSettings: View {
                 }
             }
             Text(text.appearanceCaption)
-                .font(.caption)
+                .font(DS.Font.caption)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
 #if compiler(>=6.2)
@@ -108,7 +108,7 @@ struct GeneralSettings: View {
                 Divider()
                 SettingsRow(symbol: "sparkles", title: appearanceStrings.liquidGlass,
                             caption: text.liquidGlassCaption) { EmptyView() }
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: DS.Space.small) {
                     Toggle(text.liquidGlassOtherWindows, isOn: $appearance.liquidGlassEnabled)
                         .accessibilityLabel("\(appearanceStrings.liquidGlass), \(text.liquidGlassOtherWindows)")
                     Toggle(FeatureStrings.notch(l10n.language).title,
@@ -138,7 +138,7 @@ struct GeneralSettings: View {
             .padding(.leading, settingsRowTextInset)
             if hotkeyEnabled, hotkeys.registrationFailed {
                 Text(l10n.s.shortcutUnavailable)
-                    .font(.caption)
+                    .font(DS.Font.caption)
                     .foregroundStyle(.orange)
                     .padding(.leading, settingsRowTextInset)
             }
@@ -200,7 +200,7 @@ private struct AppearanceChoice: View {
 
     var body: some View {
         Button(action: action) {
-            VStack(spacing: 8) {
+            VStack(spacing: DS.Space.small) {
                 thumbnail
                     .frame(height: 66)
                     .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
@@ -210,7 +210,7 @@ private struct AppearanceChoice: View {
                                           lineWidth: selected ? 2 : 1)
                     }
                 Text(title)
-                    .font(.system(size: 11, weight: .medium))
+                    .font(DS.Font.panelFloorEmphasis)
                     .foregroundStyle(selected ? Color.accentColor : .primary)
             }
             .frame(maxWidth: .infinity)
@@ -277,7 +277,7 @@ private struct DesktopThumbnail: View {
                         bar(width: 34)
                         bar(width: 40)
                     }
-                    .padding(8)
+            .padding(DS.Space.small)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                 }
             }

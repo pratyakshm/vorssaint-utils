@@ -209,7 +209,7 @@ struct NotchCapsuleRestingView: View {
 
     private var resting: some View {
         NotchCapsuleRow(size: size, geometry: geometry) {
-            HStack(spacing: 5) {
+            HStack(spacing: DS.Space.xSmall) {
                 switch service.idleContent {
                 case .battery:
                     let symbol = NotchRestingBattery.symbol(for: service.power)

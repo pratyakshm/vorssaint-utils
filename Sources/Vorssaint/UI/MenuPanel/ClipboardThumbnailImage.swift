@@ -36,7 +36,7 @@ struct ClipboardThumbnailImage: View {
                     .aspectRatio(contentMode: contentMode)
             } else if failed, let failureText {
                 Text(failureText)
-                    .font(.system(size: 12))
+                    .font(DS.Font.panelBody)
                     .lineLimit(2)
                     .truncationMode(.middle)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)

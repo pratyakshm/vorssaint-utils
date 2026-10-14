@@ -11,7 +11,7 @@ struct NotchDownloadsSettingsControls: View {
     private var text: NotchFilesStrings { FeatureStrings.notchFiles(l10n.language) }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: DS.Space.medium) {
             Toggle(text.downloadsTitle, isOn: $enabled)
                 .disabled(!AppFeature.notchDownloads.isAvailable)
             Text(text.downloadsHint).font(.caption).foregroundStyle(.secondary)
@@ -41,21 +41,21 @@ private struct NotchDownloadsSetupView: View {
 
     var body: some View {
         ViewThatFits(in: .vertical) {
-            VStack(spacing: 12) {
+            VStack(spacing: DS.Space.medium) {
                 glyph
                 copy.multilineTextAlignment(.center)
                 actions
             }
-            HStack(spacing: 16) {
+            HStack(spacing: DS.Space.large) {
                 glyph
-                VStack(alignment: .leading, spacing: 10) {
+                VStack(alignment: .leading, spacing: DS.Space.medium) {
                     copy.multilineTextAlignment(.leading)
                     actions
                 }
             }
         }
         .frame(maxWidth: 360)
-        .padding(12)
+        .padding(DS.Space.medium)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
@@ -73,7 +73,7 @@ private struct NotchDownloadsSetupView: View {
         // folder to choose.
         Text(downloads.folderUnavailable ? text.folderUnavailable
              : offersSwitchOnly ? text.downloadsTitle : enabled ? text.downloadsHint : text.downloadsDescription)
-            .font(.system(size: 12))
+            .font(DS.Font.panelBody)
             .foregroundStyle(downloads.folderUnavailable ? Color.orange : .white.opacity(0.65))
             .fixedSize(horizontal: false, vertical: true)
     }
@@ -95,11 +95,11 @@ private struct NotchDownloadsSetupView: View {
     }
 
     private var chooseActions: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: DS.Space.small) {
             Button(action: downloads.chooseFolder) {
                 Text(text.chooseFolder)
-                    .font(.system(size: 12, weight: .semibold))
-                    .padding(.horizontal, 14)
+                    .font(DS.Font.panelTitle)
+                    .padding(.horizontal, DS.Space.rowGap)
                     .frame(height: 28)
                     .background(.white.opacity(0.14), in: Capsule())
                     .contentShape(Capsule())
@@ -108,9 +108,9 @@ private struct NotchDownloadsSetupView: View {
             if downloads.folderUnavailable {
                 Button(action: downloads.forgetFolder) {
                     Text(text.clearFolder)
-                        .font(.system(size: 12, weight: .medium))
+                        .font(DS.Font.panelBody)
                         .foregroundStyle(.white.opacity(0.7))
-                        .padding(.horizontal, 10)
+                        .padding(.horizontal, DS.Space.medium)
                         .frame(height: 28)
                         .contentShape(Capsule())
                 }
@@ -152,7 +152,7 @@ struct NotchDownloadsView: View {
                         .frame(maxHeight: .infinity)
                 } else {
                     ScrollView {
-                        LazyVStack(spacing: 8) {
+                        LazyVStack(spacing: DS.Space.small) {
                             ForEach(downloads.items) { item in
                                 downloadCard(item)
                             }
@@ -168,13 +168,13 @@ struct NotchDownloadsView: View {
     }
 
     private func downloadCard(_ item: NotchDownloadItem) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 8) {
-                let fileLabel = HStack(spacing: 8) {
+        VStack(alignment: .leading, spacing: DS.Space.xSmall) {
+            HStack(spacing: DS.Space.small) {
+                let fileLabel = HStack(spacing: DS.Space.small) {
                     Image(systemName: item.completed ? "checkmark.circle.fill" : "arrow.down.circle")
                         .foregroundStyle(item.completed ? .green : .white)
                         .accessibilityHidden(true)
-                    Text(item.name).font(.system(size: 12, weight: .medium)).lineLimit(1).truncationMode(.middle)
+                    Text(item.name).font(DS.Font.panelBody).lineLimit(1).truncationMode(.middle)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 if item.completed {
@@ -221,7 +221,7 @@ struct NotchDownloadsView: View {
                 }.font(.caption2).foregroundStyle(.secondary).lineLimit(1)
             }
         }
-        .padding(12)
+        .padding(DS.Space.medium)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(.white.opacity(0.07), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
         .clipped()
@@ -250,26 +250,26 @@ struct NotchDownloadStrip: View {
         let item = downloads.items.first { $0.active && !$0.completed }
         Button { service.openActivity(.downloads) } label: {
             HStack(spacing: 0) {
-                HStack(spacing: 6) {
+                HStack(spacing: DS.Space.xSmall) {
                     if geometry.compactActivityWingWidth >= 40 {
                         Image(systemName: "arrow.down.circle.fill").font(.system(size: iconSize))
                         if NotchDownloadSupport.showsCompactName(in: geometry) {
                             Text(item?.name ?? FeatureStrings.notchFiles(l10n.language).downloadsTitle)
-                                .font(.system(size: 11, weight: .medium)).lineLimit(1).truncationMode(.middle)
+                                .font(DS.Font.panelFloor).lineLimit(1).truncationMode(.middle)
                         }
                     }
                 }
                 .padding(.leading, geometry.compactActivityWingWidth >= 40 ? iconInset : 0)
-                .padding(.trailing, 4)
+                .padding(.trailing, DS.Space.xxSmall)
                 // Each wing anchors to its own edge, so the silhouette's curve
                 // decides the margin instead of the content's own width.
                 .frame(width: geometry.compactActivityWingWidth, alignment: .leading).clipped()
                 Color.clear.frame(width: geometry.compactActivityCameraGap)
-                HStack(spacing: 6) {
+                HStack(spacing: DS.Space.xSmall) {
                     // The name widens both wings; the bar fills the side the
                     // percentage alone would leave as a band of black.
                     if NotchDownloadSupport.showsCompactName(in: geometry), let fraction = item?.fraction {
-                        NotchMeter(value: fraction, height: 4).padding(.leading, 4)
+                        NotchMeter(value: fraction, height: 4).padding(.leading, DS.Space.xxSmall)
                     } else {
                         Spacer(minLength: 0)
                     }

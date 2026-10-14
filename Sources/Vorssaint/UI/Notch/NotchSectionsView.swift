@@ -78,7 +78,7 @@ struct NotchSectionsView: View {
     /// column keeps its width when everything fits, so tiles never shift.
     @ViewBuilder private func indicator(positions: Int, current: Int) -> some View {
         if positions > 1 {
-            VStack(spacing: 5) {
+            VStack(spacing: DS.Space.xSmall) {
                 ForEach(0..<positions, id: \.self) { position in
                     Button { service.showSectionRow(position) } label: {
                         Circle()
@@ -102,22 +102,22 @@ struct NotchSectionsView: View {
         let current = service.selected == module
         let shape = RoundedRectangle(cornerRadius: 16, style: .continuous)
         return Button { service.select(module) } label: {
-            VStack(spacing: 6) {
+            VStack(spacing: DS.Space.xSmall) {
                 Image(systemName: module.symbol)
                     .font(.system(size: 22, weight: .medium))
                     .foregroundStyle(tint(for: module))
                     .frame(width: 25, height: 25)
                 Text(module.title(l10n.language))
-                    .font(.system(size: 11, weight: .medium))
+                    .font(DS.Font.panelFloorEmphasis)
                     .lineLimit(2)
                     .minimumScaleFactor(0.85)
                     .multilineTextAlignment(.center)
                     .frame(height: 27)
                 Text("⌥⌘" + module.shortcutKey.uppercased())
-                    .font(.system(size: 10, weight: .medium, design: .rounded))
+                    .font(DS.Font.panelFloorEmphasis)
                     .foregroundStyle(.white.opacity(0.6))
             }
-            .padding(.horizontal, 6)
+            .padding(.horizontal, DS.Space.xSmall)
             .frame(maxWidth: .infinity)
             .frame(height: NotchLayout.sectionTileHeight)
             .background(.white.opacity(highlighted ? 0.12 : 0.045), in: shape)
@@ -127,9 +127,9 @@ struct NotchSectionsView: View {
             .overlay(alignment: .topTrailing) {
                 if current {
                     Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 10))
+                        .font(DS.Font.panelFloor)
                         .foregroundStyle(.white.opacity(0.7))
-                        .padding(7)
+                        .padding(DS.Space.small)
                 }
             }
             .contentShape(shape)
@@ -183,16 +183,16 @@ struct NotchSectionSearch: View {
     }
 
     var body: some View {
-        HStack(spacing: expanded ? 4 : 6) {
+        HStack(spacing: expanded ? DS.Space.xxSmall : DS.Space.xSmall) {
             Image(systemName: "magnifyingglass")
-                .font(.system(size: 12, weight: .medium))
+                .font(DS.Font.rowIcon)
                 .foregroundStyle(expanded ? .white : .white.opacity(0.55))
                 .frame(width: expanded ? 22 : 28, height: 28)
             // The field keeps its focus at a hair's width, so typing filters
             // the gallery before the field has even shown itself.
             TextField(prompt, text: Binding(get: { service.sectionQuery }, set: service.searchSections))
                 .textFieldStyle(.plain)
-                .font(.system(size: 12))
+                .font(DS.Font.panelBody)
                 .focused($searching)
                 .frame(maxWidth: expanded ? maximumFieldWidth : 1)
                 .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { fieldWidth = $0 }
@@ -206,7 +206,7 @@ struct NotchSectionSearch: View {
                 .accessibilityLabel(l10n.s.actionClear)
             }
         }
-        .padding(.trailing, expanded ? 8 : 0)
+        .padding(.trailing, expanded ? DS.Space.small : 0)
         .frame(height: 28)
         .background(.white.opacity(expanded ? 0.07 : 0), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
         .contentShape(RoundedRectangle(cornerRadius: 9, style: .continuous))

@@ -19,11 +19,11 @@ struct KeepAwakeIconPicker: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: compact ? 7 : 10) {
+        VStack(alignment: .leading, spacing: compact ? DS.Space.small : DS.Space.medium) {
             choiceHeader(l10n.s.keepAwakeActiveIconLabel,
                          value: title(selectedIcon))
 
-            HStack(spacing: compact ? 5 : 7) {
+            HStack(spacing: compact ? DS.Space.xSmall : DS.Space.small) {
                 ForEach(KeepAwakeActiveIcon.allCases) { icon in
                     iconButton(icon)
                 }
@@ -32,13 +32,13 @@ struct KeepAwakeIconPicker: View {
             choiceHeader(l10n.s.keepAwakeIconTintLabel,
                          value: selectedTint.title(l10n.s))
 
-            HStack(spacing: compact ? 6 : 8) {
+            HStack(spacing: compact ? DS.Space.xSmall : DS.Space.small) {
                 ForEach(KeepAwakeIconTint.allCases) { tint in
                     tintButton(tint)
                 }
             }
         }
-        .padding(compact ? 8 : 0)
+        .padding(compact ? DS.Space.small : 0)
         .background {
             if compact {
                 RoundedRectangle(cornerRadius: 9, style: .continuous)
@@ -48,13 +48,13 @@ struct KeepAwakeIconPicker: View {
     }
 
     private func choiceHeader(_ title: String, value: String) -> some View {
-        HStack(spacing: 8) {
+        HStack(spacing: DS.Space.small) {
             Text(title)
-                .font(.system(size: compact ? 10.5 : 12, weight: .medium))
+                .font(compact ? DS.Font.panelFloorEmphasis : DS.Font.panelBody)
                 .foregroundStyle(.secondary)
             Spacer(minLength: 8)
             Text(value)
-                .font(.system(size: compact ? 10 : 11))
+                .font(DS.Font.panelFloor)
                 .foregroundStyle(.tertiary)
                 .lineLimit(1)
         }
@@ -125,7 +125,7 @@ struct KeepAwakeIconPicker: View {
                     // across the circle was never drawn: the choice for no
                     // icon showed an empty ring.
                     Image(systemName: "line.diagonal")
-                        .font(.system(size: compact ? 8 : 9, weight: .semibold))
+                        .font(DS.Font.panelFloorEmphasis)
                         .foregroundStyle(.secondary)
                 }
             }

@@ -10,7 +10,7 @@ struct NotchQueueView: View {
     private var text: NotchMusicExtrasStrings { FeatureStrings.notchMusicExtras(l10n.language) }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: DS.Space.medium) {
             HStack {
                 Text(text.queue).font(.callout.weight(.semibold))
                 Spacer()
@@ -26,22 +26,22 @@ struct NotchQueueView: View {
                 ScrollView {
                     LazyVStack(spacing: 0) {
                         ForEach(service.upcomingRows) { item in
-                            HStack(spacing: 10) {
+                            HStack(spacing: DS.Space.medium) {
                                 NotchArtwork(image: service.upcomingArtwork[item.id], size: 34)
-                                VStack(alignment: .leading, spacing: 3) {
+                                VStack(alignment: .leading, spacing: DS.Space.rowTextStack) {
                                     Text(item.title).font(.callout.weight(.medium)).lineLimit(1)
                                     if !item.artist.isEmpty { Text(item.artist).font(.caption).foregroundStyle(.secondary).lineLimit(1) }
                                 }.frame(maxWidth: .infinity, alignment: .leading)
                                 if queue.canPlay {
                                     Button { service.playQueued(item) } label: {
-                                        Image(systemName: "play.fill").font(.system(size: 11))
+                                        Image(systemName: "play.fill").font(DS.Font.panelFloor)
                                             .frame(width: 28, height: 28).contentShape(Circle())
                                     }
                                     .buttonStyle(NotchButtonStyle(cornerRadius: 14))
                                     .disabled(service.queueActionPending || service.upcomingIsHeld)
                                     .help(text.playNow).accessibilityLabel("\(text.playNow): \(item.title)")
                                 }
-                            }.padding(.vertical, 8)
+                            }.padding(.vertical, DS.Space.small)
                         }
                     }
                 }
@@ -53,7 +53,7 @@ struct NotchQueueView: View {
             }
         }
         // The title sits as far below the player as the first verse would.
-        .padding(.top, 6)
+        .padding(.top, DS.Space.xSmall)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 }

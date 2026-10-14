@@ -144,7 +144,7 @@ struct NotchMusicStrip: View {
     /// The song as the pointer asked for it: the title over the artist,
     /// ending at the cover.
     private var namedLabel: some View {
-        VStack(alignment: .trailing, spacing: 1) {
+        VStack(alignment: .trailing, spacing: DS.Space.rowTextStack) {
             Text(title)
                 .font(Font(Layout.titleFont as CTFont))
                 .lineLimit(1)
@@ -162,14 +162,14 @@ struct NotchMusicStrip: View {
     }
 
     private var trackLabel: some View {
-        VStack(spacing: 1) {
+        VStack(spacing: DS.Space.rowTextStack) {
             Text(title)
-                .font(.system(size: 11, weight: .semibold))
+                .font(DS.Font.panelFloorEmphasis)
                 .lineLimit(1)
                 .truncationMode(.tail)
             if showsArtist, let artist {
                 Text(artist)
-                    .font(.system(size: 9, weight: .medium))
+                    .font(DS.Font.panelFloor)
                     .foregroundStyle(.white.opacity(0.62))
                     .lineLimit(1)
                     .truncationMode(.tail)

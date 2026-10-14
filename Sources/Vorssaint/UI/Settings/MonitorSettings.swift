@@ -27,8 +27,8 @@ struct MonitorSettings: View {
 
     var body: some View {
         ScrollView {
-            LazyVStack(alignment: .leading, spacing: 20, pinnedViews: [.sectionHeaders]) {
-                VStack(alignment: .leading, spacing: 5) {
+            LazyVStack(alignment: .leading, spacing: DS.Space.xLarge, pinnedViews: [.sectionHeaders]) {
+                VStack(alignment: .leading, spacing: DS.Space.xSmall) {
                     Text(l10n.s.tabMonitor).font(.title2.bold())
                     Text(FeatureStrings.settingsPages(l10n.language).monitorDescription)
                         .font(.callout)
@@ -43,7 +43,7 @@ struct MonitorSettings: View {
                     menuBarStyleCard
                 } header: {
                     MenuBarMetricsPreview()
-                        .padding(.vertical, 8)
+                        .padding(.vertical, DS.Space.small)
                         .background(Color(nsColor: .windowBackgroundColor))
                 }
                 groupHeading(l10n.s.monitorPanelSection, symbol: "macwindow")
@@ -58,7 +58,7 @@ struct MonitorSettings: View {
             }
             .frame(maxWidth: 760)
             .frame(maxWidth: .infinity)
-            .padding(22)
+            .padding(DS.Space.xLarge)
         }
         .toggleStyle(.switch)
         .onAppear {
@@ -74,14 +74,14 @@ struct MonitorSettings: View {
     /// Splits the page into what the menu bar shows, what the panel shows,
     /// and what both share, so an option is never read as the other's.
     private func groupHeading(_ title: String, symbol: String) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: DS.Space.medium) {
             Divider()
             Label(title, systemImage: symbol)
                 .font(.title3.weight(.semibold))
                 .foregroundStyle(.primary)
                 .accessibilityAddTraits(.isHeader)
         }
-        .padding(.top, 8)
+        .padding(.top, DS.Space.small)
     }
 
     private var appearanceStrings: MenuBarAppearanceStrings {
@@ -109,7 +109,7 @@ struct MonitorSettings: View {
 
     private var menuBarStyleCard: some View {
         SettingsCard(title: appearanceStrings.label) {
-            HStack(spacing: 10) {
+            HStack(spacing: DS.Space.medium) {
                 MenuBarStyleChoice(appearance: .values, title: appearanceStrings.values,
                                    selected: appearance == .values) { metricAppearance = "values" }
                 MenuBarStyleChoice(appearance: .bars, title: appearanceStrings.bars,
@@ -152,7 +152,7 @@ struct MonitorSettings: View {
     private var readingsCard: some View {
         SettingsCard {
             SettingsRow(symbol: "timer", title: l10n.s.monitorIntervalLabel) {
-                HStack(spacing: 6) {
+                HStack(spacing: DS.Space.xSmall) {
                     intervalChip(1, title: l10n.s.monitorInterval1)
                     intervalChip(2, title: l10n.s.monitorInterval2)
                     intervalChip(5, title: l10n.s.monitorInterval5)
@@ -199,18 +199,18 @@ struct MonitorSettings: View {
             interval = seconds
         } label: {
             Text(title)
-                .font(.system(size: 11, weight: .medium))
+                .font(DS.Font.panelFloorEmphasis)
                 .lineLimit(1)
                 .foregroundStyle(selected ? Color.accentColor : .primary)
-                .padding(.horizontal, 10)
+                .padding(.horizontal, DS.Space.medium)
                 .frame(height: 26)
                 .background(selected ? Color.accentColor.opacity(0.12) : Color.secondary.opacity(0.06),
-                            in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                            in: RoundedRectangle(cornerRadius: DS.Radius.row, style: .continuous))
                 .overlay {
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    RoundedRectangle(cornerRadius: DS.Radius.row, style: .continuous)
                         .strokeBorder(selected ? Color.accentColor.opacity(0.7) : .clear, lineWidth: 1)
                 }
-                .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .contentShape(RoundedRectangle(cornerRadius: DS.Radius.row, style: .continuous))
         }
         .buttonStyle(.plain)
         .accessibilityAddTraits(selected ? .isSelected : [])
@@ -259,24 +259,24 @@ private struct MenuBarStyleChoice: View {
 
     var body: some View {
         Button(action: action) {
-            VStack(spacing: 8) {
+            VStack(spacing: DS.Space.small) {
                 mockup
                     .frame(maxWidth: .infinity)
                     .frame(height: 36)
-                    .background(Color.black.opacity(0.82), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .background(Color.black.opacity(0.82), in: RoundedRectangle(cornerRadius: DS.Radius.row, style: .continuous))
                 Text(title)
-                    .font(.system(size: 11, weight: .medium))
+                    .font(DS.Font.panelFloorEmphasis)
                     .foregroundStyle(selected ? Color.accentColor : .primary)
             }
-            .padding(8)
+            .padding(DS.Space.small)
             .frame(maxWidth: .infinity)
             .background(selected ? Color.accentColor.opacity(0.10) : Color.secondary.opacity(0.05),
-                        in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        in: RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous))
             .overlay {
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous)
                     .strokeBorder(selected ? Color.accentColor.opacity(0.55) : .clear, lineWidth: 1)
             }
-            .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous))
         }
         .buttonStyle(.plain)
         .accessibilityLabel(title)
@@ -289,12 +289,12 @@ private struct MenuBarStyleChoice: View {
     private var mockup: some View {
         switch appearance {
         case .values:
-            HStack(spacing: 10) {
+            HStack(spacing: DS.Space.medium) {
                 block(label: "CPU", value: "42%")
                 block(label: "RAM", value: "61%")
             }
         case .bars:
-            HStack(spacing: 10) {
+            HStack(spacing: DS.Space.medium) {
                 bar(label: "CPU", fraction: 0.42)
                 bar(label: "RAM", fraction: 0.61)
             }
@@ -304,19 +304,19 @@ private struct MenuBarStyleChoice: View {
     private func block(label: String, value: String) -> some View {
         VStack(spacing: -1) {
             Text(label)
-                .font(.system(size: 6.6, weight: .medium))
+                .font(DS.Font.panelFloor)
             Text(value)
-                .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                .font(DS.Font.panelTitle)
         }
         .foregroundStyle(.white)
     }
 
     private func bar(label: String, fraction: CGFloat) -> some View {
-        HStack(spacing: 2) {
+        HStack(spacing: DS.Space.xxSmall) {
             VStack(spacing: -1.8) {
                 ForEach(Array(label.enumerated()), id: \.offset) { _, character in
                     Text(String(character))
-                        .font(.system(size: 6.1, weight: .semibold))
+                        .font(DS.Font.panelFloorEmphasis)
                 }
             }
             ZStack(alignment: .bottom) {
@@ -344,8 +344,8 @@ private struct MenuBarMetricTiles: View {
     @State private var dragging: MenuBarMetric?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            LazyVGrid(columns: monitorTokenColumns, spacing: 8) {
+        VStack(alignment: .leading, spacing: DS.Space.medium) {
+            LazyVGrid(columns: monitorTokenColumns, spacing: DS.Space.small) {
                 ForEach(visibleOrder) { metric in
                     // Dragging moves within the full saved order, so metrics
                     // hidden by the hub keep their slot for their return.
@@ -447,7 +447,7 @@ private struct MenuBarUsageBarSettings: View {
     @AppStorage(DefaultsKey.menuBarUsageBarHighThreshold) private var highThreshold = MenuBarUsageBarSupport.defaultHighThreshold
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 9) {
+        VStack(alignment: .leading, spacing: DS.Space.medium) {
             Text(strings.customize)
                 .font(.subheadline.weight(.semibold))
 

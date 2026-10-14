@@ -29,10 +29,10 @@ struct PowerSection: View {
         PanelSection(.power, title: l10n.s.powerSection, collapsible: collapsible,
                      supportsEditing: true,
                      resetAction: resetPanelDefaults) { editing in
-            VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: DS.Space.cardStack) {
                 if blocks(editing: editing).isEmpty {
                     Text(l10n.s.powerUnavailable)
-                        .font(.system(size: 10.5))
+                        .font(DS.Font.panelFloor)
                         .foregroundStyle(.tertiary)
                 }
                 ForEach(Array(blocks(editing: editing).enumerated()), id: \.element) { index, block in
@@ -41,7 +41,7 @@ struct PowerSection: View {
                                          isEnabled: editing,
                                          order: blockOrderBinding,
                                          dragging: $draggingBlock) {
-                        HStack(alignment: .top, spacing: 8) {
+                        HStack(alignment: .top, spacing: DS.Space.rowTitleGap) {
                             if editing {
                                 PanelDragHandle()
                             }
@@ -140,7 +140,7 @@ struct PowerSection: View {
             peripheralBatteryRows
         case .system:
             if pwrSystem, let watts = power?.systemWatts {
-                VStack(alignment: .leading, spacing: 6) {
+                VStack(alignment: .leading, spacing: DS.Space.xSmall) {
                     row(icon: "bolt.fill", color: PanelMetricColor.orange(for: colorScheme),
                         label: l10n.s.powerSystem, value: MetricFormat.watts(watts),
                         visible: $pwrSystem, editing: editing)
@@ -215,7 +215,7 @@ struct PowerSection: View {
     }
 
     private func subsectionLabel(_ text: String) -> some View {
-        Text(text).font(.system(size: 10.5, weight: .semibold)).foregroundStyle(.secondary)
+        Text(text).font(DS.Font.panelFloorEmphasis).foregroundStyle(.secondary)
     }
 
     /// External power earns the bolt whether or not a charge is running, so a
@@ -232,21 +232,21 @@ struct PowerSection: View {
     @ViewBuilder
     private func batteryUsageRow(editing: Bool) -> some View {
         if let charge = monitor.snapshot.power?.chargePercent {
-            VStack(alignment: .leading, spacing: 6) {
-                HStack(spacing: 8) {
+            VStack(alignment: .leading, spacing: DS.Space.xSmall) {
+                HStack(spacing: DS.Space.rowTitleGap) {
                     Image(systemName: batteryUsageSymbol)
-                        .font(.system(size: 9))
+                        .font(DS.Font.panelFloor)
                         .foregroundStyle(.secondary)
                         .frame(width: 10)
                     Text(l10n.s.batteryLabel)
-                        .font(.system(size: 11))
+                        .font(DS.Font.panelFloor)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                         .minimumScaleFactor(0.8)
                         .frame(width: 52, alignment: .leading)
                     UsageBar(fraction: Double(charge) / 100, tint: chargeTint(charge))
                     Text("\(charge)%")
-                        .font(.system(size: 11, weight: .medium))
+                        .font(DS.Font.panelFloorEmphasis)
                         .monospacedDigit()
                         .frame(width: 38, alignment: .trailing)
                     if editing {
@@ -267,29 +267,29 @@ struct PowerSection: View {
     }
 
     private var peripheralBatteryRows: some View {
-        VStack(alignment: .leading, spacing: 5) {
+        VStack(alignment: .leading, spacing: DS.Space.xSmall) {
             subsectionLabel(l10n.s.monitorShowPeripheralBattery)
             ForEach(PeripheralBatterySupport.sorted(monitor.snapshot.peripheralBatteries).prefix(5)) { device in
-                HStack(spacing: 8) {
+                HStack(spacing: DS.Space.rowTitleGap) {
                     Image(systemName: peripheralIcon(for: device.kind))
-                        .font(.system(size: 9))
+                        .font(DS.Font.panelFloor)
                         .foregroundStyle(.secondary)
                         .frame(width: 10)
                     Text(device.name)
-                        .font(.system(size: 10.5, weight: .medium))
+                        .font(DS.Font.panelFloorEmphasis)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                         .truncationMode(.middle)
                     Spacer(minLength: 8)
                     Text("\(device.percent)%")
-                        .font(.system(size: 10.5, weight: .semibold))
+                        .font(DS.Font.panelFloorEmphasis)
                         .monospacedDigit()
                 }
             }
             let extra = max(0, monitor.snapshot.peripheralBatteries.count - 5)
             if extra > 0 {
                 Text("+\(extra)")
-                    .font(.system(size: 10))
+                    .font(DS.Font.panelFloor)
                     .foregroundStyle(.tertiary)
             }
         }
@@ -332,24 +332,24 @@ struct PowerSection: View {
 
     private func row(icon: String, color: Color, label: String, value: String, caption: String? = nil,
                      visible: Binding<Bool>, editing: Bool) -> some View {
-        HStack(spacing: 8) {
+        HStack(spacing: DS.Space.rowTitleGap) {
             Image(systemName: icon)
-                .font(.system(size: 11))
+                .font(DS.Font.panelFloor)
                 .foregroundStyle(color)
                 .frame(width: 16)
-            VStack(alignment: .leading, spacing: 1) {
+            VStack(alignment: .leading, spacing: DS.Space.rowTextStack) {
                 Text(label)
-                    .font(.system(size: 11))
+                    .font(DS.Font.panelFloor)
                     .foregroundStyle(Color.primary.opacity(0.74))
                 if let caption {
                     Text(caption)
-                        .font(.system(size: 9.5))
+                        .font(DS.Font.panelFloor)
                         .foregroundStyle(.secondary)
                 }
             }
             Spacer(minLength: 8)
             Text(value)
-                .font(.system(size: 13, weight: .semibold, design: .rounded))
+                .font(DS.Font.rowIcon)
                 .monospacedDigit()
                 .contentTransition(.numericText())
                 .frame(minWidth: 44, alignment: .trailing)
@@ -371,7 +371,7 @@ private struct EnergyAppsBreakdown: View {
     @State private var requestID = UUID()
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: DS.Space.rowTextStack) {
             Button {
                 expanded.toggle()
                 requestID = UUID()
@@ -382,9 +382,9 @@ private struct EnergyAppsBreakdown: View {
                     rows = []
                 }
             } label: {
-                HStack(spacing: 8) {
+                HStack(spacing: DS.Space.rowTitleGap) {
                     Image(systemName: "chevron.right")
-                        .font(.system(size: 8, weight: .semibold))
+                        .font(DS.Font.panelFloorEmphasis)
                         .rotationEffect(.degrees(expanded ? 90 : 0))
                     Text(l10n.s.energyAppsTitle)
                     Spacer()
@@ -405,7 +405,7 @@ private struct EnergyAppsBreakdown: View {
                 }
             }
         }
-        .font(.system(size: 10.5))
+        .font(DS.Font.panelFloor)
         .foregroundStyle(.secondary)
         .onReceive(monitor.$snapshot) { _ in
             guard expanded, !loading,

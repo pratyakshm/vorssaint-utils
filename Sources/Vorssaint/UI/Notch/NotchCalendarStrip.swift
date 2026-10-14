@@ -69,10 +69,10 @@ struct NotchCalendarStrip: View {
     private func fullRow(_ countdown: NotchCalendarCountdown, title: String, remaining: String) -> some View {
         // The row below the camera ends in the island's deep lower corners;
         // a fixed margin left the dot and the clock on their curve.
-        HStack(spacing: 6) {
+        HStack(spacing: DS.Space.xSmall) {
             Self.dot(countdown.event)
             Text(title)
-                .font(.system(size: 11, weight: .semibold))
+                .font(DS.Font.panelFloorEmphasis)
                 .lineLimit(1).truncationMode(.tail)
                 .frame(maxWidth: .infinity, alignment: .leading)
             Self.clock(remaining, ongoing: countdown.ongoing)
@@ -80,7 +80,7 @@ struct NotchCalendarStrip: View {
         .padding(.horizontal, rowInset)
     }
 
-    private var rowInset: CGFloat { max(10, geometry.compactActivityEdgeInset(boxHeight: 9, radius: 0)) }
+    private var rowInset: CGFloat { max(DS.Space.medium, geometry.compactActivityEdgeInset(boxHeight: 9, radius: 0)) }
 
     private func wings(_ countdown: NotchCalendarCountdown, title: String, remaining: String) -> some View {
         let inset = geometry.compactActivityEdgeInset(boxHeight: 9, radius: 0)
@@ -88,7 +88,7 @@ struct NotchCalendarStrip: View {
             HStack(spacing: NotchCalendarSupport.stripTitleSpacing) {
                 Self.dot(countdown.event)
                 Text(title)
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(DS.Font.panelFloorEmphasis)
                     .lineLimit(1).truncationMode(.tail)
             }
             .padding(.leading, inset)
@@ -101,7 +101,7 @@ struct NotchCalendarStrip: View {
                 HStack(spacing: NotchCalendarSupport.stripClockSpacing) {
                     Self.clock(remaining, ongoing: countdown.ongoing)
                     Text(NotchCalendarSupport.timeText(countdown, locale: l10n.language.formattingLocale()))
-                        .font(.system(size: 11, weight: .medium)).monospacedDigit()
+                        .font(DS.Font.panelFloor).monospacedDigit()
                         .foregroundStyle(.white.opacity(0.55))
                         .fixedSize()
                 }
@@ -168,7 +168,7 @@ struct NotchCalendarStrip: View {
     /// color, so it never reads as a wait for the next one.
     private static func clock(_ remaining: String, ongoing: Bool) -> some View {
         Text(remaining)
-            .font(.system(size: 13, weight: .medium)).monospacedDigit()
+            .font(DS.Font.body).monospacedDigit()
             .lineLimit(1).minimumScaleFactor(0.8)
             .foregroundStyle(ongoing ? Color.mint : Color.white)
             .modifier(NotchRollingDigits(value: remaining, countsDown: true, everySecond: false))

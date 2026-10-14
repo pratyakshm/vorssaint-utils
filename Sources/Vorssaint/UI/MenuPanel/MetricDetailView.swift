@@ -130,7 +130,7 @@ struct ActivityMonitorButton: View {
             NSWorkspace.shared.open(url)
         } label: {
             Image(systemName: "arrow.up.forward.app")
-                .font(.system(size: 10, weight: .medium))
+                .font(DS.Font.panelFloorEmphasis)
                 .foregroundStyle(.secondary)
                 .frame(width: 18, height: 18)
                 .background(Circle().fill(Color.primary.opacity(isHovered ? 0.1 : 0)))
@@ -161,7 +161,7 @@ struct MetricDetailView: View {
     private let processLimit = 15
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: DS.Space.cardStack) {
             summaryCard
             detailCard
             if kind == .network {
@@ -195,18 +195,18 @@ struct MetricDetailView: View {
     }
 
     private var summaryCard: some View {
-        VStack(alignment: .leading, spacing: 9) {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
+        VStack(alignment: .leading, spacing: DS.Space.medium) {
+            HStack(alignment: .firstTextBaseline, spacing: DS.Space.rowTitleGap) {
                 Image(systemName: kind.symbolName)
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(DS.Font.cardTitle)
                     .foregroundStyle(summaryColor)
                     .frame(width: 18)
-                VStack(alignment: .leading, spacing: 1) {
+                VStack(alignment: .leading, spacing: DS.Space.rowTextStack) {
                     Text(primaryValue)
                         .font(.system(size: 28, weight: .semibold, design: .rounded))
                         .monospacedDigit()
                     Text(secondaryValue)
-                        .font(.system(size: 10.5, weight: .medium))
+                        .font(DS.Font.panelFloorEmphasis)
                         .foregroundStyle(.secondary)
                         .lineLimit(2)
                 }
@@ -296,7 +296,7 @@ struct MetricDetailView: View {
     }
 
     private var detailCard: some View {
-        VStack(alignment: .leading, spacing: 7) {
+        VStack(alignment: .leading, spacing: DS.Space.rowTitleGap) {
             ForEach(detailRows) { row in
                 detailRow(row)
             }
@@ -305,12 +305,12 @@ struct MetricDetailView: View {
     }
 
     private var speedTestCard: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 8) {
+        VStack(alignment: .leading, spacing: DS.Space.xSmall) {
+            HStack(spacing: DS.Space.rowTitleGap) {
                 if speed.isRunning {
                     ProgressView().controlSize(.small)
                     Text(l10n.s.speedTestTesting)
-                        .font(.system(size: 11))
+                        .font(DS.Font.panelFloor)
                         .foregroundStyle(.secondary)
                 } else {
                     Button {
@@ -318,7 +318,7 @@ struct MetricDetailView: View {
                     } label: {
                         Label(speed.downloadMbps == nil ? l10n.s.speedTestRun : l10n.s.speedTestAgain,
                               systemImage: "gauge.with.dots.needle.67percent")
-                            .font(.system(size: 11))
+                            .font(DS.Font.panelFloor)
                     }
                     .buttonStyle(.bordered)
                     .controlSize(.small)
@@ -326,17 +326,17 @@ struct MetricDetailView: View {
                 Spacer()
                 if let down = speed.downloadMbps, let up = speed.uploadMbps {
                     Text("↓\(mbps(down)) ↑\(mbps(up)) Mbps")
-                        .font(.system(size: 11, weight: .semibold))
+                        .font(DS.Font.panelFloorEmphasis)
                         .monospacedDigit()
                 }
             }
             if case .failed = speed.phase {
                 Text(l10n.s.speedTestFailed)
-                    .font(.system(size: 10))
+                    .font(DS.Font.panelFloor)
                     .foregroundStyle(PanelMetricColor.orange(for: colorScheme))
             } else if let latency = speed.latencyMs {
                 Text("\(l10n.s.speedTestLatency): \(Int(latency.rounded())) ms")
-                    .font(.system(size: 10))
+                    .font(DS.Font.panelFloor)
                     .foregroundStyle(.tertiary)
             }
         }
@@ -344,17 +344,17 @@ struct MetricDetailView: View {
     }
 
     private var processCard: some View {
-        VStack(alignment: .leading, spacing: 7) {
-            HStack(spacing: 6) {
+        VStack(alignment: .leading, spacing: DS.Space.rowTitleGap) {
+            HStack(spacing: DS.Space.xSmall) {
                 Text(processTitle)
-                    .font(.system(size: 10, weight: .medium))
+                    .font(DS.Font.panelFloorEmphasis)
                     .foregroundStyle(.tertiary)
                 Spacer(minLength: 0)
                 ActivityMonitorButton()
             }
             if processRows.isEmpty {
                 Text(processRowsLoading ? l10n.s.breakdownMeasuring : emptyProcessText)
-                    .font(.system(size: 10.5))
+                    .font(DS.Font.panelFloor)
                     .foregroundStyle(.tertiary)
             } else {
                 ForEach(processRows) { row in
@@ -594,26 +594,26 @@ struct MetricDetailView: View {
     @ViewBuilder
     private func detailRow(_ row: MetricDetailRow) -> some View {
         if row.wrapsValue {
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: DS.Space.rowTextStack) {
                 Text(row.title)
-                    .font(.system(size: 10.5))
+                    .font(DS.Font.panelFloor)
                     .foregroundStyle(.secondary)
                 Text(row.value)
-                    .font(.system(size: 11, weight: .medium))
+                    .font(DS.Font.panelFloorEmphasis)
                     .foregroundStyle(.primary)
                     .lineLimit(2)
                     .fixedSize(horizontal: false, vertical: true)
             }
         } else {
-            HStack(spacing: 8) {
+            HStack(spacing: DS.Space.rowTitleGap) {
                 if let symbolName = row.symbolName {
                     Image(systemName: symbolName)
-                        .font(.system(size: 11, weight: .medium))
+                        .font(DS.Font.panelFloorEmphasis)
                         .foregroundStyle(.secondary)
                         .frame(width: 14)
                 }
                 Text(row.title)
-                    .font(.system(size: 10.5))
+                    .font(DS.Font.panelFloor)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
@@ -622,7 +622,7 @@ struct MetricDetailView: View {
                     PressureIndicator(pressure: monitor.snapshot.memoryPressure)
                 } else {
                     Text(row.value)
-                        .font(.system(size: 11, weight: .medium))
+                        .font(DS.Font.panelFloorEmphasis)
                         .monospacedDigit()
                         .foregroundStyle(.primary)
                         .lineLimit(1)

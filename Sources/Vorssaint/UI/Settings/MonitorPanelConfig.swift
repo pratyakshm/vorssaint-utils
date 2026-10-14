@@ -78,8 +78,8 @@ struct MonitorPanelConfig: View {
     }
 
     private var tileLayout: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 175), spacing: 10)], spacing: 10) {
+        VStack(alignment: .leading, spacing: DS.Space.medium) {
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 175), spacing: DS.Space.medium)], spacing: DS.Space.medium) {
                 ForEach(availableBlocks, id: \.self) { block in
                     MonitorToken(symbol: block.section.symbolName,
                                  title: block.section.title(l10n.s),
@@ -93,7 +93,7 @@ struct MonitorPanelConfig: View {
             if let block = currentBlock, block != .mixer {
                 Text(block.section.title(l10n.s))
                     .font(.subheadline.weight(.medium))
-                LazyVGrid(columns: monitorLargeTokenColumns, spacing: 10) {
+                LazyVGrid(columns: monitorLargeTokenColumns, spacing: DS.Space.medium) {
                     itemTiles(for: block)
                 }
                 .monitorTokenGroup()
@@ -122,7 +122,7 @@ struct MonitorPanelConfig: View {
             }
             if AppFeature.monitorCPU.isAvailable {
                 itemTile(l10n.s.cpuLabel, symbol: MenuBarMetric.cpu.symbolName, value: $sysCPU, available: available,
-                         options: AnyView(VStack(spacing: 10) {
+                          options: AnyView(VStack(spacing: DS.Space.medium) {
                              chartOption($graphCPU)
                              MonitorTokenOption(symbol: "square.grid.3x2",
                                                 title: FeatureStrings.cpuCores(l10n.language).perCore,

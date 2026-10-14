@@ -14,8 +14,8 @@ struct KeepAwakeAutomationEditor: View {
     var compact = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: compact ? 8 : 10) {
-            HStack(alignment: .top, spacing: compact ? 6 : 8) {
+        VStack(alignment: .leading, spacing: compact ? DS.Space.small : DS.Space.medium) {
+            HStack(alignment: .top, spacing: compact ? DS.Space.xSmall : DS.Space.small) {
                 conditionTile(
                     title: strings.externalDisplayToggle,
                     icon: "display",
@@ -51,7 +51,7 @@ struct KeepAwakeAutomationEditor: View {
                 .pickerStyle(.segmented)
                 .labelsHidden()
                 .controlSize(compact ? .small : .regular)
-                .font(.system(size: compact ? 10 : 12, weight: .medium))
+                    .font(compact ? DS.Font.panelFloorEmphasis : DS.Font.panelBody)
                 .onChange(of: requireAll) { _, _ in
                     awake.automationPreferencesDidChange()
                 }
@@ -88,25 +88,25 @@ struct KeepAwakeAutomationEditor: View {
                                selected: Bool,
                                action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            VStack(alignment: .leading, spacing: compact ? 5 : 7) {
+            VStack(alignment: .leading, spacing: compact ? DS.Space.xSmall : DS.Space.small) {
                 HStack {
                     Image(systemName: icon)
-                        .font(.system(size: compact ? 14 : 17, weight: .semibold))
+                        .font(compact ? DS.Font.rowIcon : DS.Font.cardTitle)
                         .foregroundStyle(selected ? Color.accentColor : Color.secondary)
                     Spacer(minLength: 4)
                     if selected {
                         Image(systemName: "checkmark.circle.fill")
-                            .font(.system(size: compact ? 11 : 13, weight: .semibold))
+                            .font(compact ? DS.Font.panelFloorEmphasis : DS.Font.rowIcon)
                             .foregroundStyle(Color.accentColor)
                     }
                 }
                 Text(title)
-                    .font(.system(size: compact ? 10 : 12, weight: .medium))
+                .font(compact ? DS.Font.panelFloorEmphasis : DS.Font.panelBody)
                     .foregroundStyle(.primary)
                     .lineLimit(2)
                     .multilineTextAlignment(.leading)
             }
-            .padding(compact ? 7 : 9)
+            .padding(compact ? DS.Space.small : DS.Space.medium)
             .frame(maxWidth: .infinity, minHeight: compact ? 65 : 78, alignment: .topLeading)
             .background(
                 RoundedRectangle(cornerRadius: compact ? 9 : 11, style: .continuous)

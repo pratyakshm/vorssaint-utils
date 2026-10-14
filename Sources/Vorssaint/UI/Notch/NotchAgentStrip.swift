@@ -42,7 +42,7 @@ struct NotchAgentStrip: View {
             ? geometry.compactActivityEdgeInset(boxHeight: textSize * 0.72, radius: 0) : 0
         HStack(spacing: 0) {
             Button { service.openActivity(.agents) } label: {
-                HStack(spacing: 1) {
+                HStack(spacing: DS.Space.rowTextStack) {
                     if geometry.compactActivityWingWidth >= 28 {
                         ForEach(working) { NotchAgentGlyph(provider: $0, size: iconSize) }
                     }
@@ -144,7 +144,7 @@ struct NotchAgentRestingWing: View {
                     .frame(width: 11, height: 11)
             } else {
                 Text(AgentFormat.percent(used ? limit.window.usedFraction : limit.window.remainingFraction))
-                    .font(.system(size: 9, weight: .medium))
+                    .font(DS.Font.panelFloor)
                     .monospacedDigit()
                     .lineLimit(1)
             }
@@ -153,7 +153,7 @@ struct NotchAgentRestingWing: View {
                 NotchAgentMark(provider: provider, size: 10)
             } else {
                 Text(AgentFormat.cost(snapshot.usage(.today).total.cost))
-                    .font(.system(size: 9, weight: .medium))
+                    .font(DS.Font.panelFloor)
                     .monospacedDigit()
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)

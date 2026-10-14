@@ -12,7 +12,7 @@ struct KeyCap: View {
         Text(label)
             .font(.system(size: 12, weight: .semibold, design: .rounded))
             .frame(minWidth: 20, minHeight: 22)
-            .padding(.horizontal, 5)
+            .padding(.horizontal, DS.Space.xSmall)
             .background(
                 RoundedRectangle(cornerRadius: 6, style: .continuous)
                     .fill(Color.primary.opacity(0.07))
@@ -29,7 +29,7 @@ struct ShortcutCaps: View {
     let keys: [String]
 
     var body: some View {
-        HStack(spacing: 3) {
+        HStack(spacing: DS.Space.rowTextStack) {
             ForEach(Array(keys.enumerated()), id: \.offset) { _, key in
                 KeyCap(label: key)
             }
@@ -47,33 +47,33 @@ struct FullDiskAccessNote: View {
     @ObservedObject private var permissions = Permissions.shared
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 7) {
-            HStack(alignment: .top, spacing: compact ? 7 : 8) {
+        VStack(alignment: .leading, spacing: DS.Space.rowTitleGap) {
+            HStack(alignment: .top, spacing: DS.Space.rowTitleGap) {
                 Image(systemName: "info.circle")
                     .foregroundStyle(.secondary)
                 Text(reason ?? l10n.s.uninstallerFDANote)
-                    .font(compact ? .system(size: 10) : .caption)
+                    .font(compact ? DS.Font.panelFloor : DS.Font.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
             Text(l10n.s.uninstallerFDAHint)
-                .font(compact ? .system(size: 9) : .caption2)
+                .font(DS.Font.panelFloor)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
-            HStack(spacing: compact ? 7 : 8) {
+            HStack(spacing: DS.Space.rowTitleGap) {
                 Button(l10n.s.uninstallerFDAGrant) { permissions.requestFullDiskAccess() }
                 // Shown alongside because access only takes effect on relaunch.
                 Button(l10n.s.uninstallerFDARelaunch) { appDelegate()?.relaunchApp() }
             }
             .controlSize(.small)
-            .font(compact ? .system(size: 10.5) : nil)
+            .font(compact ? DS.Font.panelFloor : nil)
         }
         // Take the width the host offers, so the card lines up with the cards
         // around it instead of shrinking to its longest line.
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(compact ? 9 : 11)
+        .padding(DS.Space.medium)
         .background(
-            RoundedRectangle(cornerRadius: compact ? 8 : 9, style: .continuous)
+            RoundedRectangle(cornerRadius: DS.Radius.row, style: .continuous)
                 .fill(Color.primary.opacity(compact ? 0.045 : 0.05))
         )
     }
@@ -95,14 +95,14 @@ struct UninstallFailureNote: View {
     private static let namesShown = 4
 
     var body: some View {
-        VStack(alignment: .leading, spacing: compact ? 5 : 7) {
+        VStack(alignment: .leading, spacing: compact ? DS.Space.xSmall : DS.Space.rowTitleGap) {
             Text(l10n.s.uninstallerSomeFailed)
-                .font(compact ? .system(size: 10) : .caption)
+                .font(compact ? DS.Font.panelFloor : DS.Font.caption)
                 .foregroundStyle(.orange)
                 .fixedSize(horizontal: false, vertical: true)
             ForEach(items.prefix(Self.namesShown)) { item in
                 Text(item.name)
-                    .font(compact ? .system(size: 9.5) : .caption2)
+                    .font(compact ? DS.Font.footnote : DS.Font.panelFloor)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
                     .truncationMode(.middle)
@@ -110,7 +110,7 @@ struct UninstallFailureNote: View {
             if items.count > Self.namesShown {
                 Text(String(format: l10n.s.uninstallerFailedMoreFormat,
                             items.count - Self.namesShown))
-                    .font(compact ? .system(size: 9.5) : .caption2)
+                    .font(compact ? DS.Font.footnote : DS.Font.panelFloor)
                     .foregroundStyle(.tertiary)
             }
             if !permissions.fullDiskAccess,
@@ -271,10 +271,10 @@ struct DisclosureHeaderRow<Label: View>: View {
                 isExpanded.wrappedValue.toggle()
             }
         } label: {
-            HStack(spacing: 8) {
+            HStack(spacing: DS.Space.rowTitleGap) {
                 label()
                 Image(systemName: "chevron.right")
-                    .font(.caption.weight(.semibold))
+                    .font(DS.Font.panelFloorEmphasis)
                     .foregroundStyle(.secondary)
                     .rotationEffect(.degrees(isExpanded.wrappedValue ? 90 : 0))
             }

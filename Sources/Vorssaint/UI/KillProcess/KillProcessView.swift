@@ -56,26 +56,26 @@ struct KillProcessView: View {
     // MARK: Header
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: DS.Space.medium) {
             Form {
                 Section {
                     Toggle(strings.groupToggle, isOn: groupBinding)
                     Text(strings.groupCaption)
-                        .font(.caption).foregroundStyle(.secondary)
+                        .font(DS.Font.caption).foregroundStyle(.secondary)
                 }
                 Section {
                     Toggle(strings.commandBarToggle, isOn: $commandBarEnabled)
                     Text(strings.commandBarCaption)
-                        .font(.caption).foregroundStyle(.secondary)
+                        .font(DS.Font.caption).foregroundStyle(.secondary)
                 }
             }
             .formStyle(.grouped)
             .fixedSize(horizontal: false, vertical: true)
 
-            HStack(spacing: 16) {
+            HStack(spacing: DS.Space.large) {
                 Spacer()
                 Text(String(format: strings.processCountFormat, service.filteredEntries.count))
-                    .font(.caption)
+                    .font(DS.Font.caption)
                     .foregroundStyle(.secondary)
                 Button {
                     service.refresh(force: true)
@@ -86,7 +86,7 @@ struct KillProcessView: View {
                 .help(strings.refreshTooltip)
             }
 
-            HStack(spacing: 10) {
+            HStack(spacing: DS.Space.medium) {
                 Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
                 TextField(strings.searchPlaceholder, text: $service.query)
                     .textFieldStyle(.plain)
@@ -95,7 +95,7 @@ struct KillProcessView: View {
                 }
             }
         }
-        .padding(16)
+        .padding(DS.Space.large)
     }
 
     private var groupBinding: Binding<Bool> {
@@ -108,7 +108,7 @@ struct KillProcessView: View {
     /// column: the leading `22`pt gap matches the row icon, and the trailing
     /// `98`pt gap matches the Kill + "..." button cluster.
     private var columnHeader: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: DS.Space.medium) {
             Spacer().frame(width: 22)
             columnHeaderButton(strings.columnProcess, column: .name)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -120,24 +120,24 @@ struct KillProcessView: View {
                 .frame(width: 56, alignment: .trailing)
             Spacer().frame(width: 98)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 6)
+        .padding(.horizontal, DS.Space.large)
+        .padding(.vertical, DS.Space.xSmall)
     }
 
     private func columnHeaderButton(_ title: String, column: KillProcessService.SortBy) -> some View {
         Button {
             service.toggleSort(column)
         } label: {
-            HStack(spacing: 3) {
+            HStack(spacing: DS.Space.rowTextStack) {
                 Text(title)
                 if service.sortBy == column {
                     Image(systemName: service.sortAscending ? "chevron.up" : "chevron.down")
-                        .font(.system(size: 8, weight: .bold))
+                        .font(DS.Font.panelFloorEmphasis)
                 }
             }
         }
         .buttonStyle(.plain)
-        .font(.system(size: 10.5, weight: .semibold))
+        .font(DS.Font.section)
         .foregroundStyle(.secondary)
     }
 
@@ -180,19 +180,19 @@ struct KillProcessView: View {
     }
 
     private func row(_ entry: KillProcessEntry) -> some View {
-        HStack(spacing: 10) {
+        HStack(spacing: DS.Space.medium) {
             Image(nsImage: ResponsibleProcess.icon(for: entry.pid))
                 .resizable().frame(width: 22, height: 22)
-            VStack(alignment: .leading, spacing: 1) {
-                HStack(spacing: 4) {
-                    Text(entry.name).font(.system(size: 12.5)).lineLimit(1).truncationMode(.middle)
+            VStack(alignment: .leading, spacing: DS.Space.rowTextStack) {
+                HStack(spacing: DS.Space.rowTextStack) {
+                    Text(entry.name).font(DS.Font.caption).lineLimit(1).truncationMode(.middle)
                     if entry.groupedCount > 1 {
                         Text(String(format: strings.processCountFormat, entry.groupedCount))
-                            .font(.system(size: 10)).foregroundStyle(.tertiary)
+                            .font(DS.Font.panelFloor).foregroundStyle(.tertiary)
                     }
                 }
                 Text(entry.path)
-                    .font(.system(size: 10.5)).foregroundStyle(.tertiary)
+                    .font(DS.Font.panelFloor).foregroundStyle(.tertiary)
                     .lineLimit(1).truncationMode(.head)
             }
             Spacer()
@@ -234,7 +234,7 @@ struct KillProcessView: View {
         }
         .buttonStyle(.bordered)
         .controlSize(.small)
-        .padding(.vertical, 2)
+        .padding(.vertical, DS.Space.rowTextStack)
     }
 
     // MARK: Confirmation

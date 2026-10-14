@@ -54,7 +54,7 @@ struct SystemSection: View {
         PanelSection(.system, title: l10n.s.systemSection, collapsible: collapsible,
                      supportsEditing: true,
                      resetAction: resetPanelDefaults) { editing in
-            VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: DS.Space.cardStack) {
                 let currentBlocks = blocks(editing: editing)
                 ForEach(Array(currentBlocks.enumerated()), id: \.element) { index, block in
                     if index > 0 { Divider() }
@@ -62,7 +62,7 @@ struct SystemSection: View {
                                          isEnabled: editing,
                                          order: blockOrderBinding,
                                          dragging: $draggingBlock) {
-                        HStack(alignment: .top, spacing: 8) {
+                        HStack(alignment: .top, spacing: DS.Space.rowTitleGap) {
                             if editing {
                                 PanelDragHandle()
                             }
@@ -200,16 +200,16 @@ struct SystemSection: View {
 
     private func connectedDevicesRowContent<Trailing: View>(title: String, isInteractive: Bool,
                                                              @ViewBuilder trailing: () -> Trailing) -> some View {
-        HStack(spacing: 8) {
+        HStack(spacing: DS.Space.rowTitleGap) {
             Label(title, systemImage: "cable.connector")
-                .font(.system(size: 11, weight: .medium))
+                .font(DS.Font.panelFloorEmphasis)
             Spacer(minLength: 0)
             Text("\(monitor.snapshot.connectedDevices.count)")
-                .font(.system(size: 11, weight: .medium))
+                .font(DS.Font.panelFloorEmphasis)
                 .monospacedDigit()
                 .foregroundStyle(.secondary)
             Image(systemName: "chevron.right")
-                .font(.system(size: 8, weight: .semibold))
+                .font(DS.Font.panelFloorEmphasis)
                 .foregroundStyle(.secondary)
                 .opacity(isInteractive ? 1 : 0.35)
             trailing()
@@ -270,10 +270,10 @@ struct SystemSection: View {
     @ViewBuilder
     private func breakdownList(for kind: BreakdownKind) -> some View {
         if expanded == kind {
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: DS.Space.rowTextStack) {
                 if breakdownRows.isEmpty {
                     Text(breakdownIsLoading ? l10n.s.breakdownMeasuring : emptyBreakdownText(for: kind))
-                        .font(.system(size: 10.5))
+                        .font(DS.Font.panelFloor)
                         .foregroundStyle(.tertiary)
                         .padding(.leading, 38)
                 } else {
@@ -306,15 +306,15 @@ struct SystemSection: View {
                                systemImage: "thermometer.medium",
                                isVisible: $sysTemps)
         } else {
-            VStack(alignment: .leading, spacing: 6) {
-                HStack(spacing: 6) {
+            VStack(alignment: .leading, spacing: DS.Space.xSmall) {
+                HStack(spacing: DS.Space.xSmall) {
                     subsectionLabel(l10n.s.temperatures)
                     Spacer(minLength: 0)
                     if editing {
                         PanelInlineHideButton(isVisible: $sysTemps)
                     }
                 }
-                HStack(spacing: 8) {
+                HStack(spacing: DS.Space.rowTitleGap) {
                     if cpuAvailable {
                         temperatureCell(icon: "cpu", label: l10n.s.cpuLabel,
                                         value: monitor.snapshot.cpuTemperature)
@@ -327,7 +327,7 @@ struct SystemSection: View {
                 if monitor.snapshot.cpuTemperature == nil,
                    monitor.snapshot.gpuTemperature == nil {
                     Text(l10n.s.monitorUnavailable)
-                        .font(.system(size: 10))
+                        .font(DS.Font.panelFloor)
                         .foregroundStyle(.tertiary)
                 }
             }
@@ -335,21 +335,21 @@ struct SystemSection: View {
     }
 
     private func temperatureCell(icon: String, label: String, value: Double?) -> some View {
-        VStack(spacing: 3) {
-            HStack(spacing: 4) {
+        VStack(spacing: DS.Space.rowTextStack) {
+            HStack(spacing: DS.Space.rowTextStack) {
                 Image(systemName: icon)
-                    .font(.system(size: 9))
+                    .font(DS.Font.panelFloor)
                     .foregroundStyle(.secondary)
                 Text(label)
-                    .font(.system(size: 10))
+                    .font(DS.Font.panelFloor)
                     .foregroundStyle(.secondary)
             }
             Text(value.map { MetricFormat.temperature($0, unit: displayTemperatureUnit) } ?? "-")
-                .font(.system(size: 15, weight: .semibold, design: .rounded))
+                .font(DS.Font.cardTitle)
                 .monospacedDigit()
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 6)
+        .padding(.vertical, DS.Space.xSmall)
         .background(
             RoundedRectangle(cornerRadius: 7, style: .continuous)
                 .fill(Color.primary.opacity(0.045))
@@ -363,8 +363,8 @@ struct SystemSection: View {
     // MARK: Hardware usage
 
     private func usageRows(editing: Bool) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 6) {
+        VStack(alignment: .leading, spacing: DS.Space.xSmall) {
+            HStack(spacing: DS.Space.xSmall) {
                 subsectionLabel(l10n.s.usageSection)
                 Spacer(minLength: 0)
                 if !editing {
@@ -391,9 +391,9 @@ struct SystemSection: View {
                     Button {
                         toggleCPUApps()
                     } label: {
-                        HStack(spacing: 8) {
+                        HStack(spacing: DS.Space.rowTitleGap) {
                             Image(systemName: "chevron.right")
-                                .font(.system(size: 8, weight: .semibold))
+                                .font(DS.Font.panelFloorEmphasis)
                                 .foregroundStyle(.secondary)
                                 .rotationEffect(.degrees(cpuAppsExpanded ? 90 : 0))
                             subsectionLabel(FeatureStrings.cpuCores(l10n.language).apps)
@@ -434,12 +434,12 @@ struct SystemSection: View {
         if !sysUptime {
             PanelHiddenItemRow(title: l10n.s.monitorItemUptime, systemImage: "clock", isVisible: $sysUptime)
         } else {
-            HStack(spacing: 6) {
+            HStack(spacing: DS.Space.xSmall) {
                 Image(systemName: "clock")
-                    .font(.system(size: 9))
+                    .font(DS.Font.panelFloor)
                     .foregroundStyle(.secondary)
                 Text("\(l10n.s.systemUptime) \(Self.uptimeString())")
-                    .font(.system(size: 10.5, weight: .medium))
+                    .font(DS.Font.panelFloorEmphasis)
                     .foregroundStyle(.secondary)
                 Spacer()
                 if editing {
@@ -484,21 +484,21 @@ struct SystemSection: View {
     private func usageRowContent<Trailing: View>(label: String, fraction: Double?,
                                                  kind: BreakdownKind, isInteractive: Bool,
                                                  @ViewBuilder trailing: () -> Trailing) -> some View {
-        HStack(spacing: 8) {
+        HStack(spacing: DS.Space.rowTitleGap) {
             Image(systemName: "chevron.right")
-                .font(.system(size: 8, weight: .semibold))
+                .font(DS.Font.panelFloorEmphasis)
                 .foregroundStyle(.secondary)
                 .rotationEffect(.degrees(expanded == kind ? 90 : 0))
                 .opacity(isInteractive ? 1 : 0.35)
             Text(label)
-                .font(.system(size: 11))
+                .font(DS.Font.panelFloor)
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
                 .frame(width: 52, alignment: .leading)
             UsageBar(fraction: fraction ?? 0)
             Text(fraction.map { String(format: "%.0f%%", locale: MetricFormat.locale, $0 * 100) } ?? "-")
-                .font(.system(size: 11, weight: .medium))
+                .font(DS.Font.panelFloorEmphasis)
                 .monospacedDigit()
                 .frame(width: 38, alignment: .trailing)
             trailing()
@@ -514,8 +514,8 @@ struct SystemSection: View {
                                systemImage: "memorychip.fill",
                                isVisible: $sysMemory)
         } else {
-            VStack(alignment: .leading, spacing: 6) {
-                HStack(spacing: 6) {
+            VStack(alignment: .leading, spacing: DS.Space.xSmall) {
+                HStack(spacing: DS.Space.xSmall) {
                     subsectionLabel(l10n.s.memorySection)
                     Spacer(minLength: 0)
                     if editing {
@@ -553,36 +553,36 @@ struct SystemSection: View {
     @ViewBuilder
     private func memorySecondaryRow(_ title: String, _ bytes: UInt64?) -> some View {
         if let bytes {
-            HStack(spacing: 8) {
+            HStack(spacing: DS.Space.rowTitleGap) {
                 Text(title)
-                    .font(.system(size: 10.5))
+                    .font(DS.Font.panelFloor)
                     .foregroundStyle(.secondary)
                 Spacer()
                 Text(formatMemory(bytes))
-                    .font(.system(size: 11, weight: .medium))
+                    .font(DS.Font.panelFloorEmphasis)
                     .monospacedDigit()
                     .foregroundStyle(.secondary)
             }
-            .padding(.leading, 16)
+            .padding(.leading, DS.Space.large)
         }
     }
 
     private func memoryRowContent(isInteractive: Bool) -> some View {
-        HStack(spacing: 8) {
+        HStack(spacing: DS.Space.rowTitleGap) {
             Image(systemName: "chevron.right")
-                .font(.system(size: 8, weight: .semibold))
+                .font(DS.Font.panelFloorEmphasis)
                 .foregroundStyle(.secondary)
                 .rotationEffect(.degrees(expanded == .memory ? 90 : 0))
                 .opacity(isInteractive ? 1 : 0.35)
             Text(l10n.s.memoryPressure)
-                .font(.system(size: 11))
+                .font(DS.Font.panelFloor)
                 .foregroundStyle(.secondary)
             PressureIndicator(pressure: monitor.snapshot.memoryPressure)
             Spacer()
             let memoryValue = MonitorMemoryMetric.current.value(in: monitor.snapshot)
             if let used = memoryValue, let total = monitor.snapshot.memoryTotal {
                 Text("\(formatMemory(used)) / \(formatMemory(total))")
-                    .font(.system(size: 11, weight: .medium))
+                    .font(DS.Font.panelFloorEmphasis)
                     .monospacedDigit()
                     .foregroundStyle(.secondary)
             }
@@ -591,7 +591,7 @@ struct SystemSection: View {
 
     private func subsectionLabel(_ text: String) -> some View {
         Text(text)
-            .font(.system(size: 10.5, weight: .semibold))
+            .font(DS.Font.panelFloorEmphasis)
             .foregroundStyle(.secondary)
     }
 
@@ -603,14 +603,14 @@ struct SystemSection: View {
                                systemImage: "bell.badge",
                                isVisible: $sysAlerts)
         } else {
-            VStack(alignment: .leading, spacing: 7) {
-                HStack(spacing: 6) {
+            VStack(alignment: .leading, spacing: DS.Space.rowTitleGap) {
+                HStack(spacing: DS.Space.xSmall) {
                     Button {
                         alertsExpanded.toggle()
                     } label: {
-                        HStack(spacing: 8) {
+                        HStack(spacing: DS.Space.rowTitleGap) {
                             Image(systemName: "chevron.right")
-                                .font(.system(size: 8, weight: .semibold))
+                                .font(DS.Font.panelFloorEmphasis)
                                 .foregroundStyle(.secondary)
                                 .rotationEffect(.degrees(alertsExpanded ? 90 : 0))
                             subsectionLabel(text.section)
@@ -671,17 +671,17 @@ struct PressureIndicator: View {
     let pressure: MemoryPressure
 
     var body: some View {
-        HStack(spacing: 5) {
+        HStack(spacing: DS.Space.xSmall) {
             Circle()
                 .fill(color)
                 .frame(width: 7, height: 7)
                 .shadow(color: color.opacity(0.6), radius: 2)
             Text(label)
-                .font(.system(size: 11, weight: .medium))
+                .font(DS.Font.panelFloorEmphasis)
                 .foregroundStyle(color)
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 3)
+        .padding(.horizontal, DS.Space.small)
+        .padding(.vertical, DS.Space.xxSmall)
         .background(Capsule().fill(color.opacity(0.13)))
     }
 

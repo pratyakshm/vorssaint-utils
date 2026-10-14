@@ -72,7 +72,7 @@ struct MenuBarMetricsPreview: View {
         // preview does not pretend to know about any of them.
         let iconHidden = hideIconWithMetrics && (!lines.isEmpty || !items.isEmpty)
 
-        HStack(spacing: 12) {
+        HStack(spacing: DS.Space.medium) {
             Spacer()
             Image(systemName: "wifi")
                 .foregroundStyle(.white.opacity(0.5))
@@ -96,12 +96,12 @@ struct MenuBarMetricsPreview: View {
                 }
             }
         }
-        .font(.system(size: 12))
-        .padding(.horizontal, 14)
+        .font(DS.Font.panelBody)
+        .padding(.horizontal, DS.Space.rowGap)
         .frame(height: 32)
         .frame(maxWidth: .infinity)
         .background(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
+            RoundedRectangle(cornerRadius: DS.Radius.row, style: .continuous)
                 .fill(Color.black.opacity(0.82))
         )
     }

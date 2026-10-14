@@ -14,7 +14,7 @@ struct NotchLyricsView: View {
     // The verses sit on the island itself, as a player's own lyrics do, and
     // a song without them says so like the island's other empty pages.
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: DS.Space.small) {
             if let lyrics = service.lyrics {
                 if lyrics.instrumental {
                     NotchEmptyView(symbol: "music.note", message: text.instrumental) {
@@ -24,7 +24,7 @@ struct NotchLyricsView: View {
                     synced(lyrics)
                     // Importing is a one-off; it shares the timing row as an
                     // icon instead of a row of its own under the verses.
-                    HStack(spacing: 10) {
+                    HStack(spacing: DS.Space.medium) {
                         importButton
                         Text(text.offset).foregroundStyle(.secondary)
                         Spacer(minLength: 0)
@@ -51,7 +51,7 @@ struct NotchLyricsView: View {
                     if !playback.hasPosition { Text(text.noPosition).font(.caption).foregroundStyle(.secondary) }
                     ScrollView {
                         Text(lyrics.plain.isEmpty ? lyrics.lines.map(\.text).joined(separator: "\n") : lyrics.plain)
-                            .font(.system(size: 15, weight: .medium)).textSelection(.enabled)
+                            .font(DS.Font.cardTitle).textSelection(.enabled)
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
                     .notchScrollEdgeFade()
@@ -60,8 +60,8 @@ struct NotchLyricsView: View {
                 }
             } else if service.state == .loading {
                 // A slow lookup leaves importing within reach while it waits.
-                VStack(spacing: 12) {
-                    HStack(spacing: 8) { ProgressView().controlSize(.small); Text(text.loading) }
+                VStack(spacing: DS.Space.medium) {
+                    HStack(spacing: DS.Space.small) { ProgressView().controlSize(.small); Text(text.loading) }
                         .font(.callout).foregroundStyle(.secondary)
                     NotchPillButton(title: text.importLyrics, action: service.importLyrics)
                 }
@@ -72,11 +72,11 @@ struct NotchLyricsView: View {
                     // A short island keeps importing as a glyph beside the
                     // next step rather than cutting either name short.
                     ViewThatFits(in: .horizontal) {
-                        HStack(spacing: 8) {
+                        HStack(spacing: DS.Space.small) {
                             nextStep
                             NotchPillButton(title: text.importLyrics, action: service.importLyrics)
                         }
-                        HStack(spacing: 8) {
+                        HStack(spacing: DS.Space.small) {
                             nextStep
                             NotchIconButton(symbol: "doc.badge.plus", title: text.importLyrics, action: service.importLyrics)
                         }
@@ -118,7 +118,7 @@ struct NotchLyricsView: View {
             let active = lyrics.activeIndex(at: playback.position(at: context.date), offset: service.offset)
             ScrollViewReader { proxy in
                 ScrollView {
-                    LazyVStack(alignment: .leading, spacing: 12) {
+                    LazyVStack(alignment: .leading, spacing: DS.Space.medium) {
                         if active == nil {
                             Text(text.waiting).font(.caption).foregroundStyle(.secondary).id("start")
                         }
@@ -133,7 +133,7 @@ struct NotchLyricsView: View {
                                 .fixedSize(horizontal: false, vertical: true)
                                 .id(index)
                         }
-                    }.padding(.vertical, 6)
+                    }.padding(.vertical, DS.Space.xSmall)
                 }
                 .notchScrollEdgeFade(length: 24)
                 .onChange(of: active, initial: true) { _, index in

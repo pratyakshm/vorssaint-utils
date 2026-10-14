@@ -33,7 +33,7 @@ struct UpdatePreviewView: View {
             }
             .padding(.horizontal, 28)
             .padding(.top, 24)
-            .padding(.bottom, 16)
+            .padding(.bottom, DS.Space.large)
 
             Divider()
 
@@ -54,7 +54,7 @@ struct UpdatePreviewView: View {
                     .keyboardShortcut(.defaultAction)
                     .buttonStyle(.borderedProminent)
             }
-            .padding(16)
+            .padding(DS.Space.large)
         }
         .frame(width: 640, height: 600)
         .background(Color(nsColor: .windowBackgroundColor))
@@ -92,28 +92,28 @@ struct UpdateShowcaseIntroView: View {
 
     private var showcaseStep: some View {
         VStack(spacing: 0) {
-            VStack(spacing: 16) {
-                VStack(spacing: 8) {
+            VStack(spacing: DS.Space.cardStack) {
+                VStack(spacing: DS.Space.rowTitleGap) {
                     Text(l10n.s.updateShowcaseTitle)
                         .font(.system(size: 24, weight: .bold))
                         .multilineTextAlignment(.center)
                     Text(l10n.s.updateShowcaseMessage)
-                        .font(.system(size: 13.5))
+                        .font(DS.Font.body)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
                         .fixedSize(horizontal: false, vertical: true)
                         .frame(maxWidth: 520)
                 }
-                .padding(.top, 2)
+                .padding(.top, DS.Space.rowTextStack)
 
                 UpdateShowcaseMediaSurface(state: mediaLoader.state)
                     .frame(width: 592, height: 369)
                     .clipped()
-                    .padding(.top, 2)
+                    .padding(.top, DS.Space.rowTextStack)
             }
             .padding(.horizontal, 28)
             .padding(.top, 22)
-            .padding(.bottom, 16)
+            .padding(.bottom, DS.Space.large)
 
             Divider()
 
@@ -129,7 +129,7 @@ struct UpdateShowcaseIntroView: View {
                 .keyboardShortcut(.defaultAction)
                 .buttonStyle(.borderedProminent)
             }
-            .padding(16)
+            .padding(DS.Space.large)
         }
     }
 
@@ -151,7 +151,7 @@ struct UpdateShowcaseIntroView: View {
                 .keyboardShortcut(.defaultAction)
                 .controlSize(.large)
             }
-            .padding(16)
+            .padding(DS.Space.large)
         }
     }
 
@@ -182,7 +182,7 @@ struct UpdateSupportIntroView: View {
                     .buttonStyle(.borderedProminent)
                     .controlSize(.large)
             }
-            .padding(16)
+            .padding(DS.Space.large)
         }
         .frame(width: 560, height: 420)
         .background(Color(nsColor: .windowBackgroundColor))
@@ -202,7 +202,7 @@ private struct UpdateSupportContent: View {
     }
 
     var body: some View {
-        VStack(spacing: 13) {
+        VStack(spacing: DS.Space.rowGap) {
             ZStack {
                 Circle()
                     .fill(Theme.spaceGradient)
@@ -218,7 +218,7 @@ private struct UpdateSupportContent: View {
                 .fixedSize(horizontal: false, vertical: true)
 
             Text(l10n.s.supportIntroMessage)
-                .font(.system(size: 13.5))
+                .font(DS.Font.body)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
@@ -234,21 +234,21 @@ private struct UpdateSupportContent: View {
             .controlSize(.large)
 
             Text(donateThanksText)
-                .font(.caption)
+                .font(DS.Font.caption)
                 .foregroundStyle(.tertiary)
 
             Button {
                 openURL(AppInfo.repositoryURL)
             } label: {
                 Label(l10n.s.supportIntroStarHint, systemImage: "star")
-                    .font(.caption)
+                    .font(DS.Font.caption)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
             }
             .buttonStyle(.plain)
             .foregroundStyle(.secondary)
             .frame(maxWidth: 440)
-            .padding(.top, 4)
+            .padding(.top, DS.Space.xxSmall)
             .help(l10n.s.supportIntroStarButton)
             .accessibilityLabel(l10n.s.supportIntroStarButton)
         }
@@ -302,7 +302,7 @@ struct ReleaseNotesContent: View {
         VStack(alignment: .leading, spacing: 0) {
             ForEach(Array(releases.enumerated()), id: \.offset) { index, release in
                 if index > 0 {
-                    Divider().padding(.vertical, 18)
+                    Divider().padding(.vertical, DS.Space.card)
                 }
                 releaseBlock(release, isLatest: index == 0)
             }
@@ -310,14 +310,14 @@ struct ReleaseNotesContent: View {
     }
 
     private func releaseBlock(_ release: ReleaseNotes, isLatest: Bool) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
+        VStack(alignment: .leading, spacing: DS.Space.medium) {
+            HStack(alignment: .firstTextBaseline, spacing: DS.Space.rowTitleGap) {
                 Text("v\(release.version)")
-                    .font(.system(size: 16, weight: .bold))
+                    .font(DS.Font.cardTitle)
                     .foregroundStyle(isLatest ? Color.accentColor : .primary)
                 if let date = release.date {
                     Text(date)
-                        .font(.caption)
+                        .font(DS.Font.caption)
                         .foregroundStyle(.secondary)
                 }
                 Spacer(minLength: 0)
@@ -333,23 +333,23 @@ struct ReleaseNotesContent: View {
     }
 
     private var fallbackNote: some View {
-        HStack(alignment: .top, spacing: 9) {
+        HStack(alignment: .top, spacing: DS.Space.medium) {
             Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 13, weight: .semibold))
+                .font(DS.Font.rowIcon)
                 .foregroundStyle(Color.accentColor)
                 .frame(width: 18, alignment: .center)
             Text(l10n.s.obWhatsNewFallback)
-                .font(.system(size: 12.5))
+                .font(DS.Font.caption)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
 
     private func releaseSection(_ section: ReleaseNoteSection) -> some View {
-        VStack(alignment: .leading, spacing: 9) {
+        VStack(alignment: .leading, spacing: DS.Space.medium) {
             if !section.title.isEmpty {
                 Text(section.title.uppercased())
-                    .font(.system(size: 11, weight: .bold))
+                    .font(DS.Font.section)
                     .foregroundStyle(.secondary)
                     .tracking(1.2)
             }
@@ -364,17 +364,17 @@ struct ReleaseNotesContent: View {
         switch item {
         case let .paragraph(text):
             Text(text)
-                .font(.system(size: 12.8))
+                .font(DS.Font.caption)
                 .foregroundStyle(.primary)
                 .fixedSize(horizontal: false, vertical: true)
         case let .bullet(text):
-            HStack(alignment: .top, spacing: 9) {
+            HStack(alignment: .top, spacing: DS.Space.medium) {
                 Image(systemName: iconName(for: sectionTitle))
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(DS.Font.panelTitle)
                     .foregroundStyle(Color.accentColor)
                     .frame(width: 18, alignment: .center)
                 Text(text)
-                    .font(.system(size: 12.5))
+                    .font(DS.Font.caption)
                     .foregroundStyle(.primary)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -383,9 +383,9 @@ struct ReleaseNotesContent: View {
                 Image(nsImage: nsImage)
                     .resizable()
                     .scaledToFit()
-                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: DS.Radius.row, style: .continuous))
                     .overlay(
-                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        RoundedRectangle(cornerRadius: DS.Radius.row, style: .continuous)
                             .stroke(.quaternary, lineWidth: 1)
                     )
                     .accessibilityLabel(image.alt)
@@ -431,38 +431,38 @@ private struct UpdateShowcaseMediaSurface: View {
     @State private var gifReloadID = UUID()
 
     var body: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: DS.Space.rowTitleGap) {
             ZStack {
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous)
                     .fill(Color.primary.opacity(0.06))
 
                 switch state {
                 case .idle, .loading:
-                    VStack(spacing: 10) {
+                    VStack(spacing: DS.Space.medium) {
                         ProgressView()
                             .controlSize(.small)
                         Text(l10n.s.homebrewLoading)
-                            .font(.system(size: 12.5, weight: .medium))
+                            .font(DS.Font.caption)
                             .foregroundStyle(.secondary)
                     }
                 case let .ready(url):
                     if url.pathExtension.lowercased() == "gif" {
                         AnimatedFileGIF(url: url)
                             .id(gifReloadID)
-                            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                            .padding(10)
+                            .clipShape(RoundedRectangle(cornerRadius: DS.Radius.row, style: .continuous))
+                            .padding(DS.Space.medium)
                     } else {
                         ControlledVideoView(url: url)
-                            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                            .padding(10)
+                            .clipShape(RoundedRectangle(cornerRadius: DS.Radius.row, style: .continuous))
+                            .padding(DS.Space.medium)
                     }
                 case .failed:
-                    VStack(spacing: 10) {
+                    VStack(spacing: DS.Space.medium) {
                         Image(systemName: "play.rectangle")
                             .font(.system(size: 30, weight: .semibold))
                             .foregroundStyle(.secondary)
                         Text(l10n.s.updateShowcaseUnavailable)
-                            .font(.system(size: 12.5, weight: .medium))
+                            .font(DS.Font.caption)
                             .foregroundStyle(.secondary)
                             .multilineTextAlignment(.center)
                             .frame(maxWidth: 360)
@@ -470,9 +470,9 @@ private struct UpdateShowcaseMediaSurface: View {
                 }
             }
             .aspectRatio(16.0 / 9.0, contentMode: .fit)
-            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous)
                     .stroke(.quaternary, lineWidth: 1)
             )
 

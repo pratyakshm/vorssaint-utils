@@ -47,7 +47,7 @@ struct CommandBarSettings: View {
                 // One choice, open it or recenter it, so one row. Neither
                 // carries an icon: a ⌘ glyph in front of "Open the bar now"
                 // reads as the shortcut that opens it, which it is not.
-                HStack(spacing: 10) {
+                HStack(spacing: DS.Space.medium) {
                     Button(text.openButton) {
                         CommandBarService.shared.show()
                     }
@@ -59,35 +59,35 @@ struct CommandBarSettings: View {
                 // One row for the whole explanation. As separate rows the form
                 // drew a divider between every sentence, cutting one paragraph
                 // about one feature into four cards that looked like settings.
-                VStack(alignment: .leading, spacing: 6) {
+                VStack(alignment: .leading, spacing: DS.Space.xSmall) {
                     Text(text.positionCaption)
                     Text(text.settingsCaption)
                     Label(text.privacyNote, systemImage: "lock.laptopcomputer")
-                    HStack(spacing: 6) {
+                    HStack(spacing: DS.Space.xSmall) {
                         Text(text.tryTheseLabel)
                             .foregroundStyle(.tertiary)
                         ForEach(examples, id: \.self) { example in
                             Text(example)
-                                .font(.system(size: 10.5, design: .rounded))
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 2)
+                                .font(DS.Font.panelFloor)
+                                .padding(.horizontal, DS.Space.xSmall)
+                                .padding(.vertical, DS.Space.xxSmall)
                                 .background(Capsule().fill(Color.primary.opacity(0.06)))
                         }
                     }
-                    .padding(.top, 2)
+                    .padding(.top, DS.Space.xxSmall)
                 }
-                .font(.caption)
+                .font(DS.Font.caption)
                 .foregroundStyle(.secondary)
                 // No callback: the bar reads this on every open, and opening
                 // Settings has already hidden it, so the two can never be on
                 // screen with a stale value between them.
                 Toggle(text.compactModeToggle, isOn: $compactMode)
                 Text(text.compactModeCaption)
-                    .font(.caption)
+                    .font(DS.Font.caption)
                     .foregroundStyle(.secondary)
                 Toggle(text.minimalLookToggle, isOn: $minimalLook)
                 Text(text.minimalLookCaption)
-                    .font(.caption)
+                    .font(DS.Font.caption)
                     .foregroundStyle(.secondary)
                 if CommandBarPreferences.isEnabled(.emoji, disabledRaw: disabledSources) {
                     Picker(text.emojiSkinToneLabel, selection: $emojiSkinTone) {
@@ -97,7 +97,7 @@ struct CommandBarSettings: View {
                     }
                     .pickerStyle(.segmented)
                     Text(text.emojiSkinToneCaption)
-                        .font(.caption)
+                        .font(DS.Font.caption)
                         .foregroundStyle(.secondary)
                 }
                 // Not the shared "Global shortcut" label the other feature
@@ -112,7 +112,7 @@ struct CommandBarSettings: View {
                 }
                 if shortcutEnabled, service.shortcutRegistrationFailed {
                     Text(l10n.s.shortcutUnavailable)
-                        .font(.caption)
+                        .font(DS.Font.caption)
                         .foregroundStyle(.orange)
                 }
                 if secureInput.holder != .off {
@@ -128,7 +128,7 @@ struct CommandBarSettings: View {
                     // sync.
                     Toggle(text.asciiLayoutToggle, isOn: $asciiLayoutEnabled)
                     Text(text.asciiLayoutCaption)
-                        .font(.caption)
+                        .font(DS.Font.caption)
                         .foregroundStyle(.secondary)
                 }
             } header: {
@@ -142,7 +142,7 @@ struct CommandBarSettings: View {
                     Label(text.appCenterTitle, systemImage: "app.badge")
                 }
                 Text(text.appCenterCaption)
-                    .font(.caption)
+                    .font(DS.Font.caption)
                     .foregroundStyle(.secondary)
             }
 
@@ -157,27 +157,27 @@ struct CommandBarSettings: View {
                 Text(text.sourcesTitle)
             } footer: {
                 Text(text.sourcesCaption)
-                    .font(.caption)
+                    .font(DS.Font.caption)
                     .foregroundStyle(.secondary)
             }
 
             Section {
                 Text(text.filesCaption)
-                    .font(.caption)
+                    .font(DS.Font.caption)
                     .foregroundStyle(.secondary)
                 if fileScopes.isEmpty {
                     Text(text.filesEmpty)
-                        .font(.caption)
+                        .font(DS.Font.caption)
                         .foregroundStyle(.secondary)
                 }
                 ForEach(fileScopes, id: \.self) { scope in
-                    HStack(spacing: 8) {
+                    HStack(spacing: DS.Space.rowTitleGap) {
                         Image(systemName: "folder")
-                            .font(.system(size: 11))
+                            .font(DS.Font.panelFloor)
                             .foregroundStyle(Color.accentColor)
                             .frame(width: 16)
                         Text(scope)
-                            .font(.system(size: 12))
+                            .font(DS.Font.panelBody)
                             .lineLimit(1)
                             .truncationMode(.middle)
                         Spacer()
@@ -198,16 +198,16 @@ struct CommandBarSettings: View {
                 if showsFileOptions {
                     Group {
                         Text(text.filesIgnoreCaption)
-                            .font(.caption)
+                            .font(DS.Font.caption)
                             .foregroundStyle(.secondary)
                         ForEach(fileIgnores, id: \.self) { pattern in
-                            HStack(spacing: 8) {
+                            HStack(spacing: DS.Space.rowTitleGap) {
                                 Image(systemName: "eye.slash")
-                                    .font(.system(size: 11))
+                                    .font(DS.Font.panelFloor)
                                     .foregroundStyle(.secondary)
                                     .frame(width: 16)
                                 Text(pattern)
-                                    .font(.system(size: 12))
+                                    .font(DS.Font.panelBody)
                                     .lineLimit(1)
                                 Spacer()
                                 Button(text.removeButton) { removeFileIgnore(pattern) }
@@ -215,7 +215,7 @@ struct CommandBarSettings: View {
                                     .controlSize(.mini)
                             }
                         }
-                        HStack(spacing: 8) {
+                        HStack(spacing: DS.Space.rowTitleGap) {
                             TextField(text.filesIgnorePlaceholder, text: $ignoreDraft)
                                 .textFieldStyle(.roundedBorder)
                                 .onSubmit { addFileIgnore() }
@@ -234,19 +234,19 @@ struct CommandBarSettings: View {
             Section {
                 if links.isEmpty {
                     Text(text.linksEmpty)
-                        .font(.caption)
+                        .font(DS.Font.caption)
                         .foregroundStyle(.secondary)
                 }
                 ForEach(links) { link in
-                    HStack(spacing: 8) {
+                    HStack(spacing: DS.Space.rowTitleGap) {
                         Image(systemName: link.kind.symbolName)
-                            .font(.system(size: 11))
+                            .font(DS.Font.panelFloor)
                             .foregroundStyle(Color.accentColor)
                             .frame(width: 16)
                         Text(link.name)
-                            .font(.system(size: 12, weight: .semibold, design: .rounded))
+                            .font(DS.Font.panelTitle)
                         Text(link.destination)
-                            .font(.system(size: 11))
+                            .font(DS.Font.panelFloor)
                             .foregroundStyle(.secondary)
                             .lineLimit(1)
                             .truncationMode(.middle)
@@ -271,16 +271,16 @@ struct CommandBarSettings: View {
             Section {
                 if boundRows.isEmpty {
                     Text(text.rowShortcutsEmpty)
-                        .font(.caption)
+                        .font(DS.Font.caption)
                         .foregroundStyle(.secondary)
                 }
                 ForEach(boundRows, id: \.key) { entry in
                     HStack {
                         Text(entry.alias)
-                            .font(.system(size: 11, weight: .semibold, design: .rounded))
+                            .font(DS.Font.panelFloorEmphasis)
                             .foregroundStyle(Color.accentColor)
                         Text(entry.title)
-                            .font(.system(size: 12))
+                            .font(DS.Font.panelBody)
                             .foregroundStyle(.secondary)
                             .lineLimit(1)
                         Spacer()
@@ -288,7 +288,7 @@ struct CommandBarSettings: View {
                         // and a row showing a dead key is worse than no key.
                         if service.refusedRowShortcutKeys.contains(entry.key) {
                             Text(l10n.s.shortcutUnavailable)
-                                .font(.caption)
+                                .font(DS.Font.caption)
                                 .foregroundStyle(.orange)
                         }
                         Button(text.removeButton) { removeRowShortcut(entry.key) }
@@ -303,16 +303,16 @@ struct CommandBarSettings: View {
             Section {
                 if named.isEmpty {
                     Text(text.namedEmpty)
-                        .font(.caption)
+                        .font(DS.Font.caption)
                         .foregroundStyle(.secondary)
                 }
                 ForEach(named, id: \.key) { entry in
                     HStack {
                         Text(entry.alias)
-                            .font(.system(size: 12, weight: .semibold, design: .rounded))
+                            .font(DS.Font.panelTitle)
                             .foregroundStyle(Color.accentColor)
                         Text(entry.title)
-                            .font(.system(size: 12))
+                            .font(DS.Font.panelBody)
                             .foregroundStyle(.secondary)
                             .lineLimit(1)
                         Spacer()
@@ -328,13 +328,13 @@ struct CommandBarSettings: View {
             Section {
                 if pinned.isEmpty {
                     Text(text.pinnedEmpty)
-                        .font(.caption)
+                        .font(DS.Font.caption)
                         .foregroundStyle(.secondary)
                 }
                 ForEach(pinned, id: \.key) { entry in
                     HStack {
                         Text(entry.title)
-                            .font(.system(size: 12))
+                            .font(DS.Font.panelBody)
                             .lineLimit(1)
                         Spacer()
                         Button(text.removeButton) { removePin(entry.key) }
@@ -349,13 +349,13 @@ struct CommandBarSettings: View {
             Section {
                 if hidden.isEmpty {
                     Text(text.hiddenEmpty)
-                        .font(.caption)
+                        .font(DS.Font.caption)
                         .foregroundStyle(.secondary)
                 }
                 ForEach(hidden, id: \.key) { entry in
                     HStack {
                         Text(entry.title)
-                            .font(.system(size: 12))
+                            .font(DS.Font.panelBody)
                             .lineLimit(1)
                         Spacer()
                         Button(text.removeButton) { unhide(entry.key) }
@@ -571,9 +571,9 @@ private struct CommandBarLinkEditor: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: DS.Space.rowGap) {
             Text(text.linksTitle)
-                .font(.system(size: 15, weight: .semibold))
+                .font(DS.Font.cardTitle)
 
             Picker("", selection: $draft.kind) {
                 Text(text.linkKindLink).tag(CommandBarLink.Kind.link)
@@ -583,19 +583,19 @@ private struct CommandBarLinkEditor: View {
             .pickerStyle(.segmented)
             .labelsHidden()
 
-            VStack(alignment: .leading, spacing: 5) {
+            VStack(alignment: .leading, spacing: DS.Space.xSmall) {
                 Text(common.nameLabel)
-                    .font(.caption)
+                    .font(DS.Font.caption)
                     .foregroundStyle(.secondary)
                 TextField("", text: $draft.name)
                     .textFieldStyle(.roundedBorder)
             }
 
-            VStack(alignment: .leading, spacing: 5) {
+            VStack(alignment: .leading, spacing: DS.Space.xSmall) {
                 Text(text.linkDestinationLabel)
-                    .font(.caption)
+                    .font(DS.Font.caption)
                     .foregroundStyle(.secondary)
-                HStack(spacing: 6) {
+                HStack(spacing: DS.Space.xSmall) {
                     TextField("", text: $draft.destination)
                         .textFieldStyle(.roundedBorder)
                     if draft.kind == .place || draft.kind == .script {
@@ -608,24 +608,24 @@ private struct CommandBarLinkEditor: View {
             }
 
             if draft.kind != .script {
-                VStack(alignment: .leading, spacing: 6) {
+                VStack(alignment: .leading, spacing: DS.Space.xSmall) {
                     Text(text.linkPlaceholdersHint)
-                        .font(.caption)
+                        .font(DS.Font.caption)
                         .foregroundStyle(.secondary)
-                    HStack(spacing: 6) {
+                    HStack(spacing: DS.Space.xSmall) {
                         ForEach(CommandBarLinkPlaceholder.allCases) { placeholder in
                             Button {
                                 draft.destination += placeholder.token
                             } label: {
-                                VStack(spacing: 1) {
+                                VStack(spacing: DS.Space.rowTextStack) {
                                     Text(placeholder.token)
-                                        .font(.system(size: 10.5, weight: .semibold, design: .rounded))
+                                        .font(DS.Font.panelFloorEmphasis)
                                     Text(meaning(of: placeholder))
-                                        .font(.system(size: 11))
+                                        .font(DS.Font.panelFloor)
                                         .foregroundStyle(.secondary)
                                 }
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 4)
+                                .padding(.horizontal, DS.Space.rowTitleGap)
+                                .padding(.vertical, DS.Space.xxSmall)
                                 .background(Capsule().fill(Color.primary.opacity(0.06)))
                             }
                             .buttonStyle(.plain)
@@ -634,14 +634,14 @@ private struct CommandBarLinkEditor: View {
                     }
                 }
             } else {
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: DS.Space.rowTitleGap) {
                     Text(text.scriptHint)
-                        .font(.caption)
+                        .font(DS.Font.caption)
                         .foregroundStyle(.secondary)
                     Toggle(text.scriptRunsWithoutArgument, isOn: $draft.runsWithoutArgument)
-                        .font(.caption)
+                        .font(DS.Font.caption)
                     Toggle(text.scriptRunsDirectly, isOn: $draft.runsDirectly)
-                        .font(.caption)
+                        .font(DS.Font.caption)
                 }
             }
 
@@ -658,7 +658,7 @@ private struct CommandBarLinkEditor: View {
                 .disabled(!canSave)
             }
         }
-        .padding(20)
+        .padding(DS.Space.xLarge)
         .frame(width: 440)
     }
 

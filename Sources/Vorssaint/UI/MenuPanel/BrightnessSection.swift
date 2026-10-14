@@ -19,10 +19,10 @@ struct BrightnessSection: View {
 
     var body: some View {
         PanelSection(.brightness, title: strings.pageTitle, collapsible: collapsible) {
-            VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: DS.Space.cardStack) {
                 if service.displays.isEmpty {
                     Text(strings.noDisplays)
-                        .font(.system(size: 10.5))
+                        .font(DS.Font.panelFloor)
                         .foregroundStyle(.secondary)
                 } else {
                     ForEach(service.displays) { display in
@@ -31,7 +31,7 @@ struct BrightnessSection: View {
                 }
                 if let failure = service.displayControlFailure {
                     Text(displayControlFailureText(failure, strings: strings))
-                        .font(.system(size: 10.5))
+                        .font(DS.Font.panelFloor)
                         .foregroundStyle(.red)
                 }
                 if service.keyboardLightEnabled != nil {
@@ -41,7 +41,7 @@ struct BrightnessSection: View {
                 if service.brightnessOSDSupported {
                     Divider()
                     Toggle(strings.osdToggle, isOn: $brightnessOSDEnabled)
-                        .font(.system(size: 10.5, weight: .medium))
+                        .font(DS.Font.panelFloorEmphasis)
                         .toggleStyle(.switch)
                         .controlSize(.mini)
                         .help(strings.osdCaption)
@@ -66,18 +66,18 @@ struct BrightnessSection: View {
     }
 
     private var optionsDisclosure: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: DS.Space.rowTitleGap) {
             Button {
                 optionsExpanded.toggle()
             } label: {
-                HStack(spacing: 7) {
+                HStack(spacing: DS.Space.rowTitleGap) {
                     Image(systemName: "chevron.right")
-                        .font(.system(size: 9, weight: .bold))
+                        .font(DS.Font.panelFloorEmphasis)
                         .foregroundStyle(.secondary)
                         .frame(width: 12)
                         .rotationEffect(.degrees(optionsExpanded ? 90 : 0))
                     Text(l10n.s.keepAwakeOptions)
-                        .font(.system(size: 11.5, weight: .semibold))
+                        .font(DS.Font.panelFloorEmphasis)
                         .foregroundStyle(.secondary)
                     Spacer(minLength: 0)
                 }
@@ -86,14 +86,14 @@ struct BrightnessSection: View {
             .buttonStyle(.plain)
 
             if optionsExpanded {
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: DS.Space.rowTitleGap) {
                     Toggle(strings.keysToggle, isOn: $brightnessKeysEnabled)
                         .onChange(of: brightnessKeysEnabled) { _, isOn in
                             if isOn { permissions.requestAccessibility() }
                             service.syncWithPreferences()
                         }
                     Text(strings.keysCaption)
-                        .font(.system(size: 9.5))
+                        .font(DS.Font.panelFloor)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                     if brightnessKeysEnabled, !permissions.accessibility {
@@ -106,33 +106,33 @@ struct BrightnessSection: View {
                     }
                     DisplayBrightnessShortcutControls()
                 }
-                .font(.system(size: 11.5, weight: .medium))
+                .font(DS.Font.footnote)
                 .toggleStyle(.checkbox)
                 .controlSize(.small)
-                .padding(.leading, 19)
+                .padding(.leading, DS.Space.xLarge)
             }
         }
     }
 
     private func row(_ display: BrightnessDisplay) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack(spacing: 6) {
+        VStack(alignment: .leading, spacing: DS.Space.rowTextStack) {
+            HStack(spacing: DS.Space.xSmall) {
                 Image(systemName: display.isBuiltIn ? "laptopcomputer" : "display")
-                    .font(.system(size: 10.5, weight: .semibold))
+                    .font(DS.Font.panelFloorEmphasis)
                     .foregroundStyle(.secondary)
                     .frame(width: 16)
                 Text(display.name)
-                    .font(.system(size: 11.5, weight: .medium))
+                    .font(DS.Font.footnote)
                     .lineLimit(1)
                     .truncationMode(.middle)
                 Spacer(minLength: 4)
                 if display.isActive, display.method != nil {
                     Text("\(Int((display.brightness * 100).rounded()))%")
-                        .font(.system(size: 10.5, weight: .semibold).monospacedDigit())
+                        .font(DS.Font.panelFloorEmphasis).monospacedDigit()
                         .foregroundStyle(.secondary)
                 } else if !display.isActive {
                     Text(strings.displayOff)
-                        .font(.system(size: 10.5, weight: .medium))
+                        .font(DS.Font.panelFloorEmphasis)
                         .foregroundStyle(.secondary)
                 }
                 DisplayPowerButton(display: display, compact: true)
@@ -151,18 +151,18 @@ struct BrightnessSection: View {
     /// Quick toggles switch stays the place to flip it off and back on, and
     /// the slider reaches 0, so the row carries no switch of its own.
     private var keyboardLightRow: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack(spacing: 6) {
+        VStack(alignment: .leading, spacing: DS.Space.rowTextStack) {
+            HStack(spacing: DS.Space.xSmall) {
                 Image(systemName: "keyboard")
-                    .font(.system(size: 10.5, weight: .semibold))
+                    .font(DS.Font.panelFloorEmphasis)
                     .foregroundStyle(.secondary)
                     .frame(width: 16)
                 Text(strings.keyboardLight)
-                    .font(.system(size: 11.5, weight: .medium))
+                    .font(DS.Font.footnote)
                     .lineLimit(1)
                 Spacer(minLength: 4)
                 Text("\(Int(((service.keyboardLightLevel ?? 0) * 100).rounded()))%")
-                    .font(.system(size: 10.5, weight: .semibold).monospacedDigit())
+                    .font(DS.Font.panelFloorEmphasis).monospacedDigit()
                     .foregroundStyle(.secondary)
             }
             Slider(value: keyboardLightBinding, in: 0...1,
@@ -191,7 +191,7 @@ private struct ExtraBrightnessPanelToggle: View {
 
     var body: some View {
         Toggle(l10n.s.extraBrightnessName, isOn: $enabled)
-            .font(.system(size: 10.5, weight: .medium))
+            .font(DS.Font.panelFloorEmphasis)
             .toggleStyle(.switch)
             .controlSize(.mini)
             .disabled(!service.supported && !enabled)
@@ -243,9 +243,9 @@ struct SoftwareDimmingButton: View {
             } label: {
                 HStack(spacing: compact ? 4 : 5) {
                     Image(systemName: chosen ? "checkmark.circle.fill" : "circle.lefthalf.filled")
-                        .font(.system(size: compact ? 9.5 : 11, weight: .semibold))
+                        .font(compact ? DS.Font.panelFloor : DS.Font.panelFloorEmphasis)
                     Text(usesExtendedDimming ? strings.extendedDimming : strings.softwareDimming)
-                        .font(.system(size: compact ? 10 : 12, weight: .medium))
+                        .font(compact ? DS.Font.panelFloor : DS.Font.panelBody)
                         .lineLimit(1)
                 }
                 .foregroundStyle(chosen ? Color.accentColor : Color.secondary)
@@ -287,7 +287,7 @@ struct DisplayPowerButton: View {
                     service.toggleDisplay(display)
                 } label: {
                     Image(systemName: display.isActive ? "power" : "power.circle.fill")
-                        .font(.system(size: compact ? 10.5 : 12, weight: .semibold))
+                        .font(compact ? DS.Font.panelFloorEmphasis : DS.Font.panelTitle)
                         .foregroundStyle(display.isActive ? AnyShapeStyle(.secondary)
                                                          : AnyShapeStyle(.green))
                         .frame(width: compact ? 16 : 20, height: 18)

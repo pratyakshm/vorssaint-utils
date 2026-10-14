@@ -57,7 +57,7 @@ struct MixerSection: View {
     }
 
     private var mixerControls: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: DS.Space.rowTitleGap) {
             audioDevicesSection
 
             if AppVolumeMixer.isSupported, (!visibleApps.isEmpty || mixer.needsPermission) {
@@ -80,7 +80,7 @@ struct MixerSection: View {
     }
 
     private var audioDevicesSection: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: DS.Space.xSmall) {
             universalOutputPicker
             systemSoundOutputPicker
             microphonePicker
@@ -92,18 +92,18 @@ struct MixerSection: View {
     }
 
     private var optionsDisclosure: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: DS.Space.rowTitleGap) {
             Button {
                 optionsExpanded.toggle()
             } label: {
-                HStack(spacing: 7) {
+                HStack(spacing: DS.Space.rowTitleGap) {
                     Image(systemName: "chevron.right")
-                        .font(.system(size: 9, weight: .bold))
+                        .font(DS.Font.panelFloorEmphasis)
                         .foregroundStyle(.secondary)
                         .frame(width: 12)
                         .rotationEffect(.degrees(optionsExpanded ? 90 : 0))
                     Text(l10n.s.keepAwakeOptions)
-                        .font(.system(size: 11.5, weight: .semibold))
+                        .font(DS.Font.panelFloorEmphasis)
                         .foregroundStyle(.secondary)
                     Spacer(minLength: 0)
                 }
@@ -113,20 +113,20 @@ struct MixerSection: View {
 
             if optionsExpanded {
                 MixerOptionsControls(includeSharedAudioFeatures: !settingsMode)
-                    .padding(.leading, 19)
+                    .padding(.leading, DS.Space.xLarge)
             }
         }
     }
 
     private var universalOutputPicker: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack(spacing: 8) {
+        VStack(alignment: .leading, spacing: DS.Space.rowTextStack) {
+            HStack(spacing: DS.Space.rowTitleGap) {
                 Label {
                     Text(l10n.s.mixerSystemOutputTitle)
-                        .font(.system(size: 11.5, weight: .medium))
+                        .font(DS.Font.footnote)
                 } icon: {
                     Image(systemName: "speaker.wave.2.fill")
-                        .font(.system(size: 10.5, weight: .semibold))
+                        .font(DS.Font.panelFloorEmphasis)
                         .frame(width: 16)
                 }
                 .foregroundStyle(.secondary)
@@ -157,11 +157,11 @@ struct MixerSection: View {
             }
 
             if let volume = mixer.systemOutputVolume {
-                HStack(spacing: 8) {
+                HStack(spacing: DS.Space.rowTitleGap) {
                     Image(systemName: mixer.systemOutputMuted == true || volume <= 0.001
                           ? "speaker.slash.fill"
                           : "speaker.wave.2.fill")
-                        .font(.system(size: 10.5, weight: .semibold))
+                        .font(DS.Font.panelFloorEmphasis)
                         .foregroundStyle(.secondary)
                         .frame(width: 16)
 
@@ -181,7 +181,7 @@ struct MixerSection: View {
                                           editingID: $editingVolumeID,
                                           accessibilityLabel: l10n.s.mixerSystemOutputTitle) {
                         Text("\(Int((volume * 100).rounded()))%")
-                            .font(.system(size: 10.5, weight: .medium))
+                            .font(DS.Font.panelFloorEmphasis)
                             .monospacedDigit()
                             .foregroundStyle(.secondary)
                     } onCommit: {
@@ -197,14 +197,14 @@ struct MixerSection: View {
     }
 
     private var systemSoundOutputPicker: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack(spacing: 8) {
+        VStack(alignment: .leading, spacing: DS.Space.rowTextStack) {
+            HStack(spacing: DS.Space.rowTitleGap) {
                 Label {
                     Text(l10n.s.mixerSoundEffectsOutputTitle)
-                        .font(.system(size: 11.5, weight: .medium))
+                        .font(DS.Font.footnote)
                 } icon: {
                     Image(systemName: "bell.fill")
-                        .font(.system(size: 10.5, weight: .semibold))
+                        .font(DS.Font.panelFloorEmphasis)
                         .frame(width: 16)
                 }
                 .foregroundStyle(.secondary)
@@ -288,14 +288,14 @@ struct MixerSection: View {
     }
 
     private var microphonePicker: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack(spacing: 8) {
+        VStack(alignment: .leading, spacing: DS.Space.rowTextStack) {
+            HStack(spacing: DS.Space.rowTitleGap) {
                 Label {
                     Text(l10n.s.mixerInputTitle)
-                        .font(.system(size: 11.5, weight: .medium))
+                        .font(DS.Font.footnote)
                 } icon: {
                     Image(systemName: "mic.fill")
-                        .font(.system(size: 10.5, weight: .semibold))
+                        .font(DS.Font.panelFloorEmphasis)
                         .frame(width: 16)
                 }
                 .foregroundStyle(.secondary)
@@ -325,9 +325,9 @@ struct MixerSection: View {
             }
 
             if let volume = inputManager.inputVolume {
-                HStack(spacing: 8) {
+                HStack(spacing: DS.Space.rowTitleGap) {
                     Image(systemName: volume <= 0.001 ? "mic.slash.fill" : "mic.fill")
-                        .font(.system(size: 10.5, weight: .semibold))
+                        .font(DS.Font.panelFloorEmphasis)
                         .foregroundStyle(.secondary)
                         .frame(width: 16)
 
@@ -347,7 +347,7 @@ struct MixerSection: View {
                                           editingID: $editingVolumeID,
                                           accessibilityLabel: l10n.s.mixerInputTitle) {
                         Text("\(Int((volume * 100).rounded()))%")
-                            .font(.system(size: 10.5, weight: .medium))
+                            .font(DS.Font.panelFloorEmphasis)
                             .monospacedDigit()
                             .foregroundStyle(.secondary)
                     } onCommit: {
@@ -423,7 +423,7 @@ struct MixerSection: View {
 
     private func inputMessage(_ text: String, systemImage: String) -> some View {
         Label(text, systemImage: systemImage)
-            .font(.system(size: 9.5))
+            .font(DS.Font.panelFloor)
             .foregroundStyle(.secondary)
             .lineLimit(2)
             .fixedSize(horizontal: false, vertical: true)
@@ -433,7 +433,7 @@ struct MixerSection: View {
     private var mixerRows: some View {
 #if compiler(>=6.2)
         if #available(macOS 26.0, *), glassEnabled {
-            GlassEffectContainer(spacing: 8) {
+            GlassEffectContainer(spacing: DS.Space.rowTitleGap) {
                 rowList
             }
         } else {
@@ -515,16 +515,16 @@ struct MixerSection: View {
 
     private func emptyLabel(_ text: String) -> some View {
         Text(text)
-            .font(.system(size: 11))
+            .font(DS.Font.panelFloor)
             .foregroundStyle(.secondary)
             .frame(maxWidth: .infinity, alignment: .center)
-            .padding(.vertical, 4)
+            .padding(.vertical, DS.Space.xxSmall)
     }
 
     private var permissionHint: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: DS.Space.xSmall) {
             Text(l10n.s.mixerPermissionBody)
-                .font(.system(size: 10.5))
+                .font(DS.Font.panelFloor)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             Button(l10n.s.permissionOpenSettings) {
@@ -555,7 +555,7 @@ struct MixerOptionsControls: View {
     var includeSharedAudioFeatures = true
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: DS.Space.rowTitleGap) {
             if AppVolumeMixer.isSupported {
                 inactiveAppsVisibilityToggle
             }
@@ -575,36 +575,36 @@ struct MixerOptionsControls: View {
 
     private func inputMessage(_ text: String, systemImage: String) -> some View {
         Label(text, systemImage: systemImage)
-            .font(.system(size: 9.5))
+            .font(DS.Font.panelFloor)
             .foregroundStyle(.secondary)
             .lineLimit(2)
             .fixedSize(horizontal: false, vertical: true)
     }
 
     private var headphoneDisconnectProtectionToggle: some View {
-        VStack(alignment: .leading, spacing: 3) {
+        VStack(alignment: .leading, spacing: DS.Space.rowTextStack) {
             Toggle(l10n.s.mixerLowerOnHeadphonesDisconnect,
                    isOn: $lowerOnHeadphonesDisconnect)
                 .toggleStyle(.checkbox)
-                .font(.system(size: 11.5, weight: .medium))
+                .font(DS.Font.footnote)
 
             Text(l10n.s.mixerLowerOnHeadphonesDisconnectCaption)
-                .font(.system(size: 9.5))
+                .font(DS.Font.panelFloor)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
 
             if lowerOnHeadphonesDisconnect {
-                HStack(spacing: 8) {
+                HStack(spacing: DS.Space.rowTitleGap) {
                     Stepper(value: headphonesDisconnectVolumeBinding,
                             in: Defaults.minimumMixerHeadphonesDisconnectVolumePercent...100,
                             step: 5) {
                         Text(l10n.s.mixerHeadphonesDisconnectVolume)
-                            .font(.system(size: 10.5, weight: .medium))
+                            .font(DS.Font.panelFloorEmphasis)
                     }
                     .controlSize(.small)
                     Spacer(minLength: 6)
                     Text("\(headphonesDisconnectDisplayPercent)%")
-                        .font(.system(size: 10.5, weight: .medium))
+                        .font(DS.Font.panelFloorEmphasis)
                         .monospacedDigit()
                         .foregroundStyle(.secondary)
                         .frame(width: 38, alignment: .trailing)
@@ -625,17 +625,17 @@ struct MixerOptionsControls: View {
     }
 
     private var preciseVolumeRollerToggle: some View {
-        VStack(alignment: .leading, spacing: 3) {
+        VStack(alignment: .leading, spacing: DS.Space.rowTextStack) {
             Toggle(l10n.s.preciseVolumeRollerEnable, isOn: $preciseVolumeRollerEnabled)
                 .toggleStyle(.checkbox)
-                .font(.system(size: 11.5, weight: .medium))
+                .font(DS.Font.footnote)
                 .onChange(of: preciseVolumeRollerEnabled) { _, enabled in
                     if enabled { permissions.requestAccessibility() }
                     PreciseVolumeRollerService.shared.syncWithPreferences()
                 }
 
             Text(l10n.s.preciseVolumeRollerCaption)
-                .font(.system(size: 9.5))
+                .font(DS.Font.panelFloor)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
 
@@ -646,7 +646,7 @@ struct MixerOptionsControls: View {
                     Label(l10n.s.permissionOpenSettings, systemImage: "hand.raised")
                 }
                 .buttonStyle(.link)
-                .font(.system(size: 10.5, weight: .medium))
+                .font(DS.Font.panelFloorEmphasis)
             } else if preciseVolumeRoller.tapFailed {
                 inputMessage(l10n.s.preciseVolumeRollerTapFailed,
                              systemImage: "exclamationmark.triangle")
@@ -694,22 +694,22 @@ struct MixerOptionsControls: View {
     /// checked or unchecked in one go. Hidden apps stay here even while they
     /// are not running, so they can always be brought back.
     private var listVisibilityFooter: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: DS.Space.xSmall) {
             Button {
                 showListChooser.toggle()
             } label: {
-                HStack(spacing: 8) {
+                HStack(spacing: DS.Space.rowTitleGap) {
                     Text(l10n.s.mixerVisibleApps)
-                        .font(.system(size: 10))
+                        .font(DS.Font.panelFloor)
                         .foregroundStyle(.secondary)
                     Spacer(minLength: 6)
                     Text(mixer.hiddenApps.isEmpty
                          ? l10n.s.mixerAllShown
                          : "\(l10n.s.mixerHiddenCountLabel): \(mixer.hiddenApps.count)")
-                        .font(.system(size: 10))
+                        .font(DS.Font.panelFloor)
                         .foregroundStyle(.secondary)
                     Image(systemName: "chevron.right")
-                        .font(.system(size: 8, weight: .semibold))
+                        .font(DS.Font.panelFloorEmphasis)
                         .foregroundStyle(.secondary)
                         .rotationEffect(.degrees(showListChooser ? 90 : 0))
                 }
@@ -725,7 +725,7 @@ struct MixerOptionsControls: View {
                 ForEach(listChoices) { choice in
                     Toggle(isOn: listedBinding(for: choice)) {
                         Text(choice.name)
-                            .font(.system(size: 10.5))
+                            .font(DS.Font.panelFloor)
                             .lineLimit(1)
                             .truncationMode(.middle)
                     }
@@ -752,9 +752,9 @@ struct MixerOptionsControls: View {
 
     private var inactiveAppsVisibilityToggle: some View {
         let label = FeatureStrings.mixer(l10n.language).hideInactiveApps
-        return HStack(spacing: 8) {
+        return HStack(spacing: DS.Space.rowTitleGap) {
             Text(label)
-                .font(.system(size: 10))
+                .font(DS.Font.panelFloor)
                 .foregroundStyle(.secondary)
             Spacer(minLength: 6)
             Toggle(label, isOn: $hideInactiveApps)
@@ -776,10 +776,10 @@ struct SoundOutputSwitcherControls: View {
     @State private var selectedUIDs: [String] = []
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 5) {
+        VStack(alignment: .leading, spacing: DS.Space.xSmall) {
             Toggle(l10n.s.soundOutputSwitcherEnable, isOn: $enabled)
                 .toggleStyle(.checkbox)
-                .font(.system(size: 11.5, weight: .medium))
+                .font(DS.Font.footnote)
                 .onChange(of: enabled) { _, isEnabled in
                     if isEnabled, selectedUIDs.isEmpty,
                        let current = mixer.currentOutputDeviceUID,
@@ -790,7 +790,7 @@ struct SoundOutputSwitcherControls: View {
                 }
 
             Text(l10n.s.soundOutputSwitcherCaption)
-                .font(.system(size: 9.5))
+                .font(DS.Font.panelFloor)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
 
@@ -808,9 +808,9 @@ struct SoundOutputSwitcherControls: View {
                                  systemImage: "speaker.badge.exclamationmark")
                 }
 
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: DS.Space.rowTextStack) {
                     Text(l10n.s.soundOutputSwitcherDevices)
-                        .font(.system(size: 10.5, weight: .medium))
+                        .font(DS.Font.panelFloorEmphasis)
                         .foregroundStyle(.secondary)
 
                     if universalOutputDevices.isEmpty {
@@ -819,7 +819,7 @@ struct SoundOutputSwitcherControls: View {
                         ForEach(universalOutputDevices) { device in
                             Toggle(isOn: selectionBinding(for: device.uid)) {
                                 Text(outputDeviceTitle(device))
-                                    .font(.system(size: 10.5))
+                                    .font(DS.Font.panelFloor)
                                     .lineLimit(1)
                                     .truncationMode(.middle)
                             }
@@ -847,7 +847,7 @@ struct SoundOutputSwitcherControls: View {
 
     private func inputMessage(_ text: String, systemImage: String) -> some View {
         Label(text, systemImage: systemImage)
-            .font(.system(size: 9.5))
+            .font(DS.Font.panelFloor)
             .foregroundStyle(.secondary)
             .lineLimit(2)
             .fixedSize(horizontal: false, vertical: true)
@@ -906,7 +906,7 @@ private struct MixerRow: View {
     private static let iconPointSize: CGFloat = 32
 
     var body: some View {
-        HStack(alignment: .center, spacing: 10) {
+        HStack(alignment: .center, spacing: DS.Space.rowGap) {
             ZStack(alignment: .bottomTrailing) {
                 Image(nsImage: ResponsibleProcess.icon(for: app.ownerPid,
                                                        pointSize: Self.iconPointSize))
@@ -921,16 +921,16 @@ private struct MixerRow: View {
                 }
             }
 
-            VStack(alignment: .leading, spacing: 5) {
-                HStack(spacing: 8) {
+            VStack(alignment: .leading, spacing: DS.Space.xSmall) {
+                HStack(spacing: DS.Space.rowTitleGap) {
                     Text(app.name)
-                        .font(.system(size: 11.5, weight: .medium))
+                        .font(DS.Font.footnote)
                         .lineLimit(1)
                         .truncationMode(.middle)
 
                     if isPinned {
                         Image(systemName: "pin.fill")
-                            .font(.system(size: 9))
+                            .font(DS.Font.panelFloor)
                             .foregroundStyle(.secondary)
                             .accessibilityLabel(arrangementStrings.pin)
                     }
@@ -956,12 +956,12 @@ private struct MixerRow: View {
                     // (issue #177): the row explains itself instead of the
                     // app silently missing from the mixer.
                     Text(l10n.s.mixerBypassedCaption)
-                        .font(.system(size: 10.5))
+                        .font(DS.Font.panelFloor)
                         .foregroundStyle(.secondary)
                         .lineLimit(2)
                         .fixedSize(horizontal: false, vertical: true)
                 } else {
-                    HStack(spacing: 8) {
+                    HStack(spacing: DS.Space.rowTitleGap) {
                         MixerVolumeSlider(value: volumeBinding,
                                           normalTint: normalTint,
                                           boostTint: boostColor,
@@ -977,14 +977,14 @@ private struct MixerRow: View {
                                               editorID: "app:\(app.id)",
                                               editingID: $editingVolumeID,
                                               accessibilityLabel: app.name) {
-                            HStack(spacing: 2) {
+                            HStack(spacing: DS.Space.rowTextStack) {
                                 if isBoosting {
                                     Image(systemName: "bolt.fill")
-                                        .font(.system(size: 8, weight: .bold))
+                                        .font(DS.Font.panelFloorEmphasis)
                                         .foregroundStyle(boostColor)
                                 }
                                 Text("\(Int((app.volume * 100).rounded()))%")
-                                    .font(.system(size: 10.5, weight: .medium))
+                                    .font(DS.Font.panelFloorEmphasis)
                                     .monospacedDigit()
                                     .foregroundStyle(isBoosting ? boostColor : Color.secondary)
                             }
@@ -996,7 +996,7 @@ private struct MixerRow: View {
                             mixer.setVolume(1, for: app)
                         } label: {
                             Image(systemName: "arrow.counterclockwise")
-                                .font(.system(size: 9.5, weight: .semibold))
+                                .font(DS.Font.panelFloorEmphasis)
                                 .foregroundStyle(isBoosting ? boostColor : Color.secondary)
                                 .frame(width: 14)
                         }
@@ -1009,7 +1009,7 @@ private struct MixerRow: View {
                             mixer.toggleMute(app)
                         } label: {
                             Image(systemName: app.volume <= 0.001 ? "speaker.slash.fill" : "speaker.wave.2.fill")
-                                .font(.system(size: 10))
+                                .font(DS.Font.panelFloor)
                                 .foregroundStyle(app.volume <= 0.001
                                                  ? PanelMetricColor.red(for: colorScheme)
                                                  : Color.secondary)
@@ -1020,7 +1020,7 @@ private struct MixerRow: View {
 
                     if app.outputDeviceUnavailable {
                         Label(l10n.s.mixerOutputFallback, systemImage: "speaker.badge.exclamationmark")
-                            .font(.system(size: 9.5))
+                            .font(DS.Font.panelFloor)
                             .foregroundStyle(.secondary)
                             .lineLimit(2)
                             .fixedSize(horizontal: false, vertical: true)
@@ -1028,7 +1028,7 @@ private struct MixerRow: View {
                 }
             }
         }
-        .padding(.vertical, 2)
+        .padding(.vertical, DS.Space.xxSmall)
         .accessibilityAction(named: Text(arrangementStrings.moveUp)) { moveUp?() }
         .accessibilityAction(named: Text(arrangementStrings.moveDown)) { moveDown?() }
         .contextMenu {
@@ -1119,18 +1119,18 @@ struct EditableVolumePercent<Label: View>: View {
 
     var body: some View {
         ZStack {
-            HStack(spacing: 1) {
+            HStack(spacing: DS.Space.rowTextStack) {
                 AutofocusingVolumeTextField(text: $draft,
                                             isActive: isEditing,
                                             accessibilityLabel: accessibilityLabel,
                                             onSubmit: commit,
                                             onCancel: cancel)
                 Text("%")
-                    .font(.system(size: 9.5, weight: .medium))
+                    .font(DS.Font.panelFloorEmphasis)
                     .foregroundStyle(.secondary)
                     .accessibilityHidden(true)
             }
-            .padding(.horizontal, 3)
+            .padding(.horizontal, DS.Space.xxSmall)
             .frame(width: width, height: height)
             .background(
                 RoundedRectangle(cornerRadius: 4, style: .continuous)
@@ -1467,7 +1467,7 @@ private struct LiquidGlassMixerSlider: View {
                     ], startPoint: .top, endPoint: .bottom)
                 )
                 .blendMode(.screen)
-                .padding(1)
+                .padding(DS.Space.xxSmall)
         }
         .shadow(color: tint.opacity(isBoosting ? 0.24 : 0.16), radius: 3, x: 0, y: 0)
         .shadow(color: Color.black.opacity(colorScheme == .light ? 0.08 : 0.18), radius: 2, x: 0, y: 1)

@@ -25,7 +25,7 @@ struct CleaningOverlayView: View {
     }
 
     private var fullBlackoutContent: some View {
-        VStack(spacing: 18) {
+        VStack(spacing: DS.Space.card) {
             Image(systemName: "keyboard")
                 .font(.system(size: 48, weight: .regular))
                 .foregroundStyle(.white)
@@ -35,30 +35,30 @@ struct CleaningOverlayView: View {
                 .foregroundStyle(.white)
 
             Text(l10n.s.cleaningOverlaySubtitle)
-                .font(.system(size: 15))
+                .font(DS.Font.rowTitle)
                 .foregroundStyle(.white.opacity(0.75))
                 .multilineTextAlignment(.center)
 
             fullProgressDots
-                .padding(.top, 2)
+                .padding(.top, DS.Space.rowTextStack)
 
             Button(action: { manager.deactivate() }) {
                 Text(l10n.s.cleaningOverlayUnlock)
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(DS.Font.cardTitle)
                     .foregroundStyle(.black)
                     .frame(minWidth: 130)
-                    .padding(.vertical, 10)
-                    .padding(.horizontal, 18)
+                    .padding(.vertical, DS.Space.medium)
+                    .padding(.horizontal, DS.Space.card)
                     .background(
                         Capsule(style: .continuous)
                             .fill(Color.white)
                     )
             }
             .buttonStyle(.plain)
-            .padding(.top, 6)
+            .padding(.top, DS.Space.xSmall)
 
             Text(l10n.s.cleaningOverlayMouseHint)
-                .font(.system(size: 12))
+                .font(DS.Font.panelBody)
                 .foregroundStyle(.white.opacity(0.5))
         }
         .padding(44)
@@ -67,7 +67,7 @@ struct CleaningOverlayView: View {
 
     private var compactCornerHUD: some View {
         VStack {
-            HStack(spacing: 12) {
+            HStack(spacing: DS.Space.medium) {
                 Image(systemName: "keyboard")
                     .font(.system(size: 16, weight: .medium))
                     .foregroundStyle(.secondary)
@@ -79,12 +79,12 @@ struct CleaningOverlayView: View {
 
                 VStack(alignment: .leading, spacing: 3) {
                     Text(l10n.s.cleaningOverlayTitle)
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(DS.Font.rowIcon)
                         .foregroundStyle(Color.primary)
 
-                    HStack(spacing: 8) {
+                    HStack(spacing: DS.Space.rowTitleGap) {
                         Text(l10n.s.cleaningOverlaySubtitle)
-                            .font(.system(size: 11))
+                            .font(DS.Font.panelFloor)
                             .foregroundStyle(Color.secondary)
 
                         compactProgressDots
@@ -93,13 +93,13 @@ struct CleaningOverlayView: View {
 
                 Button(action: { manager.deactivate() }) {
                     Text(l10n.s.cleaningOverlayUnlock)
-                        .font(.system(size: 11, weight: .semibold))
+                        .font(DS.Font.panelFloorEmphasis)
                 }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.small)
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 10)
+            .padding(.horizontal, DS.Space.rowGap)
+            .padding(.vertical, DS.Space.medium)
             .background(HUDBackdrop(cornerRadius: 16))
             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
             .overlay(
@@ -114,7 +114,7 @@ struct CleaningOverlayView: View {
     }
 
     private var fullProgressDots: some View {
-        HStack(spacing: 11) {
+        HStack(spacing: DS.Space.medium) {
             ForEach(0..<manager.unlockThreshold, id: \.self) { index in
                 Circle()
                     .fill(index < manager.unlockProgress ? Color.white : Color.white.opacity(0.22))
@@ -125,7 +125,7 @@ struct CleaningOverlayView: View {
     }
 
     private var compactProgressDots: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: DS.Space.rowTextStack) {
             ForEach(0..<manager.unlockThreshold, id: \.self) { index in
                 Circle()
                     .fill(index < manager.unlockProgress ? Color.accentColor : Color.primary.opacity(0.2))

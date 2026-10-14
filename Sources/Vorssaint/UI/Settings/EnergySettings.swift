@@ -40,8 +40,8 @@ struct EnergySettings: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                VStack(alignment: .leading, spacing: 5) {
+            VStack(alignment: .leading, spacing: DS.Space.xLarge) {
+                VStack(alignment: .leading, spacing: DS.Space.xSmall) {
                     Text(pageTitle).font(.title2.bold())
                     Text(pageDescription)
                         .font(.callout)
@@ -132,17 +132,17 @@ struct EnergySettings: View {
             } else {
                 sessionRow(status: sessionStatus)
             }
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: DS.Space.small) {
                 Text(l10n.s.defaultDurationLabel)
                     .font(.subheadline.weight(.medium))
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 84), spacing: 6)], spacing: 6) {
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 84), spacing: DS.Space.xSmall)], spacing: DS.Space.xSmall) {
                     ForEach(DurationPicker.choices, id: \.self) { minutes in
                         durationChip(minutes)
                     }
                 }
             }
             Divider()
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: DS.Space.small) {
                 Text(automationStrings.automationSection)
                     .font(.subheadline.weight(.medium))
                 Text(automationStrings.caption(requireAll: keepAwakeAutomationRequireAll))
@@ -196,7 +196,7 @@ struct EnergySettings: View {
             UserDefaults.standard.set(false, forKey: DefaultsKey.keepAwakeSwitchUsesUntil)
         } label: {
             Text(DurationPicker.title(for: minutes, l10n.s))
-                .font(.system(size: 11, weight: .medium))
+                .font(DS.Font.panelFloorEmphasis)
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
                 .foregroundStyle(selected ? Color.accentColor : .primary)
@@ -237,7 +237,7 @@ struct EnergySettings: View {
                 Toggle(l10n.s.keepAwakeMouseJiggle, isOn: $keepAwakeMouseJiggle).labelsHidden()
             }
             if keepAwakeMouseJiggle {
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: DS.Space.small) {
                     HStack {
                         Text(l10n.s.keepAwakeMouseJiggleInterval)
                         Spacer()
@@ -329,7 +329,7 @@ struct EnergySettings: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 DisclosureGroup(isExpanded: $brightnessOptionsExpanded) {
-                    VStack(alignment: .leading, spacing: 13) {
+                    VStack(alignment: .leading, spacing: DS.Space.rowGap) {
                         SettingsRow(symbol: "cursorarrow.rays", title: strings.keysToggle,
                                     caption: strings.keysCaption) {
                             Toggle(strings.keysToggle, isOn: $brightnessKeysEnabled)
@@ -369,7 +369,7 @@ struct EnergySettings: View {
                             .foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
                     }
-                    .padding(.top, 10)
+                    .padding(.top, DS.Space.medium)
                 } label: {
                     Text(FeatureStrings.recorder(l10n.language).moreOptions)
                         .font(.subheadline.weight(.medium))
@@ -391,9 +391,9 @@ struct EnergySettings: View {
     }
 
     private func displayRow(_ display: BrightnessDisplay) -> some View {
-        HStack(spacing: 12) {
+        HStack(spacing: DS.Space.medium) {
             Image(systemName: display.isBuiltIn ? "laptopcomputer" : "display")
-                .font(.system(size: 12, weight: .semibold))
+                .font(DS.Font.rowIcon)
                 .foregroundStyle(display.isActive ? Color.accentColor : Color.secondary)
                 .frame(width: 26, height: 26)
                 .background((display.isActive ? Color.accentColor : Color.secondary).opacity(0.12),
@@ -441,7 +441,7 @@ struct EnergySettings: View {
                         }
                 }
                 if extraBrightnessEnabled {
-                    HStack(spacing: 12) {
+                    HStack(spacing: DS.Space.medium) {
                         Text(l10n.s.extraBrightnessLevelLabel)
                         Slider(value: extraBrightnessLevelBinding, in: 10...100, step: 5)
                         Text("\(extraBrightnessLevel)%")

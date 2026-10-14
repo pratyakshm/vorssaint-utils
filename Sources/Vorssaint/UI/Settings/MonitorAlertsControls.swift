@@ -63,8 +63,8 @@ struct MonitorAlertsControls: View {
     }
 
     private var tiles: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            LazyVGrid(columns: monitorTokenColumns, spacing: 8) {
+        VStack(alignment: .leading, spacing: DS.Space.medium) {
+            LazyVGrid(columns: monitorTokenColumns, spacing: DS.Space.small) {
                 if AppFeature.monitorCPU.isAvailable {
                     alertToken(text.cpu, symbol: "cpu", isOn: $alertCPU,
                                limit: .init(label: text.cpuThreshold, value: $alertCPUThreshold,
@@ -144,9 +144,9 @@ struct MonitorAlertsControls: View {
     }
 
     private var checklist: some View {
-        VStack(alignment: .leading, spacing: 7) {
+        VStack(alignment: .leading, spacing: DS.Space.small) {
             Text(text.caption)
-                .font(.system(size: 9.5))
+                .font(DS.Font.panelFloor)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             if AppFeature.monitorCPU.isAvailable {
@@ -201,14 +201,14 @@ struct MonitorAlertsControls: View {
             // user just never hears anything).
             if notificationsDenied, anyAlertEnabled {
                 Text(text.notificationsDenied)
-                    .font(.system(size: 9.5))
+                    .font(DS.Font.panelFloor)
                     .foregroundStyle(.orange)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
         .toggleStyle(.checkbox)
         .controlSize(.small)
-        .font(.system(size: 10.5))
+        .font(DS.Font.panelFloor)
     }
 
     private var anyAlertEnabled: Bool {

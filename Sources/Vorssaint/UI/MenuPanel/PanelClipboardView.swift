@@ -49,7 +49,7 @@ struct PanelClipboardView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: DS.Space.medium) {
             header
             controls
             entriesList
@@ -59,13 +59,13 @@ struct PanelClipboardView: View {
     }
 
     private var header: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: DS.Space.small) {
             Label(text.title, systemImage: "doc.on.clipboard")
-                .font(.system(size: 12, weight: .semibold))
+                .font(DS.Font.panelTitle)
             Spacer()
             Button(action: onClose) {
                 Image(systemName: "xmark.circle.fill")
-                    .font(.system(size: 14))
+                    .font(DS.Font.rowTitle)
                     .foregroundStyle(.secondary)
                     .frame(width: 22, height: 22)
             }
@@ -75,33 +75,33 @@ struct PanelClipboardView: View {
     }
 
     private var controls: some View {
-        VStack(alignment: .leading, spacing: 7) {
+        VStack(alignment: .leading, spacing: DS.Space.rowTitleGap) {
             Toggle(text.enable, isOn: $enabled)
                 .toggleStyle(.checkbox)
-                .font(.system(size: 11.5, weight: .medium))
+                .font(DS.Font.footnote)
                 .onChange(of: enabled) { _, _ in
                     ClipboardHistoryService.shared.syncWithPreferences()
                 }
             Text(enabled ? text.caption : text.disabled)
-                .font(.system(size: 10))
+                .font(DS.Font.panelFloor)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             if enabled, shortcutEnabled {
                 Text("\(text.shortcut): \(shortcut.displayString)")
-                    .font(.system(size: 9.5, weight: .medium, design: .rounded))
+                    .font(DS.Font.panelFloorEmphasis)
                     .foregroundStyle(.tertiary)
             }
-            HStack(spacing: 6) {
+            HStack(spacing: DS.Space.xSmall) {
                 TextField(text.search, text: $query)
                     .textFieldStyle(.roundedBorder)
-                    .font(.system(size: 11))
+                    .font(DS.Font.panelFloor)
                     .disabled(history.entries.isEmpty)
                 Button {
                     let ids = history.recentEntriesSnapshot
                     if inNotch { confirmClearAboveIsland(ids) } else { clearingIDs = ids }
                 } label: {
                     Image(systemName: "trash")
-                        .font(.system(size: 11, weight: .semibold))
+                        .font(DS.Font.panelFloorEmphasis)
                         .frame(width: 24, height: 22)
                 }
                 .buttonStyle(.bordered)
@@ -113,7 +113,7 @@ struct PanelClipboardView: View {
                     history.showHistoryWindow()
                 } label: {
                     Image(systemName: "arrow.up.forward.app")
-                        .font(.system(size: 11, weight: .semibold))
+                        .font(DS.Font.panelFloorEmphasis)
                         .frame(width: 24, height: 22)
                 }
                 .buttonStyle(.bordered)
@@ -135,7 +135,7 @@ struct PanelClipboardView: View {
                 ScrollView {
                     // Lazy: a large history would otherwise build every row, and
                     // decode every image thumbnail, each time the panel opens.
-                    LazyVStack(alignment: .leading, spacing: 7) {
+                    LazyVStack(alignment: .leading, spacing: DS.Space.rowTitleGap) {
                         ForEach(filteredEntries) { entry in
                             entryRow(entry)
                                 .id(entry.id)
@@ -155,7 +155,7 @@ struct PanelClipboardView: View {
 
     private func emptyState(_ message: String) -> some View {
         Text(message)
-            .font(.system(size: 10.5))
+            .font(DS.Font.panelFloor)
             .foregroundStyle(.tertiary)
             .frame(maxWidth: .infinity)
             .frame(height: 72)
@@ -175,18 +175,18 @@ struct PanelClipboardView: View {
             // the selection renderer, which lays the whole preview out and
             // ignores the line limit, so a long entry paints over the rows
             // below it. The history window shows the full, selectable text.
-            HStack(alignment: .center, spacing: 7) {
+            HStack(alignment: .center, spacing: DS.Space.rowTitleGap) {
                 if let color = entry.color {
                     ColorSwatch(color: color, size: 12)
                 }
-                SearchHighlightText.text(entry.preview, tokens: searchTokens, fontSize: 10.5)
-                    .font(.system(size: 10.5))
+                SearchHighlightText.text(entry.preview, tokens: searchTokens, fontSize: 11)
+                    .font(DS.Font.panelFloor)
                     .lineLimit(3)
                     .truncationMode(.tail)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         case .image:
-            HStack(alignment: .center, spacing: 7) {
+            HStack(alignment: .center, spacing: DS.Space.rowTitleGap) {
                 if let name = entry.imageFile {
                     ClipboardThumbnailImage(source: .stored(name: name),
                                             aspectRatio: entry.imageAspectRatio)
@@ -194,37 +194,37 @@ struct PanelClipboardView: View {
                         .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
                 }
                 SearchHighlightText.text("\(text.imageEntryLabel) · \(entry.imageDimensionsLabel)",
-                                         tokens: searchTokens, fontSize: 10)
-                    .font(.system(size: 10))
+                                          tokens: searchTokens, fontSize: 11)
+                    .font(DS.Font.panelFloor)
                     .foregroundStyle(.secondary)
             }
         case .files:
             if entry.filePaths.count == 1,
                let path = entry.filePaths.first,
                ClipboardImageStore.isImageFile(atPath: path) {
-                HStack(alignment: .center, spacing: 7) {
+                HStack(alignment: .center, spacing: DS.Space.rowTitleGap) {
                     ClipboardThumbnailImage(source: .file(path: path),
                                             aspectRatio: ClipboardImageStore.imageAspectRatio(atPath: path))
                         .frame(maxWidth: 110, maxHeight: 40)
                         .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
-                    SearchHighlightText.text(entry.fileNames.first ?? entry.preview, tokens: searchTokens, fontSize: 10.5)
-                        .font(.system(size: 10.5))
+                    SearchHighlightText.text(entry.fileNames.first ?? entry.preview, tokens: searchTokens, fontSize: 11)
+                        .font(DS.Font.panelFloor)
                         .lineLimit(2)
                         .truncationMode(.middle)
                 }
                 .help(path)
             } else {
-                HStack(alignment: .center, spacing: 7) {
+                HStack(alignment: .center, spacing: DS.Space.rowTitleGap) {
                     Image(systemName: "folder")
-                        .font(.system(size: 11, weight: .semibold))
+                        .font(DS.Font.panelFloorEmphasis)
                         .foregroundStyle(.secondary)
                     // A count of several files is no text the search reads.
                     SearchHighlightText.text(entry.filePaths.count == 1
                                                 ? (entry.fileNames.first ?? entry.preview)
                                                 : String(format: text.fileCountFormat, entry.filePaths.count),
-                                             tokens: entry.filePaths.count == 1 ? searchTokens : [],
-                                             fontSize: 10.5)
-                        .font(.system(size: 10.5))
+                                              tokens: entry.filePaths.count == 1 ? searchTokens : [],
+                                              fontSize: 11)
+                        .font(DS.Font.panelFloor)
                         .lineLimit(2)
                         .truncationMode(.middle)
                 }
@@ -234,19 +234,19 @@ struct PanelClipboardView: View {
     }
 
     private func entryRow(_ entry: ClipboardHistoryEntry) -> some View {
-        VStack(alignment: .leading, spacing: 7) {
+        VStack(alignment: .leading, spacing: DS.Space.rowTitleGap) {
             if entry.isPinned {
                 Label(text.pinned, systemImage: "pin.fill")
-                    .font(.system(size: 9.5, weight: .bold))
+                    .font(DS.Font.panelFloorEmphasis)
                     .foregroundStyle(Color.accentColor)
             }
             entryPreview(entry)
-            HStack(spacing: 6) {
+            HStack(spacing: DS.Space.xSmall) {
                 Button {
                     history.move(entry, .up)
                 } label: {
                     Image(systemName: "arrow.up")
-                        .font(.system(size: 10, weight: .bold))
+                        .font(DS.Font.panelFloorEmphasis)
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.mini)
@@ -256,7 +256,7 @@ struct PanelClipboardView: View {
                     history.move(entry, .down)
                 } label: {
                     Image(systemName: "arrow.down")
-                        .font(.system(size: 10, weight: .bold))
+                        .font(DS.Font.panelFloorEmphasis)
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.mini)
@@ -266,7 +266,7 @@ struct PanelClipboardView: View {
                     history.togglePin(entry)
                 } label: {
                     Image(systemName: entry.isPinned ? "pin.slash" : "pin")
-                        .font(.system(size: 10, weight: .bold))
+                        .font(DS.Font.panelFloorEmphasis)
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.mini)
@@ -274,7 +274,7 @@ struct PanelClipboardView: View {
                 if entry.kind == .image, AppFeature.screenshot.isAvailable {
                     Button { history.editImage(entry) } label: {
                         Image(systemName: "pencil")
-                            .font(.system(size: 10, weight: .bold))
+                            .font(DS.Font.panelFloorEmphasis)
                     }
                     .buttonStyle(.bordered)
                     .controlSize(.mini)
@@ -301,7 +301,7 @@ struct PanelClipboardView: View {
                 } label: {
                     Label(copiedID == entry.id ? text.copied : text.copy,
                           systemImage: copiedID == entry.id ? "checkmark" : "doc.on.doc")
-                        .font(.system(size: 10, weight: .semibold))
+                        .font(DS.Font.panelFloorEmphasis)
                 }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.mini)
@@ -309,14 +309,14 @@ struct PanelClipboardView: View {
                     history.remove(entry)
                 } label: {
                     Image(systemName: "trash")
-                        .font(.system(size: 10, weight: .bold))
+                        .font(DS.Font.panelFloorEmphasis)
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.mini)
                 .help(text.delete)
                 Spacer()
                 Text(entry.copiedAt, style: .time)
-                    .font(.system(size: 9.5))
+                    .font(DS.Font.panelFloor)
                     .foregroundStyle(.tertiary)
             }
         }

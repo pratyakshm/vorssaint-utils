@@ -32,14 +32,14 @@ struct NetworkSection: View {
         PanelSection(.network, title: l10n.s.networkSection, collapsible: collapsible,
                      supportsEditing: true,
                      resetAction: resetPanelDefaults) { editing in
-            VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: DS.Space.cardStack) {
                 ForEach(Array(blocks(editing: editing).enumerated()), id: \.element) { index, block in
                     if index > 0 { Divider() }
                     PanelReorderableItem(item: block,
                                          isEnabled: editing,
                                          order: blockOrderBinding,
                                          dragging: $draggingBlock) {
-                        HStack(alignment: .top, spacing: 8) {
+                        HStack(alignment: .top, spacing: DS.Space.rowTitleGap) {
                             if editing {
                                 PanelDragHandle()
                             }
@@ -140,10 +140,10 @@ struct NetworkSection: View {
                                systemImage: "list.bullet.rectangle",
                                isVisible: $netApps)
         } else {
-            VStack(alignment: .leading, spacing: 6) {
-                HStack(spacing: 6) {
+            VStack(alignment: .leading, spacing: DS.Space.xSmall) {
+                HStack(spacing: DS.Space.xSmall) {
                     Text(l10n.s.networkApps)
-                        .font(.system(size: 10, weight: .medium))
+                        .font(DS.Font.panelFloorEmphasis)
                         .foregroundStyle(.tertiary)
                     Spacer(minLength: 0)
                     if editing {
@@ -152,7 +152,7 @@ struct NetworkSection: View {
                 }
                 if appRows.isEmpty {
                     Text(appRowsLoading ? l10n.s.breakdownMeasuring : l10n.s.networkAppsIdle)
-                        .font(.system(size: 10.5))
+                        .font(DS.Font.panelFloor)
                         .foregroundStyle(.tertiary)
                 } else {
                     ForEach(appRows) { row in
@@ -172,14 +172,14 @@ struct NetworkSection: View {
                                systemImage: "arrow.down",
                                isVisible: $netSpeed)
         } else {
-            VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: DS.Space.medium) {
                 if editing {
                     HStack {
                         Spacer(minLength: 0)
                         PanelInlineHideButton(isVisible: $netSpeed)
                     }
                 }
-                HStack(spacing: 10) {
+                HStack(spacing: DS.Space.rowGap) {
                     rateColumn(icon: "arrow.down",
                                label: l10n.s.networkDownload,
                                value: monitor.snapshot.netDownBytesPerSec,
@@ -210,9 +210,9 @@ struct NetworkSection: View {
             speedUnit = speedInBits ? .bytes : .bits
         } label: {
             Text(symbol)
-                .font(.system(size: 10.5, weight: .semibold, design: .rounded))
+                .font(DS.Font.panelFloorEmphasis)
                 .foregroundStyle(.secondary)
-                .padding(.horizontal, 7)
+                .padding(.horizontal, DS.Space.small)
                 .frame(height: 22)
                 .background(
                     RoundedRectangle(cornerRadius: 7, style: .continuous)
@@ -227,17 +227,17 @@ struct NetworkSection: View {
     }
 
     private func rateColumn(icon: String, label: String, value: Double?, color: Color) -> some View {
-        HStack(spacing: 7) {
+        HStack(spacing: DS.Space.rowTitleGap) {
             Image(systemName: icon)
-                .font(.system(size: 12, weight: .semibold))
+                .font(DS.Font.panelTitle)
                 .foregroundStyle(color)
-            VStack(alignment: .leading, spacing: 1) {
+            VStack(alignment: .leading, spacing: DS.Space.rowTextStack) {
                 Text(value.map { MetricFormat.networkRate($0, inBits: speedInBits) } ?? l10n.s.networkMeasuring)
-                    .font(.system(size: 13.5, weight: .semibold, design: .rounded))
+                    .font(DS.Font.body)
                     .monospacedDigit()
                     .contentTransition(.numericText())
                 Text(label)
-                    .font(.system(size: 10))
+                    .font(DS.Font.panelFloor)
                     .foregroundStyle(.secondary)
             }
             Spacer(minLength: 0)
@@ -269,14 +269,14 @@ struct NetworkSection: View {
                                systemImage: "sum",
                                isVisible: $netTotals)
         } else {
-            HStack(spacing: 6) {
+            HStack(spacing: DS.Space.xSmall) {
                 Text(l10n.s.networkThisSession)
-                    .font(.system(size: 10))
+                    .font(DS.Font.panelFloor)
                     .foregroundStyle(.tertiary)
                 Spacer()
                 if let down = monitor.snapshot.netTotalDown, let up = monitor.snapshot.netTotalUp {
                     Text("↓\(MetricFormat.bytes(down))  ↑\(MetricFormat.bytes(up))")
-                        .font(.system(size: 10.5, weight: .medium))
+                        .font(DS.Font.panelFloorEmphasis)
                         .monospacedDigit()
                         .foregroundStyle(.secondary)
                 }
@@ -295,12 +295,12 @@ struct NetworkSection: View {
                                systemImage: "gauge.with.dots.needle.67percent",
                                isVisible: $netTest)
         } else {
-            VStack(alignment: .leading, spacing: 6) {
-                HStack(spacing: 8) {
+            VStack(alignment: .leading, spacing: DS.Space.xSmall) {
+                HStack(spacing: DS.Space.rowTitleGap) {
                     if speed.isRunning {
                         ProgressView().controlSize(.small)
                         Text(l10n.s.speedTestTesting)
-                            .font(.system(size: 11))
+                            .font(DS.Font.panelFloor)
                             .foregroundStyle(.secondary)
                     } else {
                         Button {
@@ -308,7 +308,7 @@ struct NetworkSection: View {
                         } label: {
                             Label(speed.downloadMbps == nil ? l10n.s.speedTestRun : l10n.s.speedTestAgain,
                                   systemImage: "gauge.with.dots.needle.67percent")
-                                .font(.system(size: 11))
+                                .font(DS.Font.panelFloor)
                         }
                         .buttonStyle(.bordered)
                         .controlSize(.small)
@@ -316,7 +316,7 @@ struct NetworkSection: View {
                     Spacer()
                     if let down = speed.downloadMbps, let up = speed.uploadMbps {
                         Text("↓\(mbps(down)) ↑\(mbps(up)) Mbps")
-                            .font(.system(size: 11, weight: .semibold))
+                            .font(DS.Font.panelFloorEmphasis)
                             .monospacedDigit()
                             .contentTransition(.numericText())
                     }
@@ -326,11 +326,11 @@ struct NetworkSection: View {
                 }
                 if case .failed = speed.phase {
                     Text(l10n.s.speedTestFailed)
-                        .font(.system(size: 10))
+                        .font(DS.Font.panelFloor)
                         .foregroundStyle(PanelMetricColor.orange(for: colorScheme))
                 } else if let latency = speed.latencyMs {
                     Text("\(l10n.s.speedTestLatency): \(Int(latency.rounded())) ms")
-                        .font(.system(size: 10))
+                        .font(DS.Font.panelFloor)
                         .foregroundStyle(.tertiary)
                 }
             }
@@ -414,15 +414,15 @@ private struct NetworkAddressBlock: View {
             PanelHiddenItemRow(title: l10n.s.networkIPAddresses,
                                systemImage: "network", isVisible: $isVisible)
         } else {
-            HStack(alignment: .top, spacing: 6) {
+            HStack(alignment: .top, spacing: DS.Space.xSmall) {
                 Text(l10n.s.networkLocalIP)
-                    .font(.system(size: 10))
+                    .font(DS.Font.panelFloor)
                     .foregroundStyle(.tertiary)
                 Spacer()
                 // Nothing connected: the value is left out, like the totals block.
                 if !service.localAddresses.isEmpty {
                     Text(service.localAddresses.joined(separator: "\n"))
-                        .font(.system(size: 10.5, weight: .medium))
+                        .font(DS.Font.panelFloorEmphasis)
                         .monospacedDigit()
                         .multilineTextAlignment(.trailing)
                         .foregroundStyle(.secondary)

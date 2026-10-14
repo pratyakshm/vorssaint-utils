@@ -17,16 +17,16 @@ struct UpdateHighlightsView: View {
 
     var body: some View {
         let size = UpdateHighlightsLayout.size(in: availableSize)
-        VStack(spacing: 16) {
-            VStack(spacing: 4) {
+        VStack(spacing: DS.Space.cardStack) {
+            VStack(spacing: DS.Space.rowTextStack) {
                 Text(FeatureStrings.notch(l10n.language).title).font(.title2.weight(.semibold))
                 Text(AppInfo.isDeveloperBuild ? text.preview : "Vorssaint \(AppInfo.version)")
-                    .font(.caption).foregroundStyle(.secondary)
+                    .font(DS.Font.caption).foregroundStyle(.secondary)
             }
             .frame(height: 42)
 
             ScrollView {
-                VStack(spacing: 16) {
+                VStack(spacing: DS.Space.cardStack) {
                     Group {
                         if let animationURL {
                             UpdateHighlightsGIF(url: animationURL, animates: !reduceMotion)
@@ -40,7 +40,7 @@ struct UpdateHighlightsView: View {
                     .accessibilityHidden(true)
 
                     Text(text.caption)
-                        .font(.callout).foregroundStyle(.secondary)
+                        .font(DS.Font.body).foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
                         .fixedSize(horizontal: false, vertical: true)
                 }

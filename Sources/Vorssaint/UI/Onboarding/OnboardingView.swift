@@ -98,7 +98,7 @@ struct OnboardingView: View {
 
             Spacer()
 
-            HStack(spacing: 6) {
+            HStack(spacing: DS.Space.xSmall) {
                 ForEach(steps.indices, id: \.self) { i in
                     Capsule()
                         .fill(i == index ? Color.accentColor : Color.primary.opacity(0.15))
@@ -126,7 +126,7 @@ struct OnboardingView: View {
             .controlSize(.large)
             .buttonStyle(.borderedProminent)
         }
-        .padding(16)
+        .padding(DS.Space.large)
     }
 
     private var primaryButtonTitle: String {
@@ -144,22 +144,22 @@ private struct WelcomeStep: View {
         VStack(spacing: 0) {
             ZStack {
                 Theme.spaceGradient
-                VStack(spacing: 10) {
+                VStack(spacing: DS.Space.medium) {
                     BrandMark(width: 130)
                     Text(AppInfo.name)
                         .font(.system(size: 26, weight: .bold))
                         .foregroundStyle(.white)
                     Text(l10n.s.obStepWelcomeBody)
-                        .font(.system(size: 12))
+                        .font(DS.Font.panelBody)
                         .foregroundStyle(.white.opacity(0.85))
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 40)
                 }
-                .padding(.top, 12)
+                .padding(.top, DS.Space.medium)
             }
             .frame(height: 220)
 
-            VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: DS.Space.cardStack) {
                 Picker(l10n.s.obLanguageLabel, selection: $l10n.language) {
                     ForEach(AppLanguage.allCases) { language in
                         Text(language.displayName).tag(language)
@@ -184,20 +184,20 @@ private struct WelcomeStep: View {
     }
 
     private func featureRow(icon: String, title: String, text: String) -> some View {
-        HStack(alignment: .top, spacing: 12) {
+        HStack(alignment: .top, spacing: DS.Space.rowGap) {
             ZStack {
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                RoundedRectangle(cornerRadius: DS.Radius.row, style: .continuous)
                     .fill(Theme.spaceGradient)
                     .frame(width: 30, height: 30)
                 Image(systemName: icon)
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(DS.Font.rowIcon)
                     .foregroundStyle(.white)
             }
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: DS.Space.rowTextStack) {
                 Text(title)
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(DS.Font.rowIcon)
                 Text(text)
-                    .font(.system(size: 11.5))
+                    .font(DS.Font.footnote)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -218,12 +218,12 @@ private struct PurposeStep: View {
     private var hub: FeatureHubStrings { FeatureStrings.hub(l10n.language) }
 
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: DS.Space.cardStack) {
             StepHeader(icon: "sparkles.rectangle.stack",
                        title: l10n.s.obPurposeTitle,
                        subtitle: l10n.s.obPurposeBody)
 
-            VStack(spacing: 8) {
+            VStack(spacing: DS.Space.rowTitleGap) {
                 ForEach(FeaturePreset.allCases) { preset in
                     bundleCard(preset)
                 }
@@ -232,22 +232,22 @@ private struct PurposeStep: View {
 
             HStack {
                 Text(hub.tabFeatures.uppercased())
-                    .font(.system(size: 11, weight: .bold))
+                    .font(DS.Font.section)
                     .foregroundStyle(.secondary)
                     .tracking(1)
                 Spacer()
                 Text(String(format: hub.activeCountFormat,
                             selectedFeatures.count, FeatureRuntime.shared.installableCount))
-                    .font(.caption)
+                    .font(DS.Font.caption)
                     .foregroundStyle(.tertiary)
             }
             .padding(.horizontal, 28)
 
-            LazyVStack(spacing: 14) {
+            LazyVStack(spacing: DS.Space.rowGap) {
                 ForEach(FeatureGroup.allCases, id: \.self) { group in
-                    VStack(alignment: .leading, spacing: 7) {
+                    VStack(alignment: .leading, spacing: DS.Space.rowTitleGap) {
                         Text(groupTitle(group))
-                            .font(.caption.weight(.semibold))
+                            .font(DS.Font.panelFloorEmphasis)
                             .foregroundStyle(.secondary)
                         ForEach(AppFeature.features(in: group), id: \.self) { feature in
                             featureCard(feature)
@@ -258,11 +258,11 @@ private struct PurposeStep: View {
             .padding(.horizontal, 28)
 
             Text(l10n.s.obPurposeSkip)
-                .font(.caption)
+                .font(DS.Font.caption)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 36)
-                .padding(.bottom, 12)
+                .padding(.bottom, DS.Space.medium)
 
             Spacer()
         }
@@ -290,18 +290,18 @@ private struct PurposeStep: View {
             selectedPreset = preset
             selectedFeatures = preset.features
         } label: {
-            HStack(spacing: 12) {
+            HStack(spacing: DS.Space.rowGap) {
                 Image(systemName: preset.symbolName)
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(DS.Font.cardTitle)
                     .foregroundStyle(Color.accentColor)
                     .frame(width: 26)
                     .accessibilityHidden(true)
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: DS.Space.rowTextStack) {
                     Text(name(preset))
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(DS.Font.rowIcon)
                         .foregroundStyle(.primary)
                     Text(caption(preset))
-                        .font(.system(size: 11))
+                        .font(DS.Font.panelFloor)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -312,18 +312,18 @@ private struct PurposeStep: View {
                         .accessibilityHidden(true)
                 }
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 10)
+            .padding(.horizontal, DS.Space.rowGap)
+            .padding(.vertical, DS.Space.medium)
             .background(
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                RoundedRectangle(cornerRadius: DS.Radius.row, style: .continuous)
                     .fill(selected ? Color.accentColor.opacity(0.12) : Color.primary.opacity(0.05))
             )
             .overlay {
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                RoundedRectangle(cornerRadius: DS.Radius.row, style: .continuous)
                     .strokeBorder(selected ? Color.accentColor.opacity(0.45) : .clear,
                                   lineWidth: 1)
             }
-            .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: DS.Radius.row, style: .continuous))
         }
         .buttonStyle(.plain)
         .accessibilityLabel("\(name(preset)). \(caption(preset))")
@@ -349,41 +349,41 @@ private struct PurposeStep: View {
                 selectedFeatures.formUnion(feature.initialInstallGroup)
             }
         } label: {
-            HStack(spacing: 10) {
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
+            HStack(spacing: DS.Space.rowGap) {
+                RoundedRectangle(cornerRadius: DS.Radius.row, style: .continuous)
                     .fill(selected
                           ? AnyShapeStyle(Theme.spaceGradient)
                           : AnyShapeStyle(Color.secondary.opacity(0.16)))
                     .frame(width: 32, height: 32)
                     .overlay {
                         Image(systemName: feature.symbolName)
-                            .font(.system(size: 13, weight: .semibold))
+                            .font(DS.Font.rowIcon)
                             .foregroundStyle(selected ? AnyShapeStyle(.white) : AnyShapeStyle(.secondary))
                             .accessibilityHidden(true)
                     }
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: DS.Space.rowTextStack) {
                     Text(feature.hubTitle(l10n.s, hub: hub))
-                        .font(.system(size: 12.5, weight: .semibold))
+                        .font(DS.Font.panelTitle)
                         .foregroundStyle(.primary)
                     Text(feature.hubDescription(hub))
-                        .font(.caption)
+                        .font(DS.Font.caption)
                         .foregroundStyle(.secondary)
                         .lineLimit(2)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: 8)
                 Image(systemName: selected ? "checkmark.circle.fill" : "circle")
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(DS.Font.cardTitle)
                     .foregroundStyle(selected ? Color.accentColor : Color.secondary.opacity(0.45))
                     .accessibilityHidden(true)
             }
-            .padding(.horizontal, 11)
-            .padding(.vertical, 8)
+            .padding(.horizontal, DS.Space.medium)
+            .padding(.vertical, DS.Space.rowTitleGap)
             .background(
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                RoundedRectangle(cornerRadius: DS.Radius.row, style: .continuous)
                     .fill(selected ? Color.accentColor.opacity(0.09) : Color.primary.opacity(0.035))
             )
-            .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: DS.Radius.row, style: .continuous))
         }
         .buttonStyle(.plain)
         .disabled(blocked != nil)
@@ -423,14 +423,14 @@ private struct SelectedPermissionsStep: View {
     }
 
     var body: some View {
-        VStack(spacing: 18) {
+        VStack(spacing: DS.Space.card) {
             StepHeader(icon: "key.horizontal.fill",
                        title: hub.tabPermissions,
                        subtitle: hub.permissionsIntro)
 
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: DS.Space.medium) {
                 Text(hub.onboardingSelectedPermissionsTitle)
-                    .font(.headline)
+                    .font(DS.Font.cardTitle)
 
                 if permissions.isEmpty {
                     Label(hub.onboardingNoSelectedPermissions,
@@ -439,53 +439,53 @@ private struct SelectedPermissionsStep: View {
                 } else {
                     VStack(spacing: 0) {
                         ForEach(Array(permissions.enumerated()), id: \.offset) { index, permission in
-                            if index > 0 { Divider().padding(.vertical, 12) }
-                            VStack(alignment: .leading, spacing: 8) {
+                            if index > 0 { Divider().padding(.vertical, DS.Space.medium) }
+                            VStack(alignment: .leading, spacing: DS.Space.rowTitleGap) {
                                 PermissionRow(kind: permission == .accessibility
                                               ? .accessibility : .screenRecording)
                                 Text(permission.explainer(hub))
-                                    .font(.caption)
+                                    .font(DS.Font.caption)
                                     .foregroundStyle(.secondary)
                                 Text(String(format: hub.usedByFormat,
                                             featureNames(for: permission)))
-                                    .font(.caption)
+                                    .font(DS.Font.caption)
                                     .foregroundStyle(.tertiary)
                             }
                         }
                     }
                 }
             }
-            .padding(16)
+            .padding(DS.Space.card)
             .background(
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous)
                     .fill(Color.primary.opacity(0.05))
             )
             .padding(.horizontal, 28)
 
             DisclosureGroup(isExpanded: $showingOtherPermissions) {
-                VStack(alignment: .leading, spacing: 14) {
+                VStack(alignment: .leading, spacing: DS.Space.rowGap) {
                     PermissionsPortalSections(hub: hub,
                                               visiblePermissions: otherPermissions)
                 }
-                .padding(.top, 12)
+                .padding(.top, DS.Space.medium)
             } label: {
-                VStack(alignment: .leading, spacing: 3) {
+                VStack(alignment: .leading, spacing: DS.Space.rowTextStack) {
                     Text(hub.onboardingOtherPermissionsTitle)
-                        .font(.headline)
+                        .font(DS.Font.cardTitle)
                     Text(hub.onboardingOtherPermissionsCaption)
-                        .font(.caption)
+                        .font(DS.Font.caption)
                         .foregroundStyle(.secondary)
                 }
             }
-            .padding(16)
+            .padding(DS.Space.card)
             .background(
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous)
                     .fill(Color.primary.opacity(0.05))
             )
             .padding(.horizontal, 28)
 
             Text(l10n.s.permissionRestartNote)
-                .font(.caption)
+                .font(DS.Font.caption)
                 .foregroundStyle(.tertiary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 36)
@@ -515,24 +515,24 @@ private struct DoneStep: View {
         VStack(spacing: 0) {
             ZStack {
                 Theme.spaceGradient
-                VStack(spacing: 14) {
+                VStack(spacing: DS.Space.rowGap) {
                     BrandMark(width: 150)
                     Text(l10n.s.obStepDoneTitle)
                         .font(.system(size: 26, weight: .bold))
                         .foregroundStyle(.white)
                     Text(l10n.s.obStepDoneBody)
-                        .font(.system(size: 12.5))
+                        .font(DS.Font.caption)
                         .foregroundStyle(.white.opacity(0.85))
                 }
             }
             .frame(height: 300)
 
-            VStack(spacing: 10) {
+            VStack(spacing: DS.Space.medium) {
                 Image(systemName: "menubar.arrow.up.rectangle")
                     .font(.system(size: 26))
                     .foregroundStyle(.secondary)
                 Text(l10n.s.obDoneHint)
-                    .font(.system(size: 12))
+                    .font(DS.Font.panelBody)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 60)
@@ -552,9 +552,9 @@ private struct StepHeader: View {
     let subtitle: String
 
     var body: some View {
-        VStack(spacing: 10) {
+        VStack(spacing: DS.Space.medium) {
             ZStack {
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous)
                     .fill(Theme.spaceGradient)
                     .frame(width: 56, height: 56)
                 Image(systemName: icon)
@@ -564,7 +564,7 @@ private struct StepHeader: View {
             Text(title)
                 .font(.system(size: 19, weight: .bold))
             Text(subtitle)
-                .font(.system(size: 12))
+                .font(DS.Font.panelBody)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)

@@ -123,7 +123,7 @@ struct NotchCompanionMark: View {
             downloadIndicator
         case .agents:
             let working = Self.working
-            HStack(spacing: 1) {
+            HStack(spacing: DS.Space.rowTextStack) {
                 ForEach(working) { NotchAgentGlyph(provider: $0, size: Self.agentMarkSize(working.count, geometry)) }
             }
         case .calendar:
@@ -142,12 +142,12 @@ struct NotchCompanionMark: View {
     }
 
     private var downloadIndicator: some View {
-        HStack(spacing: 5) {
-            Image(systemName: "arrow.down.circle.fill").font(.system(size: 13))
+        HStack(spacing: DS.Space.xSmall) {
+            Image(systemName: "arrow.down.circle.fill").font(DS.Font.body)
             if geometry.compactActivityWingWidth >= 80,
                let fraction = downloads.items.first(where: { $0.active && !$0.completed })?.fraction {
                 Text(fraction, format: .percent.precision(.fractionLength(0)))
-                    .font(.system(size: 10, weight: .medium)).monospacedDigit()
+                    .font(DS.Font.panelFloor).monospacedDigit()
             }
         }
         .lineLimit(1)

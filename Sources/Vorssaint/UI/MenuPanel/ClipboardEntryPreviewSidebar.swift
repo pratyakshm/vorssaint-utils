@@ -57,14 +57,14 @@ struct ClipboardEntryPreviewSidebar: View {
     }
 
     private var sidebarHeader: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: DS.Space.small) {
             Label(text.previewLabel, systemImage: "doc.text.magnifyingglass")
-                .font(.system(size: 11.5, weight: .semibold))
+                .font(DS.Font.panelFloorEmphasis)
                 .foregroundStyle(.secondary)
             Spacer()
             Button(action: onClose) {
                 Image(systemName: "xmark")
-                    .font(.system(size: 9.5, weight: .semibold))
+                    .font(DS.Font.panelFloorEmphasis)
                     .foregroundStyle(.secondary)
                     .frame(width: 20, height: 20)
             }
@@ -72,8 +72,8 @@ struct ClipboardEntryPreviewSidebar: View {
             .help(l10n.s.menuClose)
             .accessibilityLabel(l10n.s.menuClose)
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
+        .padding(.horizontal, DS.Space.medium)
+        .padding(.vertical, DS.Space.medium)
     }
 
     /// One text view for every text entry: JSON laid out after the entry
@@ -91,7 +91,7 @@ struct ClipboardEntryPreviewSidebar: View {
     private func contentScrollView(_ entry: ClipboardHistoryEntry) -> some View {
         ScrollView {
             previewContent(entry)
-                .padding(12)
+                .padding(DS.Space.medium)
                 .frame(maxWidth: .infinity, alignment: .topLeading)
         }
         .frame(maxHeight: .infinity)
@@ -99,10 +99,10 @@ struct ClipboardEntryPreviewSidebar: View {
 
     private func textEditor(_ entry: ClipboardHistoryEntry) -> some View {
         TextEditor(text: $draft)
-            .font(.system(size: 12))
+            .font(DS.Font.panelBody)
             .lineSpacing(2)
             .scrollContentBackground(.hidden)
-            .padding(8)
+            .padding(DS.Space.small)
             .background(
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .fill(Color.primary.opacity(0.045))
@@ -111,7 +111,7 @@ struct ClipboardEntryPreviewSidebar: View {
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .strokeBorder(Color.accentColor.opacity(0.45), lineWidth: 1)
             )
-            .padding(12)
+            .padding(DS.Space.medium)
             .focused($editorFocused)
             .onExitCommand { cancelEditing() }
             .accessibilityLabel(text.edit)
@@ -124,7 +124,7 @@ struct ClipboardEntryPreviewSidebar: View {
             // Standard text selection lets someone copy only the fragment
             // they need; the window monitor leaves ⌘C with this view.
             Text(entry.text)
-                .font(.system(size: 12))
+                .font(DS.Font.panelBody)
                 .textSelection(.enabled)
                 .lineSpacing(2)
                 .frame(maxWidth: .infinity, alignment: .topLeading)
@@ -137,7 +137,7 @@ struct ClipboardEntryPreviewSidebar: View {
 
     @ViewBuilder
     private func imagePreview(_ entry: ClipboardHistoryEntry) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: DS.Space.small) {
             if let name = entry.imageFile {
                 ClipboardThumbnailImage(source: .stored(name: name),
                                         aspectRatio: entry.imageAspectRatio)
@@ -145,7 +145,7 @@ struct ClipboardEntryPreviewSidebar: View {
                     .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
             }
             Text("\(text.imageEntryLabel) · \(entry.imageDimensionsLabel)")
-                .font(.system(size: 10.5))
+                .font(DS.Font.panelFloor)
                 .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, alignment: .topLeading)
@@ -165,7 +165,7 @@ struct ClipboardEntryPreviewSidebar: View {
         let isImage = ClipboardImageStore.isImageFile(atPath: path)
         let fileName = (path as NSString).lastPathComponent
 
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: DS.Space.medium) {
             if isImage {
                 ClipboardThumbnailImage(source: .file(path: path),
                                         aspectRatio: ClipboardImageStore.imageAspectRatio(atPath: path))
@@ -176,33 +176,33 @@ struct ClipboardEntryPreviewSidebar: View {
                 let size = ClipboardImageStore.fileSizeString(atPath: path)
                 let parts = [text.imageEntryLabel, dim, size].compactMap { $0 }
                 Text(parts.joined(separator: " · "))
-                    .font(.system(size: 10.5))
+                    .font(DS.Font.panelFloor)
                     .foregroundStyle(.secondary)
             } else {
-                HStack(spacing: 8) {
+                HStack(spacing: DS.Space.small) {
                     Image(nsImage: NSWorkspace.shared.icon(forFile: path))
                         .resizable()
                         .frame(width: 32, height: 32)
-                    VStack(alignment: .leading, spacing: 2) {
+                    VStack(alignment: .leading, spacing: DS.Space.rowTextStack) {
                         Text(fileName)
-                            .font(.system(size: 12, weight: .medium))
+                            .font(DS.Font.panelBody)
                             .lineLimit(2)
                         if let size = ClipboardImageStore.fileSizeString(atPath: path) {
                             Text(size)
-                                .font(.system(size: 10))
+                                .font(DS.Font.panelFloor)
                                 .foregroundStyle(.secondary)
                         }
                     }
                 }
             }
 
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: DS.Space.rowTextStack) {
                 Text(path)
-                    .font(.system(size: 10.5, design: .monospaced))
+                    .font(.system(size: 11, design: .monospaced))
                     .textSelection(.enabled)
                     .lineSpacing(2)
                     .foregroundStyle(.secondary)
-                    .padding(8)
+                    .padding(DS.Space.small)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background(
                         RoundedRectangle(cornerRadius: 6, style: .continuous)
@@ -215,14 +215,14 @@ struct ClipboardEntryPreviewSidebar: View {
 
     @ViewBuilder
     private func multipleFilesPreview(_ entry: ClipboardHistoryEntry) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: DS.Space.small) {
             Text(String(format: text.fileCountFormat, entry.filePaths.count))
-                .font(.system(size: 11.5, weight: .semibold))
+                .font(DS.Font.panelFloorEmphasis)
                 .foregroundStyle(.secondary)
 
-            VStack(spacing: 6) {
+            VStack(spacing: DS.Space.xSmall) {
                 ForEach(entry.filePaths, id: \.self) { path in
-                    HStack(spacing: 6) {
+                    HStack(spacing: DS.Space.xSmall) {
                         if ClipboardImageStore.isImageFile(atPath: path) {
                             ClipboardThumbnailImage(source: .file(path: path, maxPixelSize: 64))
                                 .frame(width: 20, height: 20)
@@ -233,25 +233,25 @@ struct ClipboardEntryPreviewSidebar: View {
                                 .frame(width: 18, height: 18)
                         }
                         Text((path as NSString).lastPathComponent)
-                            .font(.system(size: 11))
+                            .font(DS.Font.panelFloor)
                             .lineLimit(1)
                             .truncationMode(.middle)
                         Spacer()
                     }
                 }
             }
-            .padding(8)
+            .padding(DS.Space.small)
             .background(
                 RoundedRectangle(cornerRadius: 6, style: .continuous)
                     .fill(Color.primary.opacity(0.04))
             )
 
             Text(entry.filePaths.joined(separator: "\n"))
-                .font(.system(size: 10.5, design: .monospaced))
+                .font(.system(size: 11, design: .monospaced))
                 .textSelection(.enabled)
                 .lineSpacing(2)
                 .foregroundStyle(.secondary)
-                .padding(8)
+                .padding(DS.Space.small)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(
                     RoundedRectangle(cornerRadius: 6, style: .continuous)
@@ -269,14 +269,14 @@ struct ClipboardEntryPreviewSidebar: View {
     }
 
     private func sidebarFooter(_ entry: ClipboardHistoryEntry) -> some View {
-        HStack(spacing: 6) {
+        HStack(spacing: DS.Space.xSmall) {
             if entry.isPinned {
                 Image(systemName: "pin.fill")
-                    .font(.system(size: 9.5))
+                    .font(DS.Font.panelFloor)
                     .foregroundStyle(Color.accentColor)
             }
             Text(entry.copiedAt, style: .time)
-                .font(.system(size: 9.5))
+                .font(DS.Font.panelFloor)
                 .foregroundStyle(.tertiary)
             Spacer()
             if editingEntryID == entry.id {
@@ -307,8 +307,8 @@ struct ClipboardEntryPreviewSidebar: View {
             }
         }
         .controlSize(.mini)
-        .padding(.horizontal, 12)
-        .padding(.vertical, 9)
+        .padding(.horizontal, DS.Space.medium)
+        .padding(.vertical, DS.Space.medium)
     }
 
     /// The picture an image entry or a single copied image file holds.
@@ -404,7 +404,7 @@ struct ClipboardHistoryInfoSection: View {
     }()
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: DS.Space.xSmall) {
             Text("Information")
                 .font(.subheadline.weight(.medium))
                 .foregroundStyle(.secondary)
@@ -412,9 +412,9 @@ struct ClipboardHistoryInfoSection: View {
                 let rows = self.rows
                 ForEach(rows) { row in
                     if row.id != rows.first?.id { Divider() }
-                    HStack(spacing: 6) {
+                    HStack(spacing: DS.Space.xSmall) {
                         Text(row.label).foregroundStyle(.secondary)
-                        Spacer(minLength: 12)
+                        Spacer(minLength: DS.Space.medium)
                         if let icon = sourceIcon, row.label == "Source" {
                             Image(nsImage: icon)
                                 .resizable()
@@ -423,13 +423,13 @@ struct ClipboardHistoryInfoSection: View {
                         Text(row.value).lineLimit(1).truncationMode(.middle)
                     }
                     .font(.callout)
-                    .padding(.vertical, 6)
+                    .padding(.vertical, DS.Space.xSmall)
                 }
             }
         }
-        .padding(.horizontal, 12)
-        .padding(.top, 12)
-        .padding(.bottom, 4)
+        .padding(.horizontal, DS.Space.medium)
+        .padding(.top, DS.Space.medium)
+        .padding(.bottom, DS.Space.xxSmall)
     }
 
     private var rows: [InfoRow] {

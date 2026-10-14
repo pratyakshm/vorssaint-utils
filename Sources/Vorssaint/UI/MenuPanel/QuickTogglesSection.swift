@@ -39,7 +39,7 @@ struct PanelQuickTogglesView: View {
     var onClose: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: DS.Space.cardStack) {
             header
             QuickTogglesList(editing: false, draggingItem: $draggingItem) {
                 QuickLauncherService.shared.hide()
@@ -48,13 +48,13 @@ struct PanelQuickTogglesView: View {
     }
 
     private var header: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: DS.Space.rowTitleGap) {
             Label(FeatureStrings.quickToggles(l10n.language).pageTitle, systemImage: "togglepower")
-                .font(.system(size: 12, weight: .semibold))
+                .font(DS.Font.panelTitle)
             Spacer()
             Button(action: onClose) {
                 Image(systemName: "xmark.circle.fill")
-                    .font(.system(size: 14))
+                    .font(DS.Font.rowTitle)
                     .foregroundStyle(.secondary)
                     .frame(width: 22, height: 22)
             }

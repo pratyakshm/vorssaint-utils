@@ -30,16 +30,16 @@ struct CPUCoreMatrix: View {
     }
 
     private func grid(_ layout: [[CPUCoreSegment]], strings: CPUCoreFeatureStrings) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: DS.Space.medium) {
             ForEach(layout.indices, id: \.self) { row in
-                HStack(alignment: .top, spacing: 12) {
+                HStack(alignment: .top, spacing: DS.Space.medium) {
                     ForEach(layout[row].indices, id: \.self) { index in
                         coreGroup(layout[row][index], strings: strings)
                     }
                 }
             }
         }
-        .padding(8)
+        .padding(DS.Space.small)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color.primary.opacity(0.025), in: RoundedRectangle(cornerRadius: 5))
         .overlay(RoundedRectangle(cornerRadius: 5).strokeBorder(Color.primary.opacity(0.12), lineWidth: 1))
@@ -52,8 +52,8 @@ struct CPUCoreMatrix: View {
         case "efficiency": strings.efficiencyCores
         default: segment.group.name
         }
-        return VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 4) {
+        return VStack(alignment: .leading, spacing: DS.Space.xSmall) {
+            HStack(spacing: DS.Space.rowTextStack) {
                 ForEach(segment.group.indices, id: \.self) { index in
                     coreBar(index, width: segment.barWidth, strings: strings)
                 }

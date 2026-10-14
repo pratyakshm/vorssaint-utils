@@ -151,7 +151,7 @@ struct NotchIconButton: View {
     var body: some View {
         Button(action: action) {
             Image(systemName: symbol)
-                .font(.system(size: 12, weight: .medium))
+                .font(DS.Font.rowIcon)
                 .foregroundStyle(selected ? .white : .white.opacity(0.55))
                 .contentTransition(.symbolEffect(.replace))
                 .animation(reduceMotion ? nil : .smooth(duration: 0.24), value: symbol)
@@ -176,20 +176,20 @@ struct NotchEmptyView<Actions: View>: View {
 
     var body: some View {
         ViewThatFits(in: .vertical) {
-            VStack(spacing: 12) {
+            VStack(spacing: DS.Space.medium) {
                 glyph
                 label.multilineTextAlignment(.center).frame(maxWidth: 250)
                 actions()
             }
-            HStack(spacing: 14) {
+            HStack(spacing: DS.Space.rowGap) {
                 glyph
-                VStack(alignment: .leading, spacing: 10) {
+                VStack(alignment: .leading, spacing: DS.Space.medium) {
                     label.frame(maxWidth: 260, alignment: .leading)
                     actions()
                 }
             }
         }
-        .padding(12)
+        .padding(DS.Space.medium)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
@@ -204,7 +204,7 @@ struct NotchEmptyView<Actions: View>: View {
 
     private var label: some View {
         Text(message)
-            .font(.system(size: 12))
+            .font(DS.Font.panelBody)
             .foregroundStyle(.secondary)
             .fixedSize(horizontal: false, vertical: true)
     }
@@ -226,10 +226,10 @@ struct NotchPillButton: View {
     var body: some View {
         Button(action: action) {
             Text(title)
-                .font(.system(size: 12, weight: prominent ? .semibold : .medium))
+                .font(DS.Font.panelTitle)
                 .foregroundStyle(.white.opacity(prominent ? 1 : 0.7))
                 .lineLimit(1)
-                .padding(.horizontal, 14)
+                .padding(.horizontal, DS.Space.rowGap)
                 .frame(height: 28)
                 .background(.white.opacity(prominent ? 0.14 : 0), in: Capsule())
                 .contentShape(Capsule())
@@ -273,7 +273,7 @@ struct NotchRail<Item: Identifiable, Content: View>: View {
     let rows: Int
     let itemWidth: CGFloat
     let width: CGFloat
-    var spacing: CGFloat = 8
+    var spacing: CGFloat = DS.Space.small
     var rowSpacing: CGFloat = 8
     var scrollTarget: Item.ID? = nil
     @ViewBuilder let content: (Item) -> Content
@@ -653,13 +653,13 @@ struct NotchDeviceMenu: View {
     var body: some View {
         NotchMenuButton(title: title, items: items) {
             Text("\(current) \(Image(systemName: "chevron.down"))")
-                .font(.system(size: 10, weight: .medium))
+                .font(DS.Font.panelFloorEmphasis)
                 .lineLimit(lines)
                 .multilineTextAlignment(alignment)
                 .truncationMode(lines > 1 ? .tail : .middle)
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: width, alignment: frameAlignment)
-                .padding(.horizontal, 4)
+                .padding(.horizontal, DS.Space.xxSmall)
                 .contentShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
         }
         .help(current)
