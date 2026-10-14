@@ -185,19 +185,19 @@ struct FanControlCardContent: View {
                               isActive: snapshot.isCooling)
                 .frame(width: 24)
 
-            VStack(alignment: .leading, spacing: 1) {
-                HStack(spacing: 5) {
+            VStack(alignment: .leading, spacing: 3) {
+                HStack(spacing: DS.Space.small) {
                     Text(strings.title)
                         .font(.system(size: 12, weight: .semibold))
                     Text(betaLabel)
-                        .font(.system(size: 7.5, weight: .bold))
+                        .font(.system(size: 10, weight: .bold))
                         .foregroundStyle(Color.white)
                         .padding(.horizontal, 4)
                         .padding(.vertical, 1)
                         .background(Capsule().fill(Color.accentColor))
                 }
                 Text(statusText)
-                    .font(.system(size: 10).monospacedDigit())
+                    .font(.system(size: 12).monospacedDigit())
                     .foregroundStyle(snapshot.isCooling ? Color.cyan : Color.secondary)
             }
             Spacer()
@@ -206,21 +206,21 @@ struct FanControlCardContent: View {
     }
 
     private var fanRows: some View {
-        VStack(spacing: 5) {
+        VStack(spacing: DS.Space.small) {
             ForEach(snapshot.fans) { fan in
-                HStack(spacing: 6) {
+                HStack(spacing: DS.Space.small) {
                     Text(String(format: strings.fanNameFormat, fan.index + 1))
                         .font(.system(size: 10.5))
                         .foregroundStyle(.secondary)
                     Spacer()
-                    VStack(alignment: .trailing, spacing: 1) {
+                    VStack(alignment: .trailing, spacing: 3) {
                         Text(String(format: strings.currentRPMFormat,
                                     Int(fan.actualRPM.rounded())))
                             .font(.system(size: 10.5, weight: .semibold).monospacedDigit())
                         if fan.isManuallyControlled {
                             Text(String(format: strings.targetRPMFormat,
                                         Int(fan.targetRPM.rounded())))
-                                .font(.system(size: 9.5).monospacedDigit())
+                                .font(.system(size: 11.5).monospacedDigit())
                                 .foregroundStyle(.secondary)
                         }
                     }
@@ -231,9 +231,9 @@ struct FanControlCardContent: View {
     }
 
     private var fallbackFanRows: some View {
-        VStack(spacing: 5) {
+        VStack(spacing: DS.Space.small) {
             ForEach(fallbackFanSpeeds.indices, id: \.self) { index in
-                HStack(spacing: 6) {
+                HStack(spacing: DS.Space.small) {
                     Text(String(format: strings.fanNameFormat, index + 1))
                         .font(.system(size: 10.5))
                         .foregroundStyle(.secondary)

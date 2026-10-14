@@ -353,11 +353,11 @@ struct CommandBarView: View {
     private var compactHints: some View {
         HStack(spacing: 4) {
             Text("↓")
-                .font(.system(size: 9, weight: .semibold, design: .rounded))
+                .font(.system(size: 11, weight: .semibold, design: .rounded))
             Text(text.suggestionsLabel)
-                .font(.system(size: 9))
+                .font(.system(size: 11))
             Text("Esc")
-                .font(.system(size: 9, weight: .semibold, design: .rounded))
+                .font(.system(size: 11, weight: .semibold, design: .rounded))
                 .padding(.leading, 4)
         }
         .foregroundStyle(.tertiary)
@@ -595,7 +595,7 @@ struct CommandBarView: View {
                 // one fills the field so it can be tried on the spot.
                 HStack(spacing: 5) {
                     Text(text.tryTheseLabel)
-                        .font(.system(size: 9, weight: .bold))
+                        .font(.system(size: 11, weight: .bold))
                         .tracking(0.5)
                         .foregroundStyle(.tertiary)
                     ForEach(CommandBarView.examples(text), id: \.self) { example in
@@ -660,7 +660,7 @@ struct CommandBarView: View {
             HStack(spacing: 3) {
                 if let source {
                     Image(systemName: source.symbolName)
-                        .font(.system(size: 8.5, weight: .semibold))
+                        .font(.system(size: 11, weight: .semibold))
                 }
                 Text(label)
                     .font(.system(size: 10, weight: isActive ? .semibold : .regular))
@@ -1155,7 +1155,7 @@ struct CommandBarView: View {
                 }
                 if let error = homebrew.errorMessage, !error.isEmpty {
                     Label(error, systemImage: "exclamationmark.triangle.fill")
-                        .font(.system(size: 9.5))
+                        .font(.system(size: 11.5))
                         .foregroundStyle(.orange)
                         .fixedSize(horizontal: false, vertical: true)
                         .padding(.horizontal, 17)
@@ -1163,7 +1163,7 @@ struct CommandBarView: View {
             } else {
                 Label(String(format: l10n.s.uninstallerHomebrewPackageFormat, package.displayName),
                       systemImage: "shippingbox")
-                    .font(.system(size: 9.5))
+                    .font(.system(size: 11.5))
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.horizontal, 17)
@@ -1183,7 +1183,7 @@ struct CommandBarView: View {
                         .font(.system(size: 12.5, weight: .semibold))
                         .lineLimit(1)
                     Text(target.bundleID ?? target.url.path)
-                        .font(.system(size: 9.5))
+                        .font(.system(size: 11.5))
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                         .truncationMode(.middle)
@@ -1195,7 +1195,7 @@ struct CommandBarView: View {
                     .font(.system(size: 12, weight: .semibold, design: .rounded))
                     .monospacedDigit()
                 Text(l10n.s.uninstallerFoundTitle)
-                    .font(.system(size: 9))
+                    .font(.system(size: 11))
                     .foregroundStyle(.secondary)
             }
         }
@@ -1206,7 +1206,7 @@ struct CommandBarView: View {
                                         category: AppUninstaller.Category) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(uninstallCategoryLabel(category).uppercased())
-                .font(.system(size: 9, weight: .semibold))
+                .font(.system(size: 11, weight: .semibold))
                 .foregroundStyle(.tertiary)
             ForEach(group) { item in
                 uninstallReviewRow(item)
@@ -1245,7 +1245,7 @@ struct CommandBarView: View {
                         .lineLimit(1)
                         .truncationMode(.head)
                 }
-                .font(.system(size: 9.5))
+                .font(.system(size: 11.5))
             }
             Spacer(minLength: 0)
             Button {
@@ -1271,7 +1271,7 @@ struct CommandBarView: View {
                             uninstaller.items.filter(\.include).count, uninstaller.items.count))
                     .font(.system(size: 11, weight: .medium))
                 Text(Self.uninstallByteString(uninstaller.selectedSize))
-                    .font(.system(size: 9.5))
+                    .font(.system(size: 11.5))
                     .foregroundStyle(.secondary)
             }
             Spacer()
@@ -1424,38 +1424,38 @@ struct CommandBarView: View {
     private var footer: some View {
         HStack(spacing: 5) {
             Image(systemName: "keyboard")
-                .font(.system(size: 8.5))
+                .font(.system(size: 11))
                 .foregroundStyle(.tertiary)
             Text(GlobalShortcut.saved(for: DefaultsKey.commandBarShortcut,
                                       fallback: .commandBarDefault).displayString)
-                .font(.system(size: 9, weight: .semibold, design: .rounded))
+                .font(.system(size: 11, weight: .semibold, design: .rounded))
                 .foregroundStyle(.tertiary)
             Spacer()
             if service.canOpenActions {
                 Text("⌘K")
-                    .font(.system(size: 9, weight: .semibold, design: .rounded))
+                    .font(.system(size: 11, weight: .semibold, design: .rounded))
                     .foregroundStyle(.tertiary)
                 Text(text.actionsHint)
-                    .font(.system(size: 9))
+                    .font(.system(size: 11))
                     .foregroundStyle(.tertiary)
                     .padding(.trailing, 4)
             }
             Text(service.isShowingSuggestions && !service.categoryChips.isEmpty ? "⌃P ⌃N ↑↓ ←→" : "⌃P ⌃N ↑↓")
-                .font(.system(size: 9, weight: .semibold, design: .rounded))
+                .font(.system(size: 11, weight: .semibold, design: .rounded))
                 .foregroundStyle(.tertiary)
             if service.selectedEntry?.id == "math.result" {
                 Text("⇥")
-                    .font(.system(size: 9, weight: .semibold, design: .rounded))
+                    .font(.system(size: 11, weight: .semibold, design: .rounded))
                     .foregroundStyle(.tertiary)
                 Text(text.reuseHint)
-                    .font(.system(size: 9))
+                    .font(.system(size: 11))
                     .foregroundStyle(.tertiary)
             }
             Image(systemName: "return")
-                .font(.system(size: 8))
+                .font(.system(size: 11))
                 .foregroundStyle(.tertiary)
             Text("Esc")
-                .font(.system(size: 9, weight: .semibold, design: .rounded))
+                .font(.system(size: 11, weight: .semibold, design: .rounded))
                 .foregroundStyle(.tertiary)
         }
         .padding(.horizontal, 16)

@@ -621,7 +621,7 @@ private struct CommandBarLinkEditor: View {
                                     Text(placeholder.token)
                                         .font(.system(size: 10.5, weight: .semibold, design: .rounded))
                                     Text(meaning(of: placeholder))
-                                        .font(.system(size: 9))
+                                        .font(.system(size: 11))
                                         .foregroundStyle(.secondary)
                                 }
                                 .padding(.horizontal, 8)

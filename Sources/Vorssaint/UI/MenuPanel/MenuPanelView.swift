@@ -517,7 +517,7 @@ private struct MenuPanelHeader: View {
             if AppInfo.isBeta {
                 HStack {
                     Text(l10n.s.betaBadgeLabel.uppercased())
-                        .font(.system(size: 9, weight: .bold))
+                        .font(.system(size: 11, weight: .bold))
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
                         .background(Color.orange.opacity(0.18))
@@ -1292,7 +1292,7 @@ struct QuickControlsSection: View {
         } label: {
             HStack(spacing: 6) {
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 8.5, weight: .bold))
+                    .font(.system(size: 11, weight: .bold))
                     .foregroundStyle(.secondary)
                     .rotationEffect(.degrees(editing || isExpanded(category) ? 90 : 0))
                 Text(title(for: category).uppercased())
@@ -1301,7 +1301,7 @@ struct QuickControlsSection: View {
                     .tracking(0.5)
                 Spacer(minLength: 0)
                 Text("\(enabledCount)/\(categoryItems.count)")
-                    .font(.system(size: 9.5, weight: .semibold, design: .rounded))
+                    .font(.system(size: 11.5, weight: .semibold, design: .rounded))
                     .foregroundStyle(enabledCount > 0 ? Color.accentColor : Color.secondary)
                     .monospacedDigit()
             }
@@ -2118,7 +2118,7 @@ struct UtilityActionButton: View {
         if let accessoryTitle, let accessoryAction {
             Button(action: accessoryAction) {
                 Label(accessoryTitle, systemImage: accessorySystemImage ?? "clock")
-                    .font(.system(size: 9.5, weight: .semibold))
+                    .font(.system(size: 11.5, weight: .semibold))
             }
             .buttonStyle(.bordered)
             .controlSize(.mini)
@@ -2161,7 +2161,7 @@ struct UtilityActionButton: View {
             } else {
                 if let shortcutHint {
                     Text(shortcutHint)
-                        .font(.system(size: 9, weight: .semibold, design: .rounded))
+                        .font(.system(size: 11, weight: .semibold, design: .rounded))
                         .foregroundStyle(.tertiary)
                         .padding(.horizontal, 5)
                         .padding(.vertical, 2)
@@ -2172,7 +2172,7 @@ struct UtilityActionButton: View {
                 }
                 if showChevron {
                     Image(systemName: "chevron.right")
-                        .font(.system(size: 9, weight: .semibold))
+                        .font(.system(size: 11, weight: .semibold))
                         .foregroundStyle(.tertiary)
                 }
             }
@@ -2267,7 +2267,7 @@ struct PanelToggleRow: View {
                 }
                 if isActive, let activeText {
                     Label(activeText, systemImage: "checkmark.circle.fill")
-                        .font(.system(size: 9.5, weight: .medium))
+                        .font(.system(size: 11.5, weight: .medium))
                         .foregroundStyle(.green)
                         .lineLimit(1)
                 }
@@ -2276,7 +2276,7 @@ struct PanelToggleRow: View {
                         permissionAction()
                     } label: {
                         Label(permissionButtonTitle ?? "", systemImage: "hand.raised.fill")
-                            .font(.system(size: 9.5, weight: .semibold))
+                            .font(.system(size: 11.5, weight: .semibold))
                     }
                     .buttonStyle(.bordered)
                     .controlSize(.mini)
@@ -2286,7 +2286,7 @@ struct PanelToggleRow: View {
                         accessoryAction()
                     } label: {
                         Label(accessoryTitle, systemImage: "arrow.up.forward.square")
-                            .font(.system(size: 9.5, weight: .semibold))
+                            .font(.system(size: 11.5, weight: .semibold))
                     }
                     .buttonStyle(.bordered)
                     .controlSize(.mini)
@@ -2336,12 +2336,12 @@ struct PanelToggleRow: View {
 /// them, and separators start under the titles rather than the icons.
 enum PanelRowMetrics {
     static let iconWidth: CGFloat = 22
-    static let iconSpacing: CGFloat = 9
+    static let iconSpacing: CGFloat = DS.Space.medium
     static let dragHandleWidth: CGFloat = 16
 
-    static func horizontalInset(island: Bool) -> CGFloat { island ? 12 : 10 }
+    static func horizontalInset(island: Bool) -> CGFloat { island ? DS.Space.medium : DS.Space.medium }
 
-    static func verticalInset(island: Bool) -> CGFloat { island ? 10 : 8 }
+    static func verticalInset(island: Bool) -> CGFloat { island ? DS.Space.small : DS.Space.small }
 
     static func separatorInset(island: Bool) -> CGFloat {
         horizontalInset(island: island) + iconWidth + iconSpacing
@@ -2445,7 +2445,7 @@ struct PanelBetaBadge: View {
 
     var body: some View {
         Text(text.uppercased())
-            .font(.system(size: 8, weight: .bold))
+            .font(.system(size: 11, weight: .bold))
             .tracking(0.4)
             .foregroundStyle(.orange)
             .padding(.horizontal, 5)
@@ -2809,7 +2809,7 @@ struct KeepAwakeCard: View {
             } label: {
                 HStack(spacing: 7) {
                     Image(systemName: optionsExpanded ? "chevron.down" : "chevron.right")
-                        .font(.system(size: 9, weight: .bold))
+                        .font(.system(size: 11, weight: .bold))
                         .foregroundStyle(.secondary)
                         .frame(width: 12)
                     Text(l10n.s.keepAwakeOptions)
@@ -2876,7 +2876,7 @@ struct KeepAwakeCard: View {
                     Spacer(minLength: 6)
                     automationSummaryBadges
                     Image(systemName: automationExpanded ? "chevron.down" : "chevron.right")
-                        .font(.system(size: 8.5, weight: .bold))
+                        .font(.system(size: 11, weight: .bold))
                         .foregroundStyle(.tertiary)
                 }
                 .contentShape(Rectangle())
@@ -2904,7 +2904,7 @@ struct KeepAwakeCard: View {
            !keepAwakeRunningApps,
            !keepAwakePauseWhenLocked {
             Text(automationStrings.automationOff)
-                .font(.system(size: 9.5, weight: .medium))
+                .font(.system(size: 11.5, weight: .medium))
                 .foregroundStyle(.tertiary)
         } else {
             HStack(spacing: 4) {
@@ -2926,7 +2926,7 @@ struct KeepAwakeCard: View {
 
     private func automationSystemBadge(_ icon: String) -> some View {
         Image(systemName: icon)
-            .font(.system(size: 9, weight: .semibold))
+            .font(.system(size: 11, weight: .semibold))
             .foregroundStyle(Color.accentColor)
             .frame(width: 17, height: 17)
             .background(Circle().fill(Color.accentColor.opacity(0.12)))
@@ -2954,7 +2954,7 @@ struct KeepAwakeCard: View {
             }
             if let errorText {
                 Text(errorText)
-                    .font(.system(size: 9.5))
+                    .font(.system(size: 11.5))
                     .foregroundStyle(.red)
                     .padding(.leading, 22)
                     .fixedSize(horizontal: false, vertical: true)

@@ -16,15 +16,15 @@ struct SettingsCard<Content: View>: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 13) {
+        VStack(alignment: .leading, spacing: DS.Space.cardStack) {
             if let title {
-                Text(title).font(.headline)
+                Text(title).font(DS.Font.cardTitle)
             }
             content
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(16)
-        .background(.quaternary.opacity(0.35), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .padding(DS.Space.card)
+        .background(.quaternary.opacity(0.35), in: RoundedRectangle(cornerRadius: DS.Space.large, style: .continuous))
     }
 }
 
@@ -50,14 +50,14 @@ struct SettingsRow<Accessory: View>: View {
     }
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: DS.Space.rowGap) {
             iconTile
-            VStack(alignment: .leading, spacing: 2) {
-                HStack(spacing: 6) {
-                    Text(title)
+            VStack(alignment: .leading, spacing: DS.Space.rowTextStack) {
+                HStack(spacing: DS.Space.rowTitleGap) {
+                    Text(title).font(DS.Font.rowTitle)
                     if let badge {
                         Text(badge)
-                            .font(.system(size: 8, weight: .bold))
+                            .font(DS.Font.badge)
                             .foregroundStyle(Color.white)
                             .padding(.horizontal, 5)
                             .padding(.vertical, 1)
@@ -67,12 +67,12 @@ struct SettingsRow<Accessory: View>: View {
                 }
                 if let caption {
                     Text(caption)
-                        .font(.caption)
+                        .font(DS.Font.caption)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
-            Spacer(minLength: 12)
+            Spacer(minLength: DS.Space.medium)
             accessory
         }
     }
@@ -81,7 +81,7 @@ struct SettingsRow<Accessory: View>: View {
     private var iconTile: some View {
         if let symbol {
             Image(systemName: symbol)
-                .font(.system(size: 12, weight: .semibold))
+                .font(DS.Font.rowIcon)
                 .foregroundStyle(Color.accentColor)
                 .frame(width: 26, height: 26)
                 .background(Color.accentColor.opacity(0.12),
@@ -116,7 +116,7 @@ struct SettingsFeatureSwitchRow: View {
     var body: some View {
         let installed = features.isAvailable(feature)
         let usable = installed && enabled
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: DS.Space.xSmall) {
             SettingsRow(symbol: symbol, title: title, caption: usable ? caption : nil) {
                 Toggle(title, isOn: usable ? $isOn : .constant(false)).labelsHidden().toggleStyle(.switch)
             }
@@ -124,9 +124,9 @@ struct SettingsFeatureSwitchRow: View {
             .saturation(usable ? 1 : 0)
             .opacity(usable ? 1 : 0.45)
             if !installed {
-                HStack(spacing: 10) {
+                HStack(spacing: DS.Space.small) {
                     Text(feature.enableReason(l10n))
-                        .font(.caption)
+                        .font(DS.Font.caption)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                     Button(FeatureStrings.notchEditor(l10n.language).openFeatures) { feature.showInFeatures() }
@@ -135,7 +135,7 @@ struct SettingsFeatureSwitchRow: View {
                 .padding(.leading, settingsRowTextInset)
             } else if !usable, let caption {
                 Text(caption)
-                    .font(.caption)
+                    .font(DS.Font.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.leading, settingsRowTextInset)
@@ -166,7 +166,7 @@ struct SettingsChoiceRow<Value: Hashable, Options: View>: View {
             SettingsRow(symbol: symbol, title: title) {
                 picker.pickerStyle(.segmented).fixedSize()
             }
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: DS.Space.small) {
                 SettingsRow(symbol: symbol, title: title) { EmptyView() }
                 ViewThatFits(in: .horizontal) {
                     picker.pickerStyle(.segmented).fixedSize()
@@ -203,7 +203,7 @@ struct SettingsMenuRow<Value: Hashable, Options: View>: View {
     var body: some View {
         ViewThatFits(in: .horizontal) {
             SettingsRow(symbol: symbol, title: title) { menu }
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: DS.Space.small) {
                 SettingsRow(symbol: symbol, title: title) { EmptyView() }
                 // Only the menu's width decides here: a title too long for one
                 // line wraps above it either way.
@@ -225,9 +225,9 @@ struct SettingsMenuRow<Value: Hashable, Options: View>: View {
 /// around it on a redesigned page.
 struct TrailingSwitchToggleStyle: ToggleStyle {
     func makeBody(configuration: Configuration) -> some View {
-        HStack(spacing: 12) {
+        HStack(spacing: DS.Space.rowGap) {
             configuration.label
-            Spacer(minLength: 12)
+            Spacer(minLength: DS.Space.medium)
             Toggle(isOn: configuration.$isOn) { EmptyView() }
                 .labelsHidden()
                 .toggleStyle(.switch)

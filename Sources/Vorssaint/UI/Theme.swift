@@ -3,6 +3,58 @@
 
 import SwiftUI
 
+/// Central design tokens: one place for text sizes and spacing so panels
+/// read larger and more breathable. New and migrated views use `DS`;
+/// unmigrated views keep their literals until their panel is adopted.
+enum DS {
+    enum Font {
+        /// Card headings on Settings pages (was `.headline`, ~13).
+        static let cardTitle = SwiftUI.Font.system(size: 15, weight: .semibold)
+        /// Row titles in settings and panels (was implicit body, ~13).
+        static let rowTitle = SwiftUI.Font.system(size: 14, weight: .regular)
+        /// Standard body text.
+        static let body = SwiftUI.Font.system(size: 13.5, weight: .regular)
+        /// Explanations under row titles (was `.caption`, 11).
+        static let caption = SwiftUI.Font.system(size: 12.5, weight: .regular)
+        /// Tertiary hints (was `.caption2` / 9-10).
+        static let footnote = SwiftUI.Font.system(size: 11.5, weight: .regular)
+        /// Small badges (was 8 bold).
+        static let badge = SwiftUI.Font.system(size: 10, weight: .bold)
+        /// Uppercase section labels (was 10 semibold).
+        static let section = SwiftUI.Font.system(size: 11, weight: .semibold)
+        /// Panel row titles and values (was 9-10.5).
+        static let panelTitle = SwiftUI.Font.system(size: 12.5, weight: .semibold)
+        static let panelBody = SwiftUI.Font.system(size: 12, weight: .regular)
+        /// Smallest text allowed in panels and the command bar (was 8-9.5).
+        static let panelFloor = SwiftUI.Font.system(size: 11, weight: .regular)
+        static let panelFloorEmphasis = SwiftUI.Font.system(size: 11, weight: .semibold)
+        /// Row icon glyphs (was 12 semibold).
+        static let rowIcon = SwiftUI.Font.system(size: 13, weight: .semibold)
+    }
+
+    enum Space {
+        static let xxSmall: CGFloat = 4
+        static let xSmall: CGFloat = 6
+        static let small: CGFloat = 8
+        static let medium: CGFloat = 12
+        static let large: CGFloat = 16
+        static let xLarge: CGFloat = 20
+        /// Card outer padding (was 10-16 depending on surface).
+        static let card: CGFloat = 18
+        /// Vertical rhythm inside a card (was 13).
+        static let cardStack: CGFloat = 16
+        /// Row internals (was 12 / 2 / 6).
+        static let rowGap: CGFloat = 14
+        static let rowTextStack: CGFloat = 4
+        static let rowTitleGap: CGFloat = 8
+    }
+
+    enum Radius {
+        static let card: CGFloat = 14
+        static let row: CGFloat = 10
+    }
+}
+
 /// Shared look & feel: brand colors, card styling and the brand mark.
 enum Theme {
     /// Near-black background behind the brand mark. Neutral greys into black, no
@@ -122,7 +174,7 @@ enum PanelSurface {
 
 func sectionTitle(_ text: String) -> some View {
     Text(text.uppercased())
-        .font(.system(size: 10, weight: .semibold))
+        .font(DS.Font.section)
         .kerning(0.5)
         .foregroundStyle(.secondary)
 }
@@ -151,16 +203,16 @@ private struct PanelCardModifier: ViewModifier {
 
     func body(content: Content) -> some View {
         if notchPresentation {
-            content.padding(padded ? 12 : 0).modifier(NotchControlSurface(cornerRadius: 18, interactive: interactive))
+            content.padding(padded ? DS.Space.card : 0).modifier(NotchControlSurface(cornerRadius: 18, interactive: interactive))
         } else {
         content
-            .padding(padded ? 10 : 0)
+            .padding(padded ? DS.Space.medium : 0)
             .background(
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous)
                     .fill(PanelSurface.cardFill(for: colorScheme))
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous)
                     .strokeBorder(PanelSurface.border(for: colorScheme), lineWidth: 0.7)
             )
         }
