@@ -492,9 +492,9 @@ final class CommandBarService: ObservableObject {
         installMonitors(for: panel)
         panel.alphaValue = 1
         panel.orderFrontRegardless()
-        // Every fresh appearance stretches down to its width, first or
+        // Every fresh appearance settles down to its size, first or
         // fiftieth; showing again while already visible only retargets a
-        // stretch that is still in flight, never flashing a settled bar.
+        // shrink that is still in flight, never flashing a settled bar.
         Self.cancelAppearStretch(in: panel)
         Self.playAppearStretch(in: panel, fresh: !reopening)
         panel.makeKey()
@@ -505,26 +505,34 @@ final class CommandBarService: ObservableObject {
     /// replaces the old one instead of stacking onto it.
     private static let appearStretchKey = "appearStretch"
     private static let appearFadeKey = "appearFade"
+    /// The settled frame a fresh appear is shrinking toward, while its window
+    /// animation runs. Lets a content-driven resize settle the motion instead
+    /// of laying out from mid-flight. Counted so a stale timer cannot clear a
+    /// newer appearance that landed on the same frame.
+    private static var appearFinalFrame: NSRect?
+    private static var appearEpoch = 0
 
-    /// The window lands 10% wider and snaps to its width on a soft spring,
-    /// the way the system's own search arrives. Transform and opacity only,
-    /// so layout never re-runs; the field and rows ride the same layer, so
-    /// they stretch with the bar instead of after it. A rapid re-summon
+    /// The window lands 10% bigger and settles to its size on a soft spring,
+    /// shrinking about its own centre so every edge moves together, the way
+    /// the system's own search arrives. Transform and opacity only, so layout
+    /// never re-runs; the field and rows ride the same layer, so they settle
+    /// with the bar instead of after it. The window is grown to hold the
+    /// starting scale and shrinks back with it, so the overshoot is never
+    /// sliced flat by the window edge; the window lags the spring slightly,
+    /// which only ever shows clear background, never a cut. A rapid re-summon
     /// retargets from wherever the last appear got to, and reduced motion
-    /// keeps the fade but drops the stretch.
+    /// keeps the fade but drops the shrink.
     private static func playAppearStretch(in panel: NSPanel, fresh: Bool) {
         panel.contentView?.wantsLayer = true
         guard let layer = panel.contentView?.layer else { return }
-        // The model value stays at identity throughout: only ever the
-        // presentation talks.
+        // Read the in-flight scale before touching anything: past the first
+        // open the presentation reports the settled (or stale) scale, which
+        // must not decide a fresh start.
+        let presented = layer.presentation()?.value(forKeyPath: "transform.scale.x") as? Double
         layer.removeAnimation(forKey: appearStretchKey)
         let from: Double
         if fresh {
-            // Every fresh appearance starts from the same place. The
-            // presentation layer must not be consulted here: past the first
-            // open it reports the settled (or stale) scale of 1, which used
-            // to collapse the spring into a 1-to-1 no-op and skip the fade on
-            // every later open.
+            // Every fresh appearance starts from the same place.
             from = 1.1
             layer.removeAnimation(forKey: appearFadeKey)
             let fade = CABasicAnimation(keyPath: "opacity")
@@ -533,9 +541,8 @@ final class CommandBarService: ObservableObject {
             fade.duration = 0.18
             fade.timingFunction = CAMediaTimingFunction(name: .easeOut)
             layer.add(fade, forKey: appearFadeKey)
-        } else if let presented = layer.presentation()?.value(forKeyPath: "transform.scale.x") as? Double,
-                  presented > 1.01 {
-            // Already visible with the stretch still in flight: pick it up
+        } else if let presented, presented > 1.01 {
+            // Already visible with the shrink still in flight: pick it up
             // where it is. Anything at or below ~1 is settled (or stale) and
             // means leaving the visible bar alone instead of flashing it.
             from = min(presented, 1.1)
@@ -543,16 +550,67 @@ final class CommandBarService: ObservableObject {
             return
         }
         guard !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion else { return }
-        let stretch = CASpringAnimation(keyPath: "transform.scale.x")
-        stretch.fromValue = from
-        stretch.toValue = 1
+        // The window that will hold the settled bar. Grown first so the
+        // starting scale fits inside it exactly, centred: the shrink then
+        // moves every edge at once instead of pinning the left one while the
+        // right one travels, and no edge is ever clipped flat mid-motion.
+        let finalFrame: NSRect? = fresh ? panel.frame : nil
+        if let finalFrame {
+            let grown = finalFrame.insetBy(dx: -finalFrame.width * (from - 1) / 2,
+                                           dy: -finalFrame.height * (from - 1) / 2)
+            panel.setFrame(grown, display: false)
+        }
+        // A layer-backed view scales about its origin, which pins the left
+        // edge and bottom while the rest travels. Centring the anchor (and
+        // its position, which moves with it) makes the shrink symmetric.
+        // The sizes are known: a fresh show was just grown above, while a
+        // retarget rides a window that is already on its way home.
+        if let finalFrame {
+            layer.anchorPoint = CGPoint(x: 0.5, y: 0.5)
+            layer.position = CGPoint(x: finalFrame.width * from / 2,
+                                     y: finalFrame.height * from / 2)
+        } else {
+            layer.anchorPoint = CGPoint(x: 0.5, y: 0.5)
+            layer.position = CGPoint(x: layer.bounds.midX, y: layer.bounds.midY)
+        }
+        let shrink = CASpringAnimation(keyPath: "transform.scale")
+        shrink.fromValue = from
+        shrink.toValue = 1
         // Soft but quick: settles inside a third of a second with a whisper
         // of overshoot, never a wobble.
-        stretch.stiffness = 400
-        stretch.damping = 28
-        stretch.mass = 1
-        stretch.duration = stretch.settlingDuration
-        layer.add(stretch, forKey: appearStretchKey)
+        shrink.stiffness = 400
+        shrink.damping = 28
+        shrink.mass = 1
+        shrink.duration = shrink.settlingDuration
+        layer.add(shrink, forKey: appearStretchKey)
+        // The window follows the layer home. Slightly longer than the spring
+        // on purpose: a lagging window only shows clear background around a
+        // settled bar, while a leading one would slice the layer mid-shrink.
+        if let finalFrame {
+            NSAnimationContext.runAnimationGroup { context in
+                context.duration = shrink.settlingDuration + 0.08
+                context.timingFunction = CAMediaTimingFunction(name: .easeOut)
+                panel.animator().setFrame(finalFrame, display: true)
+            }
+            appearEpoch += 1
+            let epoch = appearEpoch
+            appearFinalFrame = finalFrame
+            DispatchQueue.main.asyncAfter(deadline: .now() + shrink.settlingDuration + 0.15) {
+                if appearEpoch == epoch { appearFinalFrame = nil }
+            }
+        }
+    }
+
+    /// Ends the appear motion at once, leaving the settled bar. A resize that
+    /// lands mid-intro calls this so the new frame anchors to the final top
+    /// edge and centre, not ones still travelling home. Quiet outside an
+    /// appearance.
+    private static func settleAppearStretch(in panel: NSPanel) {
+        guard let finalFrame = appearFinalFrame else { return }
+        appearFinalFrame = nil
+        appearEpoch += 1
+        cancelAppearStretch(in: panel)
+        panel.setFrame(finalFrame, display: true)
     }
 
     /// Showing again while visible must never inherit a half-settled stretch.
@@ -779,6 +837,10 @@ final class CommandBarService: ObservableObject {
         guard let panel, panel.isVisible else { return }
         DispatchQueue.main.async { [weak self] in
             guard let self, let panel = self.panel, panel.isVisible else { return }
+            // A resize during the appear motion settles it first: laying out
+            // from a mid-flight window would anchor the new frame to a top
+            // edge and centre that are still travelling home.
+            Self.settleAppearStretch(in: panel)
             panel.contentViewController?.view.layoutSubtreeIfNeeded()
             let size = panel.contentViewController?.view.fittingSize ?? panel.frame.size
             let screen = self.panelScreen ?? NSScreen.pointerVisibleFrame
