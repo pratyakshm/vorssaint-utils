@@ -16,8 +16,9 @@ enum NotchSettingsChoiceTests {
         // list of sections with the space after it.
         let narrowest = CGFloat(SettingsWindowSupport.minContentWidth) - 240 - 22 * 2 - 196 - 16
         // Where a row's title text starts in its card, and in a row indented
-        // under a switch as the AI agents card indents its menus.
-        let column = 16 + settingsRowTextInset
+        // under a switch as the AI agents card indents its menus. Both count
+        // from the card's own padding, so they track DS with it.
+        let column = DS.Space.card + settingsRowTextInset
         let indentedColumn = column + settingsRowTextInset
         for (language, _) in LocalizationTests.languages {
             let destinations = [FeatureStrings.notch(language).files, FeatureStrings.clipboard(language).title,
@@ -82,7 +83,7 @@ enum NotchSettingsChoiceTests {
         let fitsOneLine = host.fittingSize.width <= width
         for control in controls(in: host) {
             let frame = alignmentFrame(of: control, in: host)
-            if frame.minX < 16 - 0.5 || frame.maxX > width - 16 + 0.5 {
+            if frame.minX < DS.Space.card - 0.5 || frame.maxX > width - DS.Space.card + 0.5 {
                 found.insert("a \(type(of: control)) drawn at \(Int(frame.minX))...\(Int(frame.maxX)), past the card's content")
             }
             if let segments = control as? NSSegmentedControl, control.frame.width < segments.fittingSize.width - 0.5 {
@@ -97,7 +98,7 @@ enum NotchSettingsChoiceTests {
             let underIcon = abs(frame.minX - (textColumn - settingsRowTextInset)) <= 0.5
             if !underText, !underIcon {
                 found.insert("a \(type(of: control)) at \(Int(frame.minX)) crowds the title")
-            } else if underIcon, control is NSSegmentedControl || textColumn + frame.width <= width - 16 + 0.5 {
+            } else if underIcon, control is NSSegmentedControl || textColumn + frame.width <= width - DS.Space.card + 0.5 {
                 found.insert("a \(type(of: control)) under the icon at \(Int(frame.minX)) though it fits under the title")
             }
         }
@@ -110,7 +111,7 @@ enum NotchSettingsChoiceTests {
         let host = host(row, width: width)
         return controls(in: host).contains { control in
             (control is NSSegmentedControl) == segments
-                && abs(alignmentFrame(of: control, in: host).maxX - (width - 16)) <= 0.5
+                && abs(alignmentFrame(of: control, in: host).maxX - (width - DS.Space.card)) <= 0.5
         }
     }
 

@@ -74,6 +74,26 @@ Full `swift build` not verified (same pre-existing `SwiftUIMacros`
 CommandLineTools-only toolchain failure); all touched files pass
 `swiftc -parse`.
 
+### 2026-10-15 — test target repair (DS tokens in generated fixtures)
+
+Done:
+
+- `Tests/generate_sources.py` — extracts `enum DS` from
+  `UI/Theme.swift` into `build/generated-tests/DSTokens.swift`. The test
+  target compiles extracted views (`NotchActivityPicker`, `NotchRail`,
+  `UpdateHighlightsView`, `SettingsCard` family) without the full Theme,
+  which needs app services. Without this, `./build.sh --test` failed with
+  `cannot find 'DS' in scope` (plus cascading `ForEach`/`==` errors on
+  `NotchCompactActivity`) since the first DS slice.
+- `Tests/NotchSettingsChoiceTests.swift` — hardcoded card padding 16 →
+  `DS.Space.card` (4 spots: text column, content bounds, beside-title
+  check). Card padding is 18 under DS, so every row measured 2pt off.
+- `Tests/FeatureCatalogTests.swift` — onboarding `VStack` spacing check
+  accepts `DS.Space.rowGap` as well as the literal 14 (same value).
+
+Verified: `./build.sh --test` exits 0 — TESTS OK (115928 checks),
+preference cleanup, uninstall spaces and developer isolation all OK.
+
 ### 2026-10-14 — third slice (clipboard leftovers, panel tail, launcher)
 
 Done (token swaps only, no layout reflows; each file passes

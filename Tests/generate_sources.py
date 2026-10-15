@@ -81,6 +81,11 @@ def main():
                     for prefix in ["    private var resultsState:", "    private var resultsGroups:",
                                    "    private func section("])
           + "}\n")
+    # Central design tokens. Extracted views use DS.Font, DS.Space and
+    # DS.Radius, so the test target needs the same tokens. The full Theme
+    # needs AppKit services, so extract only the DS type here.
+    write("DSTokens.swift", "import SwiftUI\n"
+          + declaration("Sources/Vorssaint/UI/Theme.swift", "enum DS {"))
     write("NotchActivityPicker.swift", "import SwiftUI\n"
           + declaration("Sources/Vorssaint/UI/Notch/NotchView.swift", "struct NotchShape: Shape {")
           + declaration("Sources/Vorssaint/UI/Notch/NotchView.swift", "struct NotchActivityPicker: View {"))

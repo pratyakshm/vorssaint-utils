@@ -715,7 +715,7 @@ enum FeatureCatalogTests {
             encoding: .utf8)) ?? ""
         let additionalPermissionsAlignment =
             #"DisclosureGroup\(isExpanded: \$showingOtherPermissions\) \{\s+"#
-            + #"VStack\(alignment: \.leading, spacing: 14\)"#
+            + #"VStack\(alignment: \.leading, spacing: (14|DS\.Space\.rowGap)\)"#
         suite.expect(onboardingViewSource.range(
             of: additionalPermissionsAlignment,
             options: .regularExpression) != nil,
