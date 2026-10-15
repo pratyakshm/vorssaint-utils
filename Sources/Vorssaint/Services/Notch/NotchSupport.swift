@@ -542,11 +542,11 @@ enum NotchHoverEmphasis {
     /// strip naming its song does on its cover's side.
     static func size(from resting: CGSize, geometry: NotchGeometry, reach: CGFloat = 0) -> CGSize {
         // Keep the pulse inside the measured free menu-bar space on each side.
+        // Hover widens the island a little; its height never changes.
         let occupiedWing = max(0, (resting.width - geometry.cameraWidth) / 2) + reach
         let freeSide = max(0, (geometry.compactSideRoom ?? 0) - occupiedWing)
         let growth = min(10, freeSide)
-        // A capsule stretches along the bar and stays inside it.
-        return CGSize(width: resting.width + growth * 2, height: resting.height + (geometry.floats ? 0 : 5))
+        return CGSize(width: resting.width + growth * 2, height: resting.height)
     }
 }
 
