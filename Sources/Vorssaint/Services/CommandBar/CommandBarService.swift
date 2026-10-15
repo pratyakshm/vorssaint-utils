@@ -502,8 +502,13 @@ final class CommandBarService: ObservableObject {
     }
 
     /// The keys the appear motion is added under, so a new appearance
-    /// replaces the old one instead of stacking onto it.
-    private static let appearStretchKey = "appearStretch"
+    /// replaces the old one instead of stacking onto it. Scale and shift run
+    /// as coincident springs with identical tuning, so they stay in step and
+    /// compose into a single shrink about the bar's centre.
+    private static let appearScaleXKey = "appearScaleX"
+    private static let appearScaleYKey = "appearScaleY"
+    private static let appearShiftXKey = "appearShiftX"
+    private static let appearShiftYKey = "appearShiftY"
     private static let appearFadeKey = "appearFade"
     /// The settled frame a fresh appear is shrinking toward, while its window
     /// animation runs. Lets a content-driven resize settle the motion instead
@@ -514,25 +519,23 @@ final class CommandBarService: ObservableObject {
 
     /// The window lands 10% bigger and settles to its size on a soft spring,
     /// shrinking about its own centre so every edge moves together, the way
-    /// the system's own search arrives. Transform and opacity only, so layout
-    /// never re-runs; the field and rows ride the same layer, so they settle
-    /// with the bar instead of after it. The window is grown to hold the
-    /// starting scale and shrinks back with it, so the overshoot is never
-    /// sliced flat by the window edge; the window lags the spring slightly,
-    /// which only ever shows clear background, never a cut. A rapid re-summon
-    /// retargets from wherever the last appear got to, and reduced motion
-    /// keeps the fade but drops the shrink.
+    /// the system's own search arrives. The bar's own view is what scales: it
+    /// holds a fixed size inside a briefly larger window, so the overshoot is
+    /// never sliced flat by the window edge. The field and rows ride the same
+    /// layer, so they settle with the bar instead of after it. The window
+    /// lags the spring slightly, which only ever shows clear background,
+    /// never a cut. A rapid re-summon retargets from wherever the last appear
+    /// got to, and reduced motion keeps the fade but drops the shrink.
     private static func playAppearStretch(in panel: NSPanel, fresh: Bool) {
-        panel.contentView?.wantsLayer = true
-        guard let layer = panel.contentView?.layer else { return }
+        guard let layer = barHostLayer() else { return }
         // Read the in-flight scale before touching anything: past the first
         // open the presentation reports the settled (or stale) scale, which
         // must not decide a fresh start.
         let presented = layer.presentation()?.value(forKeyPath: "transform.scale.x") as? Double
-        layer.removeAnimation(forKey: appearStretchKey)
+        Self.removeAppearScale(from: layer)
         let from: Double
         if fresh {
-            // Every fresh appearance starts from the same place.
+            // Every fresh appearance starts from the same place: 10% bigger.
             from = 1.1
             layer.removeAnimation(forKey: appearFadeKey)
             let fade = CABasicAnimation(keyPath: "opacity")
@@ -552,53 +555,82 @@ final class CommandBarService: ObservableObject {
         guard !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion else { return }
         // The window that will hold the settled bar. Grown first so the
         // starting scale fits inside it exactly, centred: the shrink then
-        // moves every edge at once instead of pinning the left one while the
-        // right one travels, and no edge is ever clipped flat mid-motion.
-        let finalFrame: NSRect? = fresh ? panel.frame : nil
-        if let finalFrame {
-            let grown = finalFrame.insetBy(dx: -finalFrame.width * (from - 1) / 2,
-                                           dy: -finalFrame.height * (from - 1) / 2)
-            panel.setFrame(grown, display: false)
-        }
-        // A layer-backed view scales about its origin, which pins the left
-        // edge and bottom while the rest travels. Centring the anchor (and
-        // its position, which moves with it) makes the shrink symmetric.
-        // The sizes are known: a fresh show was just grown above, while a
-        // retarget rides a window that is already on its way home.
-        if let finalFrame {
-            layer.anchorPoint = CGPoint(x: 0.5, y: 0.5)
-            layer.position = CGPoint(x: finalFrame.width * from / 2,
-                                     y: finalFrame.height * from / 2)
-        } else {
-            layer.anchorPoint = CGPoint(x: 0.5, y: 0.5)
-            layer.position = CGPoint(x: layer.bounds.midX, y: layer.bounds.midY)
-        }
-        let shrink = CASpringAnimation(keyPath: "transform.scale")
-        shrink.fromValue = from
-        shrink.toValue = 1
+        // moves every edge at once, and no edge is ever clipped flat. This
+        // holds for a retarget too: position() just snapped the window to the
+        // settled frame, so growing it again restarts a clean contained
+        // motion instead of overflowing a final-sized window.
+        let finalFrame = panel.frame
+        let grown = finalFrame.insetBy(dx: -finalFrame.width * (from - 1) / 2,
+                                       dy: -finalFrame.height * (from - 1) / 2)
+        panel.setFrame(grown, display: false)
+        // Still filling the window at this point, which is now larger: pin
+        // the view at the settled size, centred, before scaling it.
+        shared.pinBarHostForIntro(panel)
+        // The bar's view, whose size never moves during the motion: scaling
+        // this instead of the window-sized content view keeps one size from
+        // compounding onto the other.
+        guard let contentSize = shared.barHost?.view.bounds.size,
+              contentSize.width > 0, contentSize.height > 0 else { return }
+        // A layer scales about its origin, which would pin the left edge and
+        // bottom while the rest travels. The shift springs below re-centre
+        // every step instead: with identical tuning they trace the same curve
+        // as the scale, holding the centre still from 1.1x down to identity.
+        // The anchor itself is never touched, so AppKit's layout has nothing
+        // to fight with.
+        let shiftX = -Double(contentSize.width) * (from - 1) / 2
+        let shiftY = -Double(contentSize.height) * (from - 1) / 2
+        let scales: [(keyPath: String, key: String, from: Double, to: Double)] = [
+            ("transform.scale.x", appearScaleXKey, from, 1),
+            ("transform.scale.y", appearScaleYKey, from, 1),
+            ("transform.translation.x", appearShiftXKey, shiftX, 0),
+            ("transform.translation.y", appearShiftYKey, shiftY, 0),
+        ]
         // Soft but quick: settles inside a third of a second with a whisper
         // of overshoot, never a wobble.
-        shrink.stiffness = 400
-        shrink.damping = 28
-        shrink.mass = 1
-        shrink.duration = shrink.settlingDuration
-        layer.add(shrink, forKey: appearStretchKey)
+        var settle = 0.3
+        for scale in scales {
+            let spring = CASpringAnimation(keyPath: scale.keyPath)
+            spring.fromValue = scale.from
+            spring.toValue = scale.to
+            spring.stiffness = 400
+            spring.damping = 28
+            spring.mass = 1
+            spring.duration = spring.settlingDuration
+            settle = spring.settlingDuration
+            layer.add(spring, forKey: scale.key)
+        }
         // The window follows the layer home. Slightly longer than the spring
         // on purpose: a lagging window only shows clear background around a
         // settled bar, while a leading one would slice the layer mid-shrink.
-        if let finalFrame {
-            NSAnimationContext.runAnimationGroup { context in
-                context.duration = shrink.settlingDuration + 0.08
-                context.timingFunction = CAMediaTimingFunction(name: .easeOut)
-                panel.animator().setFrame(finalFrame, display: true)
-            }
-            appearEpoch += 1
-            let epoch = appearEpoch
-            appearFinalFrame = finalFrame
-            DispatchQueue.main.asyncAfter(deadline: .now() + shrink.settlingDuration + 0.15) {
-                if appearEpoch == epoch { appearFinalFrame = nil }
-            }
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = settle + 0.08
+            context.timingFunction = CAMediaTimingFunction(name: .easeOut)
+            panel.animator().setFrame(finalFrame, display: true)
         }
+        appearEpoch += 1
+        let epoch = appearEpoch
+        appearFinalFrame = finalFrame
+        DispatchQueue.main.asyncAfter(deadline: .now() + settle + 0.15) { [weak panel] in
+            guard appearEpoch == epoch else { return }
+            appearFinalFrame = nil
+            // Motion over: the view fills the window again, as at rest.
+            if let panel { shared.syncBarHostFrame(panel) }
+        }
+    }
+
+    /// The bar's own layer, the one the appear motion scales. Never the
+    /// window-sized content view: that size moves with the window, and
+    /// scaling it would compound the two.
+    private static func barHostLayer() -> CALayer? {
+        shared.barHost?.view.layer
+    }
+
+    /// Lifts the scale and shift springs, leaving any fade alone.
+    private static func removeAppearScale(from layer: CALayer) {
+        layer.removeAnimation(forKey: appearScaleXKey)
+        layer.removeAnimation(forKey: appearScaleYKey)
+        layer.removeAnimation(forKey: appearShiftXKey)
+        layer.removeAnimation(forKey: appearShiftYKey)
     }
 
     /// Ends the appear motion at once, leaving the settled bar. A resize that
@@ -611,18 +643,20 @@ final class CommandBarService: ObservableObject {
         appearEpoch += 1
         cancelAppearStretch(in: panel)
         panel.setFrame(finalFrame, display: true)
+        shared.syncBarHostFrame(panel)
     }
 
-    /// Showing again while visible must never inherit a half-settled stretch.
+    /// Showing again while visible must never inherit a half-settled shrink.
     private static func cancelAppearStretch(in panel: NSPanel) {
-        panel.contentView?.layer?.removeAnimation(forKey: appearStretchKey)
-        panel.contentView?.layer?.removeAnimation(forKey: appearFadeKey)
+        guard let layer = barHostLayer() else { return }
+        removeAppearScale(from: layer)
+        layer.removeAnimation(forKey: appearFadeKey)
     }
 
     /// Below the island, centred on it, where the drop lands.
     private func hang(_ panel: NSPanel, below island: CGRect) {
-        panel.contentViewController?.view.layoutSubtreeIfNeeded()
-        let size = panel.contentViewController?.view.fittingSize ?? NSSize(width: CommandBarView.windowWidth, height: 380)
+        barHost?.view.layoutSubtreeIfNeeded()
+        let size = barHost?.view.fittingSize ?? NSSize(width: CommandBarView.windowWidth, height: 380)
         let screen = NSScreen.screens.first { $0.frame.contains(CGPoint(x: island.midX, y: island.maxY - 1)) }?
             .visibleFrame ?? NSScreen.pointerVisibleFrame
         panelScreen = screen
@@ -630,6 +664,7 @@ final class CommandBarService: ObservableObject {
         let top = island.minY - CommandBarDropletMotion.landingGap
         panel.setFrame(NSRect(x: x, y: max(screen.minY + 16, top - size.height), width: size.width, height: size.height),
                        display: true)
+        syncBarHostFrame(panel)
     }
 
     /// The field takes the keyboard the moment the bar is ordered in, so the
@@ -841,8 +876,8 @@ final class CommandBarService: ObservableObject {
             // from a mid-flight window would anchor the new frame to a top
             // edge and centre that are still travelling home.
             Self.settleAppearStretch(in: panel)
-            panel.contentViewController?.view.layoutSubtreeIfNeeded()
-            let size = panel.contentViewController?.view.fittingSize ?? panel.frame.size
+            barHost?.view.layoutSubtreeIfNeeded()
+            let size = barHost?.view.fittingSize ?? panel.frame.size
             let screen = self.panelScreen ?? NSScreen.pointerVisibleFrame
             var frame = panel.frame
             frame.origin.x = frame.midX - size.width / 2
@@ -852,6 +887,7 @@ final class CommandBarService: ObservableObject {
             // instead of hiding its own footer below the bezel.
             frame.origin.y = max(frame.origin.y, screen.minY + 16)
             panel.setFrame(frame, display: true)
+            self.syncBarHostFrame(panel)
         }
     }
 
@@ -3531,11 +3567,50 @@ final class CommandBarService: ObservableObject {
         panel.backgroundColor = .clear
         panel.isOpaque = false
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .ignoresCycle]
+        // The bar's view keeps a size the window matches at rest. During the
+        // appear motion the window is briefly larger and this view holds its
+        // size centred in it, so the scaled view never grows with the window
+        // (the two sizes would compound). syncBarHostFrame restores the fill
+        // after every frame change.
+        panel.contentView?.wantsLayer = true
         let host = NSHostingController(rootView: CommandBarView())
         host.sizingOptions = .preferredContentSize
-        panel.contentViewController = host
+        host.view.autoresizingMask = [.width, .height]
+        if let contentView = panel.contentView {
+            host.view.frame = contentView.bounds
+            contentView.addSubview(host.view)
+        }
+        host.view.wantsLayer = true
+        self.barHost = host
         self.panel = panel
         return panel
+    }
+
+    /// The bar's own view. Kept strongly: it sits inside the panel's plain
+    /// content view instead of being the window's content view controller, so
+    /// the window can outsize it during the appear motion.
+    private var barHost: NSHostingController<CommandBarView>?
+
+    /// Fills the window with the bar's view again. Called after every frame
+    /// change and when the appear motion ends: the view holds a fixed size
+    /// centred in the window only while that motion runs.
+    private func syncBarHostFrame(_ panel: NSPanel) {
+        guard let contentView = panel.contentView, let hostView = barHost?.view else { return }
+        hostView.autoresizingMask = [.width, .height]
+        hostView.frame = contentView.bounds
+    }
+
+    /// Pins the bar's view at its current size, centred in whatever window
+    /// holds it. Used only to open the appear motion: the view keeps this
+    /// size while the larger window shrinks around it.
+    private func pinBarHostForIntro(_ panel: NSPanel) {
+        guard let contentView = panel.contentView, let hostView = barHost?.view else { return }
+        hostView.autoresizingMask = [.minXMargin, .maxXMargin, .minYMargin, .maxYMargin]
+        let size = hostView.frame.size
+        hostView.frame = NSRect(x: (contentView.bounds.width - size.width) / 2,
+                                y: (contentView.bounds.height - size.height) / 2,
+                                width: size.width,
+                                height: size.height)
     }
 
     /// Centered, a bit above the middle of the screen the pointer is on:
@@ -3544,8 +3619,8 @@ final class CommandBarService: ObservableObject {
     /// below a field that never moves. Wherever the person dragged the bar
     /// away from that spot is added on, so the choice survives the close.
     private func position(_ panel: NSPanel, animated: Bool = false) {
-        panel.contentViewController?.view.layoutSubtreeIfNeeded()
-        let size = panel.contentViewController?.view.fittingSize ?? NSSize(width: CommandBarView.windowWidth, height: 380)
+        barHost?.view.layoutSubtreeIfNeeded()
+        let size = barHost?.view.fittingSize ?? NSSize(width: CommandBarView.windowWidth, height: 380)
         // Decided once, here: moving the pointer to another display while
         // typing must not clamp the panel against a screen it is not on.
         let screen = NSScreen.pointerVisibleFrame
@@ -3556,6 +3631,7 @@ final class CommandBarService: ObservableObject {
         panel.setFrame(NSRect(origin: origin, size: size),
                        display: true,
                        animate: animated)
+        syncBarHostFrame(panel)
     }
 
     /// How far the person dragged the bar from the spot it would otherwise
