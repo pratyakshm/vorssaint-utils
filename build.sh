@@ -479,6 +479,7 @@ if (( TEST )); then
         Sources/Vorssaint/Services/CommandBar/CommandBarSystemSettingsSupport.swift
         Sources/Vorssaint/Services/CommandBar/CommandBarFileSearchSupport.swift
         Sources/Vorssaint/Services/CommandBar/CommandBarQueryMemory.swift
+        Sources/Vorssaint/Services/CommandBar/CommandBarAppearTransition.swift
         Sources/Vorssaint/Services/SpotlightNamesSupport.swift
         Sources/Vorssaint/Services/QuickTools/MicMuteSupport.swift
         Sources/Vorssaint/Services/QuickTools/QuickTogglesSupport.swift

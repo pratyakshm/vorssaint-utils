@@ -116,6 +116,25 @@ Done (token swaps only, no layout reflows; each file passes
 Full `swift build` not verified (same pre-existing `SwiftUIMacros`
 toolchain failure); all touched files pass `swiftc -parse`.
 
+### 2026-10-15 — command-bar invoke transition editor (new view, DS from birth)
+
+Done (new view uses `DS` throughout; `CommandBarSettings.swift` addition
+uses the same tokens; each file passes `swiftc -parse`):
+
+- `UI/Settings/CommandBarTransitionEditor.swift` (new) — open/close layer
+  stacks, per-layer kind/duration/curve/spring controls, droplet pace,
+  Copy config (JSON) + Import, Preview, Reset. Fonts `DS.Font.*`,
+  spacing `DS.Space.*`, row radius `DS.Radius.row`.
+- `UI/Settings/CommandBarSettings.swift` — new "Invoke transition" section
+  (Edit sheet + Copy config), `DS.Space.medium` / `DS.Font.caption`.
+
+Verified: `./build.sh --test` matches the clean-tree baseline — every
+suite passes except the pre-existing environment failures in `notch`
+(`NotchCompactTests` rail rows), `dock-autohide` and `switcher`
+(`SwitcherScrollTests`), which fail identically with these changes
+stashed. `command-bar` OK (768 checks, incl. new
+`CommandBarAppearTransitionTests`), `repository` OK (314 checks).
+
 ## Remaining
 
 ### Settings detail pages (shell is done; per-file literals remain)

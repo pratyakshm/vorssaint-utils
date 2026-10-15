@@ -62,7 +62,13 @@ final class CommandBarDroplet {
         let centerX = island.midX - area.minX
         let fieldRect = local(field)
         let icon = CGPoint(x: fieldRect.minX + 16 + CommandBarDropletMotion.mascotSize / 2, y: fieldRect.midY)
-        let motion = CommandBarDropletMotion.drop(edge: edge, centerX: centerX, field: fieldRect, icon: icon)
+        var motion = CommandBarDropletMotion.drop(edge: edge, centerX: centerX, field: fieldRect, icon: icon)
+        // The transition settings pace the drop without touching its liquid
+        // path math: every leg stretches by the same scale.
+        let pace = CommandBarAppearTransition.current().droplet
+        motion.duration *= pace.durationScale
+        motion.reveal *= pace.durationScale
+        motion.landing *= pace.durationScale
         let begin = CACurrentMediaTime()
         fall = (motion, edge, centerX, begin)
         reveal = revealed
@@ -77,7 +83,7 @@ final class CommandBarDroplet {
             self.falling = false
             self.reveal = nil
             revealed(0)
-            self.fadeOut(current)
+            self.fadeOut(current, duration: CommandBarAppearTransition.current().droplet.fadeDuration)
         }
         let wait = CABasicAnimation(keyPath: "opacity")
         wait.fromValue = 1
@@ -100,6 +106,7 @@ final class CommandBarDroplet {
         stage.removeAnimation(forKey: "reveal")
         let now = CACurrentMediaTime()
         let length = CommandBarDropletMotion.hurriedReveal
+            * CommandBarAppearTransition.current().droplet.durationScale
         play(fall.motion.remainder(from: fall.motion.frameIndex(at: now - fall.begin), within: length),
              edge: fall.edge, centerX: fall.centerX, begin: now, completion: nil)
         reveal(length)
@@ -138,7 +145,8 @@ final class CommandBarDroplet {
         let centerX = island.midX - area.minX
         let fieldRect = local(field)
         let icon = CGPoint(x: fieldRect.minX + 16 + CommandBarDropletMotion.mascotSize / 2, y: fieldRect.midY)
-        let motion = CommandBarDropletMotion.retract(edge: edge, centerX: centerX, bar: local(bar), field: fieldRect, icon: icon)
+        var motion = CommandBarDropletMotion.retract(edge: edge, centerX: centerX, bar: local(bar), field: fieldRect, icon: icon)
+        motion.duration *= CommandBarAppearTransition.current().droplet.durationScale
         prepare(in: area, look: look, mood: mood)
         play(motion, edge: edge, centerX: centerX, begin: CACurrentMediaTime()) { [weak self] in
             guard let self, self.generation == current else { return }
@@ -171,7 +179,8 @@ final class CommandBarDroplet {
         stage.removeAnimation(forKey: "reveal")
         let now = CACurrentMediaTime()
         let back = fall.motion.rewound(from: fall.motion.frameIndex(at: now - fall.begin),
-                                       within: CommandBarDropletMotion.rewindLength)
+                                       within: CommandBarDropletMotion.rewindLength
+                                        * CommandBarAppearTransition.current().droplet.durationScale)
         play(back, edge: fall.edge, centerX: fall.centerX, begin: now) { [weak self] in
             guard let self, self.generation == current else { return }
             self.panel?.orderOut(nil)

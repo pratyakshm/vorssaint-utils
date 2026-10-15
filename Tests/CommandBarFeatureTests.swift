@@ -2774,7 +2774,7 @@ enum CommandBarDropletContract {
 
         let reveal = droplet.components(separatedBy: "self.falling = false").dropFirst().first ?? ""
         let shown = reveal.range(of: "revealed(0)")
-        let fade = reveal.range(of: "self.fadeOut(current)")
+        let fade = reveal.range(of: "fadeOut(current")
         suite.expect(shown != nil && fade != nil && shown!.lowerBound < fade!.lowerBound,
                      "a landed drop hands over to the bar as is, then fades off it")
     }

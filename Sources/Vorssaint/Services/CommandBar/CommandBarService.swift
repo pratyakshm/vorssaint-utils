@@ -3,6 +3,7 @@
 
 import AppKit
 import Carbon.HIToolbox
+import CoreImage
 import SwiftUI
 
 /// The command bar: one floating field, summoned by a global shortcut, that
@@ -324,6 +325,8 @@ final class CommandBarService: ObservableObject {
     private func show(promptingFor stableKey: String?) {
         guard AppFeature.commandBar.isAvailable else { return }
         let panel = ensurePanel()
+        // A close transition still fading must never order out this opening.
+        Self.disappearEpoch += 1
         // The window that shows the bar takes the keyboard before anything is
         // prepared, so keys typed right after the shortcut wait in this app
         // for the field instead of reaching the app in front.
@@ -492,165 +495,272 @@ final class CommandBarService: ObservableObject {
         installMonitors(for: panel)
         panel.alphaValue = 1
         panel.orderFrontRegardless()
-        // Every fresh appearance settles down to its size, first or
-        // fiftieth; showing again while already visible only retargets a
-        // shrink that is still in flight, never flashing a settled bar.
-        Self.cancelAppearStretch(in: panel)
-        Self.playAppearStretch(in: panel, fresh: !reopening)
+        // Every fresh appearance plays the configured invoke transition,
+        // first or fiftieth; showing again while already visible never
+        // replays it over a settled bar.
+        Self.cancelAppearTransition()
+        Self.playAppearTransition(in: panel, fresh: !reopening)
         panel.makeKey()
         focusField(in: panel)
     }
 
-    /// The keys the appear motion is added under, so a new appearance
-    /// replaces the old one instead of stacking onto it. Scale and shift run
-    /// as coincident springs with identical tuning, so they stay in step and
-    /// compose into a single shrink about the bar's centre.
-    private static let appearScaleXKey = "appearScaleX"
-    private static let appearScaleYKey = "appearScaleY"
-    private static let appearShiftXKey = "appearShiftX"
-    private static let appearShiftYKey = "appearShiftY"
-    private static let appearFadeKey = "appearFade"
-    /// The settled frame a fresh appear is shrinking toward, while its window
-    /// animation runs. Lets a content-driven resize settle the motion instead
-    /// of laying out from mid-flight. Counted so a stale timer cannot clear a
-    /// newer appearance that landed on the same frame.
+    /// The keys the invoke transition is added under, so a new appearance
+    /// replaces the old one instead of stacking onto it.
+    private static var appearLayerKeys: [String] = []
+    private static let appearBlurFilterName = "commandBarAppearBlur"
+    /// The settled frame a window-following appear is travelling toward,
+    /// while its window animation runs. Lets a content-driven resize settle
+    /// the motion instead of laying out from mid-flight. Counted so a stale
+    /// timer cannot clear a newer appearance that landed on the same frame.
     private static var appearFinalFrame: NSRect?
     private static var appearEpoch = 0
+    /// Guards a close transition still fading while another open lands: the
+    /// open bumps this, so a stale close can never order out a fresh bar.
+    private static var disappearEpoch = 0
 
-    /// The window lands 10% bigger and settles to its size on a soft spring,
-    /// shrinking about its own centre so every edge moves together, the way
-    /// the system's own search arrives. The bar's own view is what scales: it
-    /// holds a fixed size inside a briefly larger window, so the overshoot is
-    /// never sliced flat by the window edge. The field and rows ride the same
-    /// layer, so they settle with the bar instead of after it. The window
-    /// lags the spring slightly, which only ever shows clear background,
-    /// never a cut. A rapid re-summon retargets from wherever the last appear
-    /// got to, and reduced motion keeps the fade but drops the shrink.
-    private static func playAppearStretch(in panel: NSPanel, fresh: Bool) {
-        guard let layer = barHostLayer() else { return }
-        // Read the in-flight scale before touching anything: past the first
-        // open the presentation reports the settled (or stale) scale, which
-        // must not decide a fresh start.
-        let presented = layer.presentation()?.value(forKeyPath: "transform.scale.x") as? Double
-        Self.removeAppearScale(from: layer)
-        let from: Double
-        if fresh {
-            // Every fresh appearance starts from the same place: 10% bigger.
-            from = 1.1
-            layer.removeAnimation(forKey: appearFadeKey)
-            let fade = CABasicAnimation(keyPath: "opacity")
-            fade.fromValue = 0
-            fade.toValue = 1
-            fade.duration = 0.18
-            fade.timingFunction = CAMediaTimingFunction(name: .easeOut)
-            layer.add(fade, forKey: appearFadeKey)
-        } else if let presented, presented > 1.01 {
-            // Already visible with the shrink still in flight: pick it up
-            // where it is. Anything at or below ~1 is settled (or stale) and
-            // means leaving the visible bar alone instead of flashing it.
-            from = min(presented, 1.1)
-        } else {
+    /// Plays the configured invoke transition on the bar's own layer. The
+    /// window itself stays exactly where `position()` put it unless the
+    /// config opts into `followWindow`: with the default config the bar only
+    /// ever fades and settles in place, and can never read as sliding in
+    /// from the side. Later layers win when two of them drive the same
+    /// property. Reduced motion keeps a short fade and drops everything
+    /// that travels.
+    private static func playAppearTransition(in panel: NSPanel, fresh: Bool) {
+        // Showing again while already visible must never replay the intro
+        // over a settled bar: cancelling above already lifted any in-flight
+        // motion, and the view fills the window again, as at rest.
+        guard fresh, let layer = barHostLayer() else {
+            shared.syncBarHostFrame(panel)
             return
         }
-        guard !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion else { return }
-        // The window that will hold the settled bar. Grown first so the
-        // starting scale fits inside it exactly, centred: the shrink then
-        // moves every edge at once, and no edge is ever clipped flat. This
-        // holds for a retarget too: position() just snapped the window to the
-        // settled frame, so growing it again restarts a clean contained
-        // motion instead of overflowing a final-sized window.
-        let finalFrame = panel.frame
-        let grown = finalFrame.insetBy(dx: -finalFrame.width * (from - 1) / 2,
-                                       dy: -finalFrame.height * (from - 1) / 2)
-        panel.setFrame(grown, display: false)
-        // Still filling the window at this point, which is now larger: pin
-        // the view at the settled size, centred, before scaling it.
-        shared.pinBarHostForIntro(panel)
-        // The bar's view, whose size never moves during the motion: scaling
-        // this instead of the window-sized content view keeps one size from
-        // compounding onto the other.
-        guard let contentSize = shared.barHost?.view.bounds.size,
-              contentSize.width > 0, contentSize.height > 0 else { return }
-        // A layer scales about its origin, which would pin the left edge and
-        // bottom while the rest travels. The shift springs below re-centre
-        // every step instead: with identical tuning they trace the same curve
-        // as the scale, holding the centre still from 1.1x down to identity.
-        // The anchor itself is never touched, so AppKit's layout has nothing
-        // to fight with.
-        let shiftX = -Double(contentSize.width) * (from - 1) / 2
-        let shiftY = -Double(contentSize.height) * (from - 1) / 2
-        let scales: [(keyPath: String, key: String, from: Double, to: Double)] = [
-            ("transform.scale.x", appearScaleXKey, from, 1),
-            ("transform.scale.y", appearScaleYKey, from, 1),
-            ("transform.translation.x", appearShiftXKey, shiftX, 0),
-            ("transform.translation.y", appearShiftYKey, shiftY, 0),
-        ]
-        // Soft but quick: settles inside a third of a second with a whisper
-        // of overshoot, never a wobble.
-        var settle = 0.3
-        for scale in scales {
-            let spring = CASpringAnimation(keyPath: scale.keyPath)
-            spring.fromValue = scale.from
-            spring.toValue = scale.to
-            spring.stiffness = 400
-            spring.damping = 28
-            spring.mass = 1
-            spring.duration = spring.settlingDuration
-            settle = spring.settlingDuration
-            layer.add(spring, forKey: scale.key)
+        let transition = CommandBarAppearTransition.current()
+        let layers: [CommandBarAppearTransition.Layer]
+        if NSWorkspace.shared.accessibilityDisplayShouldReduceMotion {
+            layers = transition.openLayers.filter { $0.kind == .fade }.map {
+                var calm = $0
+                calm.duration = min($0.duration, 0.12)
+                calm.delay = 0
+                calm.curve = .linear
+                return calm
+            }
+        } else {
+            layers = transition.openLayers
         }
-        // The window follows the layer home. Slightly longer than the spring
-        // on purpose: a lagging window only shows clear background around a
-        // settled bar, while a leading one would slice the layer mid-shrink.
-        NSAnimationContext.runAnimationGroup { context in
-            context.duration = settle + 0.08
-            context.timingFunction = CAMediaTimingFunction(name: .easeOut)
-            panel.animator().setFrame(finalFrame, display: true)
+        guard !layers.isEmpty,
+              let contentSize = shared.barHost?.view.bounds.size,
+              contentSize.width > 0, contentSize.height > 0 else {
+            shared.syncBarHostFrame(panel)
+            return
+        }
+        let base = CACurrentMediaTime()
+        var runTime: TimeInterval = 0
+        var endsBlurred = false
+        for item in layers {
+            if item.kind == .blur, item.to > 0 { endsBlurred = true }
+            for (key, animation, endOffset) in Self.transitionAnimations(
+                for: item, contentSize: contentSize, baseTime: base) {
+                layer.add(animation, forKey: key)
+                appearLayerKeys.append(key)
+                runTime = max(runTime, endOffset)
+            }
+        }
+        // Opt-in only: the window grows around a scale intro and travels
+        // home behind the layer. Off, the frame never moves, which is what
+        // keeps the invoke from reading as a sideways slide.
+        if transition.followWindow {
+            let from = max(transition.maxScaleFrom, 1)
+            if from > 1.001 {
+                let finalFrame = panel.frame
+                panel.setFrame(finalFrame.insetBy(dx: -finalFrame.width * (from - 1) / 2,
+                                                  dy: -finalFrame.height * (from - 1) / 2),
+                               display: false)
+                shared.pinBarHostForIntro(panel)
+                NSAnimationContext.runAnimationGroup { context in
+                    context.duration = runTime + 0.05
+                    context.timingFunction = CAMediaTimingFunction(name: .easeOut)
+                    panel.animator().setFrame(finalFrame, display: true)
+                }
+                appearFinalFrame = finalFrame
+            }
         }
         appearEpoch += 1
         let epoch = appearEpoch
-        appearFinalFrame = finalFrame
-        DispatchQueue.main.asyncAfter(deadline: .now() + settle + 0.15) { [weak panel] in
+        DispatchQueue.main.asyncAfter(deadline: .now() + runTime + 0.1) { [weak panel] in
             guard appearEpoch == epoch else { return }
             appearFinalFrame = nil
+            appearLayerKeys = []
+            if let layer = barHostLayer(), !endsBlurred {
+                Self.removeAppearBlurFilter(from: layer)
+            }
             // Motion over: the view fills the window again, as at rest.
             if let panel { shared.syncBarHostFrame(panel) }
         }
     }
 
-    /// The bar's own layer, the one the appear motion scales. Never the
+    /// One layer's Core Animation work: the key each animation is added
+    /// under, plus how far past now it lands. Scale layers carry shift
+    /// animations with identical tuning, so they trace the same curve as the
+    /// scale and hold the centre still down to identity. The anchor itself
+    /// is never touched, so AppKit's layout has nothing to fight with.
+    private static func transitionAnimations(
+        for item: CommandBarAppearTransition.Layer,
+        contentSize: CGSize,
+        baseTime: CFTimeInterval
+    ) -> [(key: String, animation: CAAnimation, endOffset: TimeInterval)] {
+        func shift(_ scale: Double, _ size: Double) -> Double {
+            -size * (scale - 1) / 2
+        }
+        var spans: [(keyPath: String, from: Double, to: Double)] = []
+        switch item.kind {
+        case .fade:
+            spans = [("opacity", item.from, item.to)]
+        case .scale:
+            spans = [("transform.scale.x", item.from, item.to),
+                     ("transform.scale.y", item.from, item.to),
+                     ("transform.translation.x",
+                      shift(item.from, Double(contentSize.width)),
+                      shift(item.to, Double(contentSize.width))),
+                     ("transform.translation.y",
+                      shift(item.from, Double(contentSize.height)),
+                      shift(item.to, Double(contentSize.height)))]
+        case .stretchX:
+            spans = [("transform.scale.x", item.from, item.to),
+                     ("transform.translation.x",
+                      shift(item.from, Double(contentSize.width)),
+                      shift(item.to, Double(contentSize.width)))]
+        case .stretchY:
+            spans = [("transform.scale.y", item.from, item.to),
+                     ("transform.translation.y",
+                      shift(item.from, Double(contentSize.height)),
+                      shift(item.to, Double(contentSize.height)))]
+        case .slideX:
+            spans = [("transform.translation.x", item.from, item.to)]
+        case .slideY:
+            spans = [("transform.translation.y", item.from, item.to)]
+        case .blur:
+            spans = [("filters.\(appearBlurFilterName).inputRadius", item.from, item.to)]
+        }
+        if item.kind == .blur, let layer = barHostLayer() {
+            Self.ensureAppearBlurFilter(on: layer)
+        }
+        return spans.map { span in
+            let key = "appearTransition.\(item.id).\(span.keyPath)"
+            if item.curve == .spring {
+                let spring = CASpringAnimation(keyPath: span.keyPath)
+                spring.fromValue = span.from
+                spring.toValue = span.to
+                spring.mass = item.mass
+                spring.stiffness = item.stiffness
+                spring.damping = item.damping
+                spring.duration = spring.settlingDuration
+                spring.beginTime = baseTime + item.delay
+                spring.fillMode = .backwards
+                return (key, spring as CAAnimation, item.delay + spring.settlingDuration)
+            }
+            let basic = CABasicAnimation(keyPath: span.keyPath)
+            basic.fromValue = span.from
+            basic.toValue = span.to
+            basic.duration = max(item.duration, 0.01)
+            basic.beginTime = baseTime + item.delay
+            basic.fillMode = .backwards
+            switch item.curve {
+            case .linear, .spring:
+                basic.timingFunction = CAMediaTimingFunction(name: .linear)
+            case .gentle:
+                basic.timingFunction = CAMediaTimingFunction(name: .easeOut)
+            case .quick:
+                basic.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+            }
+            return (key, basic as CAAnimation, item.delay + basic.duration)
+        }
+    }
+
+    /// The bar's own layer, the one the invoke transition moves. Never the
     /// window-sized content view: that size moves with the window, and
     /// scaling it would compound the two.
     private static func barHostLayer() -> CALayer? {
         shared.barHost?.view.layer
     }
 
-    /// Lifts the scale and shift springs, leaving any fade alone.
-    private static func removeAppearScale(from layer: CALayer) {
-        layer.removeAnimation(forKey: appearScaleXKey)
-        layer.removeAnimation(forKey: appearScaleYKey)
-        layer.removeAnimation(forKey: appearShiftXKey)
-        layer.removeAnimation(forKey: appearShiftYKey)
+    /// Lifts the whole invoke or close transition at once, leaving the
+    /// settled bar. Showing again while visible must never inherit a
+    /// half-settled motion. Bumps the open epoch so a superseded completion
+    /// cannot tidy up a newer appearance.
+    private static func cancelAppearTransition() {
+        appearEpoch += 1
+        appearFinalFrame = nil
+        appearLayerKeys = []
+        guard let layer = barHostLayer() else { return }
+        for key in layer.animationKeys() ?? [] where key.hasPrefix("appearTransition.") {
+            layer.removeAnimation(forKey: key)
+        }
+        Self.removeAppearBlurFilter(from: layer)
     }
 
-    /// Ends the appear motion at once, leaving the settled bar. A resize that
-    /// lands mid-intro calls this so the new frame anchors to the final top
-    /// edge and centre, not ones still travelling home. Quiet outside an
+    /// Ends the invoke transition at once, leaving the settled bar. A resize
+    /// that lands mid-intro calls this so the new frame anchors to the final
+    /// top edge and centre, not ones still travelling home. Quiet outside an
     /// appearance.
-    private static func settleAppearStretch(in panel: NSPanel) {
-        guard let finalFrame = appearFinalFrame else { return }
-        appearFinalFrame = nil
-        appearEpoch += 1
-        cancelAppearStretch(in: panel)
-        panel.setFrame(finalFrame, display: true)
+    private static func settleAppearTransition(in panel: NSPanel) {
+        guard !appearLayerKeys.isEmpty else { return }
+        let finalFrame = appearFinalFrame
+        cancelAppearTransition()
+        if let finalFrame { panel.setFrame(finalFrame, display: true) }
         shared.syncBarHostFrame(panel)
     }
 
-    /// Showing again while visible must never inherit a half-settled shrink.
-    private static func cancelAppearStretch(in panel: NSPanel) {
-        guard let layer = barHostLayer() else { return }
-        removeAppearScale(from: layer)
-        layer.removeAnimation(forKey: appearFadeKey)
+    /// Plays the configured close transition, then orders the panel out.
+    /// True means the order-out waits for the motion to land; false means
+    /// the caller orders out at once. Only the window presentation comes
+    /// through here: the droplet folds back and the island dismisses with
+    /// their own motions.
+    @discardableResult
+    private static func playDisappearTransition(in panel: NSPanel) -> Bool {
+        let transition = CommandBarAppearTransition.current()
+        guard !transition.closeLayers.isEmpty,
+              !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion,
+              let layer = barHostLayer(),
+              let contentSize = shared.barHost?.view.bounds.size,
+              contentSize.width > 0, contentSize.height > 0 else { return false }
+        cancelAppearTransition()
+        let base = CACurrentMediaTime()
+        var runTime: TimeInterval = 0
+        var endsBlurred = false
+        for item in transition.closeLayers {
+            if item.kind == .blur, item.to > 0 { endsBlurred = true }
+            for (key, animation, endOffset) in Self.transitionAnimations(
+                for: item, contentSize: contentSize, baseTime: base) {
+                layer.add(animation, forKey: key)
+                appearLayerKeys.append(key)
+                runTime = max(runTime, endOffset)
+            }
+        }
+        disappearEpoch += 1
+        let epoch = disappearEpoch
+        // A close stays a gesture, never a wait: it always lands within a
+        // beat even if the config asks for longer.
+        let wait = min(runTime, 0.4)
+        DispatchQueue.main.asyncAfter(deadline: .now() + wait) { [weak panel, weak layer] in
+            guard disappearEpoch == epoch else { return }
+            appearLayerKeys = []
+            if let layer, !endsBlurred { Self.removeAppearBlurFilter(from: layer) }
+            panel?.orderOut(nil)
+        }
+        return true
+    }
+
+    private static func ensureAppearBlurFilter(on layer: CALayer) {
+        let existing = layer.filters ?? []
+        guard !existing.contains(where: { ($0 as? CIFilter)?.name == appearBlurFilterName }) else { return }
+        let filter = CIFilter(name: "CIGaussianBlur")
+        filter?.name = appearBlurFilterName
+        filter?.setDefaults()
+        layer.filters = existing + ([filter].compactMap { $0 as Any })
+    }
+
+    private static func removeAppearBlurFilter(from layer: CALayer) {
+        let kept = (layer.filters ?? []).filter { ($0 as? CIFilter)?.name != appearBlurFilterName }
+        layer.filters = kept.isEmpty ? nil : kept
     }
 
     /// Below the island, centred on it, where the drop lands.
@@ -733,7 +843,11 @@ final class CommandBarService: ObservableObject {
         }
         restoreSuspendedInputSource()
         removeMonitors()
-        panel?.orderOut(nil)
+        if presented == .window, let panel, !Self.playDisappearTransition(in: panel) {
+            panel.orderOut(nil)
+        } else if presented != .window {
+            panel?.orderOut(nil)
+        }
         awaitsAnswers = false
         pendingKeys = []
         if let dropped {
@@ -872,10 +986,10 @@ final class CommandBarService: ObservableObject {
         guard let panel, panel.isVisible else { return }
         DispatchQueue.main.async { [weak self] in
             guard let self, let panel = self.panel, panel.isVisible else { return }
-            // A resize during the appear motion settles it first: laying out
-            // from a mid-flight window would anchor the new frame to a top
-            // edge and centre that are still travelling home.
-            Self.settleAppearStretch(in: panel)
+            // A resize during the invoke transition settles it first: laying
+            // out from a mid-flight motion would anchor the new frame to a
+            // top edge and centre that are still travelling home.
+            Self.settleAppearTransition(in: panel)
             barHost?.view.layoutSubtreeIfNeeded()
             let size = barHost?.view.fittingSize ?? panel.frame.size
             let screen = self.panelScreen ?? NSScreen.pointerVisibleFrame

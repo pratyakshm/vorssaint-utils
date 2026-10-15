@@ -26,6 +26,8 @@ struct CommandBarSettings: View {
     @State private var showsFileOptions = false
     @State private var showsLayoutOptions = false
     @State private var showsAppShortcuts = false
+    @State private var showsTransitionEditor = false
+    @State private var transitionCopied = false
 
     private var text: CommandBarFeatureStrings { FeatureStrings.commandBar(l10n.language) }
     /// The snippet library already says "save", "delete" and "name" in every
@@ -133,6 +135,23 @@ struct CommandBarSettings: View {
                 }
             } header: {
                 Text(text.pageTitle)
+            }
+
+            Section {
+                HStack(spacing: DS.Space.medium) {
+                    Button("Edit invoke transition…") {
+                        showsTransitionEditor = true
+                    }
+                    Button(transitionCopied ? "Copied" : "Copy config") {
+                        copyTransitionConfig()
+                    }
+                    .disabled(transitionCopied)
+                }
+                Text("How the bar arrives and leaves: stack fade, scale, stretch, slide and blur layers with your own timing. Copy the config to share it back for a tuned default.")
+                    .font(DS.Font.caption)
+                    .foregroundStyle(.secondary)
+            } header: {
+                Text("Invoke transition")
             }
 
             Section {
@@ -375,6 +394,9 @@ struct CommandBarSettings: View {
         .sheet(isPresented: $showsAppShortcuts) {
             CommandBarAppShortcutsView()
         }
+        .sheet(isPresented: $showsTransitionEditor) {
+            CommandBarTransitionEditor()
+        }
         .sheet(item: $editing) { link in
             CommandBarLinkEditor(draft: link, text: text, common: common) { saved in
                 save(saved)
@@ -532,6 +554,16 @@ struct CommandBarSettings: View {
     private func writeFileIgnores(_ patterns: [String]) {
         fileIgnoresRaw = CommandBarFileSearchSupport.encodeList(patterns)
         CommandBarService.shared.syncWithPreferences()
+    }
+
+    /// Copies the current invoke transition as JSON: the format to hand back
+    /// for a tuned default.
+    private func copyTransitionConfig() {
+        let json = CommandBarAppearTransition.current().encodedPretty()
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(json, forType: .string)
+        transitionCopied = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { transitionCopied = false }
     }
 
     private func removeAlias(_ key: String) {
