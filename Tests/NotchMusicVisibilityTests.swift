@@ -420,14 +420,17 @@ enum NotchMusicVisibilityTests {
         suite.expect(naming.compactActivity == .music && musicWing > 0 && naming.surfaceShift == 0,
                      "precondition: the music strip rests beside the camera with even wings")
         naming.namedMusicWings = NotchNoticeWings(leading: musicWing + 120, trailing: musicWing)
-        suite.expect(naming.surfaceSize == CGSize(width: plainStrip.width + 120, height: plainStrip.height)
-                     && naming.surfaceShift == -60,
+        let named = CGSize(width: plainStrip.width + 120, height: plainStrip.height)
+        suite.expect(naming.surfaceSize == named && naming.surfaceShift == -60,
                      "a strip naming its song grows only toward its cover, and its centre moves half as far")
         naming.hoverEmphasized = true
-        suite.expect(naming.surfaceSize == NotchHoverEmphasis.size(
-                        from: CGSize(width: plainStrip.width + 120, height: plainStrip.height), geometry: naming.geometry)
-                     && naming.surfaceShift == -60,
+        let grown = NotchHoverEmphasis.size(from: named, geometry: naming.geometry)
+        suite.expect(naming.surfaceSize == grown && naming.surfaceShift == -60,
                      "the hover emphasis grows around the named strip without moving its centre")
+        suite.expect(naming.surfacePresentation.layout == named && naming.surfacePresentation.size == grown
+                     && naming.surfacePresentation.scale == CGSize(width: grown.width / named.width,
+                                                                   height: grown.height / named.height),
+                     "the emphasis lays the island out at its resting size and scales the whole of it up")
         // The emphasis is a plain 1.2x scale and no longer stops at the menus.
         let room = naming.geometry.compactSideRoom!
         naming.namedMusicWings = NotchNoticeWings(leading: room - 4, trailing: musicWing)
@@ -444,7 +447,8 @@ enum NotchMusicVisibilityTests {
         naming.expanded = false
         naming.hoverEmphasized = false
         naming.namedMusicWings = nil
-        suite.expect(naming.surfaceSize == plainStrip && naming.surfaceShift == 0,
+        suite.expect(naming.surfaceSize == plainStrip && naming.surfaceShift == 0
+                     && naming.surfacePresentation.scale == CGSize(width: 1, height: 1),
                      "taking the name back restores the even strip on the camera's centre")
         // A song paused from the strip's button stays while the pointer does.
         let pausedSong = NotchPlaybackContext(pid: 42, revision: UUID())

@@ -890,16 +890,42 @@ final class NotchService: ObservableObject {
         }
         if peeking { return geometry.peek }
         if showsCompactActivityPicker { return compactActivityPickerLayout.size }
+        let resting = closedRestingSize
+        return hoverEmphasized ? NotchHoverEmphasis.size(from: resting, geometry: geometry) : resting
+    }
+
+    /// The closed island's own size at rest, before the hover emphasis grows it.
+    private var closedRestingSize: CGSize {
         if compactActivity != nil {
             var resting = compactActivityGeometry.compactActivitySize
             // A strip naming its song reaches further on its cover's side.
-            let named = namedMusicWings
-            if let named { resting.width += named.leading - named.trailing }
-            return hoverEmphasized ? NotchHoverEmphasis.size(from: resting, geometry: geometry) : resting
+            if let named = namedMusicWings { resting.width += named.leading - named.trailing }
+            return resting
         }
-        let resting = geometry.restingSize(showsContent: idleContent != .none || mascotShows(on: geometry))
-        return hoverEmphasized ? NotchHoverEmphasis.size(from: resting, geometry: geometry) : resting
+        return geometry.restingSize(showsContent: idleContent != .none || mascotShows(on: geometry))
     }
+
+    /// The island as its own view draws it: the size to lay out at, the factor
+    /// the hover emphasis scales that whole view by, and the size the window
+    /// reserves. Scaling the view itself keeps the shell and the contents
+    /// inside it in proportion, which growing only the shape never did.
+    var surfacePresentation: NotchSurfacePresentation {
+        let size = surfaceSize
+        guard hoverEmphasized else { return .whole(size) }
+        // A floating capsule lives inside the menu bar and cannot grow taller,
+        // so it keeps the shape-only emphasis it had; a chooser is its own
+        // surface, already sized to what it shows.
+        guard capsuleSurfaceSize == nil, !showsCompactActivityPicker else { return .whole(size) }
+        let resting = closedRestingSize
+        guard resting.width > 0, resting.height > 0 else { return .whole(size) }
+        return NotchSurfacePresentation(layout: resting,
+                                        scale: CGSize(width: size.width / resting.width,
+                                                      height: size.height / resting.height),
+                                        size: size)
+    }
+
+    /// The size the island's own view lays out at.
+    var surfaceLayoutSize: CGSize { surfacePresentation.layout }
 
     /// How far the island's centre sits right of the camera's. Only a closed
     /// notice beside a camera, or the music strip naming its song, reaches

@@ -19,6 +19,7 @@ struct NotchView: View {
     private var text: NotchStrings { FeatureStrings.notch(l10n.language) }
 
     var body: some View {
+        let presented = service.surfacePresentation
         surface
             // An activity arriving over the resting companion fades in as the
             // companion fades out, and one ending fades back into it, instead
@@ -34,7 +35,9 @@ struct NotchView: View {
                 guard arrives || leaves else { return }
                 transaction.animation = .easeInOut(duration: NotchMascotMotion.restCrossfade)
             }
-            .frame(width: service.surfaceSize.width, height: service.surfaceSize.height, alignment: .top)
+            // The island lays out at its own size and the hover emphasis scales
+            // the whole of it: the shell and the contents grow as one piece.
+            .frame(width: presented.layout.width, height: presented.layout.height, alignment: .top)
             .foregroundStyle(.white)
             // The window server leaves Liquid Glass out of its hit test, so a
             // click or a wheel over empty glass would reach the window behind:
@@ -52,12 +55,24 @@ struct NotchView: View {
             .onChange(of: contrast) {
                 DispatchQueue.main.async { service.refreshPresentation(animated: false) }
             }
+            .scaleEffect(x: presented.scale.width, y: presented.scale.height, anchor: .top)
+            // The size the window already animates to, so what is drawn lands
+            // with the silhouette rather than snapping ahead of it.
+            .animation(reduceMotion ? nil : emphasisAnimation(presented), value: presented.scale)
+            .frame(width: presented.size.width, height: presented.size.height, alignment: .top)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .environment(\.colorScheme, .dark)
             .environment(\.notchPresentation, true)
             .environment(\.notchGlassSurface, usesGlassSurface)
             .tint(.white)
             .accessibilityIdentifier("notch.surface")
+    }
+
+    /// The emphasis grows and shrinks the island on the same spring the
+    /// island's own resize runs on, so the contents land with the shape.
+    private func emphasisAnimation(_ presented: NotchSurfacePresentation) -> Animation {
+        let spring = NotchMotion.spring(from: presented.layout.width, to: presented.size.width, width: true)
+        return .spring(duration: spring.duration, bounce: spring.bounce)
     }
 
     private var usesGlassSurface: Bool {
@@ -72,7 +87,7 @@ struct NotchView: View {
     }
 
     private var shape: NotchShape {
-        NotchShape.island(height: service.surfaceSize.height, geometry: service.geometry)
+        NotchShape.island(height: service.surfaceLayoutSize.height, geometry: service.geometry)
     }
 
     @ViewBuilder private var surface: some View {

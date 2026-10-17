@@ -554,6 +554,21 @@ enum NotchHoverEmphasis {
     }
 }
 
+/// How the island is drawn: its own view lays out at `layout` and is scaled by
+/// `scale`, and `size` is what the window reserves. The hover emphasis scales
+/// the whole island, so the shell and the contents inside it keep their
+/// proportions instead of the shape growing around contents that stay put.
+struct NotchSurfacePresentation: Equatable {
+    var layout: CGSize
+    var scale: CGSize
+    var size: CGSize
+
+    /// A presentation with nothing to scale: drawn as laid out.
+    static func whole(_ size: CGSize) -> NotchSurfacePresentation {
+        NotchSurfacePresentation(layout: size, scale: CGSize(width: 1, height: 1), size: size)
+    }
+}
+
 /// What the pointer rests on in the closed music strip: the cover names the
 /// song, and the bars become its play or pause button.
 enum NotchMusicStripPart: Equatable {
