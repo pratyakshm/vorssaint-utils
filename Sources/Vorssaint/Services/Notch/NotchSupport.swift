@@ -538,15 +538,19 @@ struct NotchHoverState {
 }
 
 enum NotchHoverEmphasis {
-    /// `reach` is how much further than half the width one side goes, as a
-    /// strip naming its song does on its cover's side.
-    static func size(from resting: CGSize, geometry: NotchGeometry, reach: CGFloat = 0) -> CGSize {
-        // Keep the pulse inside the measured free menu-bar space on each side.
-        // Hover widens the island a little; its height never changes.
-        let occupiedWing = max(0, (resting.width - geometry.cameraWidth) / 2) + reach
-        let freeSide = max(0, (geometry.compactSideRoom ?? 0) - occupiedWing)
-        let growth = min(10, freeSide)
-        return CGSize(width: resting.width + growth * 2, height: resting.height)
+    /// How much larger the closed island grows while the pointer rests on it.
+    /// The emphasis used to only widen, and only as far as the measured free
+    /// menu-bar space allowed, so on a display whose room measured zero it
+    /// never showed at all. A plain scale of the resting size always shows.
+    static let scale: CGFloat = 1.2
+
+    /// The island grows from the top edge, so a notched one grows downward as
+    /// well as sideways. A floating capsule lives inside the menu bar and stays
+    /// one bar high: only its width grows.
+    static func size(from resting: CGSize, geometry: NotchGeometry) -> CGSize {
+        let width = (resting.width * scale).rounded()
+        guard !geometry.floats else { return CGSize(width: width, height: resting.height) }
+        return CGSize(width: width, height: (resting.height * scale).rounded())
     }
 }
 

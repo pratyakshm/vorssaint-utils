@@ -425,15 +425,15 @@ enum NotchMusicVisibilityTests {
                      "a strip naming its song grows only toward its cover, and its centre moves half as far")
         naming.hoverEmphasized = true
         suite.expect(naming.surfaceSize == NotchHoverEmphasis.size(
-                        from: CGSize(width: plainStrip.width + 120, height: plainStrip.height), geometry: naming.geometry,
-                        reach: 60)
+                        from: CGSize(width: plainStrip.width + 120, height: plainStrip.height), geometry: naming.geometry)
                      && naming.surfaceShift == -60,
                      "the hover emphasis grows around the named strip without moving its centre")
-        // Four points short of the menus on the named side, the pulse grows by those four.
+        // The emphasis is a plain 1.2x scale and no longer stops at the menus.
         let room = naming.geometry.compactSideRoom!
         naming.namedMusicWings = NotchNoticeWings(leading: room - 4, trailing: musicWing)
-        suite.expect(naming.surfaceSize.width == plainStrip.width + (room - 4 - musicWing) + 8,
-                     "its pulse stops at the menus on the named side, the side with the least room")
+        suite.expect(naming.surfaceSize.width
+                     == ((plainStrip.width + (room - 4 - musicWing)) * NotchHoverEmphasis.scale).rounded(),
+                     "the hover emphasis scales the named strip and reaches past the menus")
         naming.namedMusicWings = NotchNoticeWings(leading: musicWing + 120, trailing: musicWing)
         naming.notice = notice
         suite.expect(naming.surfaceShift == naming.geometry.noticeShift(notice.wings(in: naming.geometry)),

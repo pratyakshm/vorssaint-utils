@@ -892,14 +892,10 @@ final class NotchService: ObservableObject {
         if showsCompactActivityPicker { return compactActivityPickerLayout.size }
         if compactActivity != nil {
             var resting = compactActivityGeometry.compactActivitySize
-            // A strip naming its song reaches further on its cover's side,
-            // where the emphasis has the least room.
+            // A strip naming its song reaches further on its cover's side.
             let named = namedMusicWings
             if let named { resting.width += named.leading - named.trailing }
-            return hoverEmphasized
-                ? NotchHoverEmphasis.size(from: resting, geometry: geometry,
-                                          reach: named.map { ($0.leading - $0.trailing) / 2 } ?? 0)
-                : resting
+            return hoverEmphasized ? NotchHoverEmphasis.size(from: resting, geometry: geometry) : resting
         }
         let resting = geometry.restingSize(showsContent: idleContent != .none || mascotShows(on: geometry))
         return hoverEmphasized ? NotchHoverEmphasis.size(from: resting, geometry: geometry) : resting
