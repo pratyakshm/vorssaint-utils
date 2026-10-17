@@ -46,10 +46,20 @@ enum NotchGestureTests {
         }
         suite.expect(feed(0, 5, began: true) == nil && feed(0, 10) == nil && feed(0, 10) == .open,
                "small vertical movement accumulates into one intentional opening")
-        suite.expect(feed(0, -100, expanded: true) == nil,
-               "the remainder of an opening gesture cannot immediately close the notch")
+        suite.expect(feed(0, 30, expanded: true) == nil,
+               "carrying on the same swipe does not open the island twice")
+        suite.expect(feed(0, -100, expanded: true) == .close,
+               "fingers that turn around mid-swipe close the island they just opened")
         suite.expect(feed(0, 0, ended: true) == nil && feed(0, -80, momentum: true, expanded: true) == nil,
                "momentum after a swipe that already acted never changes presentation")
+        suite.expect(feed(0, 40, began: true) == .open
+               && feed(0, -40, expanded: true) == .close
+               && feed(0, 40, expanded: false) == .open,
+               "every turn of the hand drives the island the other way in the same touch")
+        suite.expect(feed(0, -40, began: true, expanded: false) == nil,
+               "an upward swipe on the closed island asks it for nothing")
+        suite.expect(feed(0, 40, began: true, expanded: true) == nil,
+               "a downward swipe on the open island asks it for nothing")
         suite.expect(feed(0, -30, began: true, expanded: true) == .close,
                "a separate upward gesture closes an expanded panel")
         suite.expect(feed(-10, 0, began: true) == nil && feed(-15, 0) == nil && feed(-20, 0) == .nextTrack,
@@ -184,8 +194,8 @@ enum NotchGestureTests {
         suite.expect(feed(0, -24, precise: true, phased: false, expanded: true) == .close,
                "high-resolution devices without phases still use timestamp-based wheel expiration")
         suite.expect(feed(0, 0, began: true, expanded: false) == nil
-               && feed(0, -30, expanded: true) == nil,
-               "an external presentation change cannot reverse the vertical action chosen by its origin")
+               && feed(0, -30, expanded: true) == .close,
+               "a swipe that began on the closed island closes it once it is open")
         suite.expect(feed(.nan, 0, began: true) == nil && feed(.infinity, 0) == nil,
                "malformed deltas never produce a gesture")
         suite.expect(feed(-80, 0) == nil, "invalid timing or movement cannot restart a phased gesture midway")

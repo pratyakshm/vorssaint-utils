@@ -3,8 +3,10 @@
 
 import AppKit
 
-/// One decision per physical scroll sequence. No timer is needed for wheel
-/// devices without phases: the next event itself expires an old sequence.
+/// One decision per direction of a physical scroll sequence. No timer is needed
+/// for wheel devices without phases: the next event itself expires an old
+/// sequence. A hand that turns around mid-swipe starts the opposite swipe from
+/// nothing, so an interruption drives the other action at once.
 struct NotchGestureSupport {
     enum Action: Equatable { case open, close, nextTrack, previousTrack }
     private enum Axis { case horizontal, vertical }
@@ -19,6 +21,9 @@ struct NotchGestureSupport {
     private var pendingY = 0.0
     private var distance = 0.0
     private var fired = false
+    /// Which way a vertical run last acted, so a hand that turns around drives
+    /// the opposite action instead of repeating the one it already took.
+    private var firedVertical = 0
     private var coasting = false
     private var lastTimestamp: TimeInterval?
     private static let verticalThreshold = 16.0
@@ -94,10 +99,8 @@ struct NotchGestureSupport {
             self = Self()
         }
         lastTimestamp = timestamp
-        guard !fired else { return nil }
         let allowVertical = origin?.vertical ?? allowVertical
         let allowHorizontal = origin?.horizontal ?? allowHorizontal
-        let expanded = origin?.expanded ?? expanded
         if axis == nil {
             // Establish intent from a little accumulated travel, not the first
             // fraction of a point as the fingers touch the trackpad.
@@ -113,14 +116,22 @@ struct NotchGestureSupport {
             }
             else { return nil }
         } else {
-            distance += axis == .horizontal ? x : y
+            let delta = axis == .horizontal ? x : y
+            // A vertical swipe measures how far it has travelled one way, so a
+            // hand that turns around begins the opposite swipe from nothing and
+            // reaches the threshold again. A track swipe keeps its net travel.
+            if axis == .vertical, delta * distance < 0 { distance = 0 }
+            distance += delta
         }
         switch axis {
         case .horizontal where allowHorizontal:
-            guard abs(distance) >= 40 else { return nil }
+            guard !fired, abs(distance) >= 40 else { return nil }
             fired = true
             return distance < 0 ? .nextTrack : .previousTrack
         case .vertical where allowVertical:
+            // Where the sequence started decides that it may travel; what the
+            // island is doing now decides which way, so a hand that turns
+            // around closes the island the same gesture just opened.
             return verticalAction(expanded: expanded)
         default:
             return nil
@@ -129,9 +140,13 @@ struct NotchGestureSupport {
 
     private mutating func verticalAction(expanded: Bool) -> Action? {
         guard abs(distance) >= Self.verticalThreshold else { return nil }
+        let direction = distance > 0 ? 1 : -1
+        // One run of travel acts once; turning around arms the other way.
+        guard direction != firedVertical else { return nil }
+        firedVertical = direction
         fired = true
-        if distance > 0, !expanded { return .open }
-        if distance < 0, expanded { return .close }
+        if direction > 0, !expanded { return .open }
+        if direction < 0, expanded { return .close }
         return nil
     }
 }
