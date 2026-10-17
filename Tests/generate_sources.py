@@ -902,7 +902,8 @@ def main():
           + "func open() { openings += 1; expanded = true; syncScreenEdgeClicks() }\n"
           + "".join(declaration(notch, prefix).replace("    private ", "    ", 1) for prefix in [
               "    private var screenEdgeClickArea:", "    private func syncScreenEdgeClicks(",
-              "    private func handleScreenEdgeEvent(", "    private func handleScreenEdgeClick(",
+              "    private func handleScreenEdgeEvent(", "    private func handleScreenEdgeScroll(",
+              "    private func handleScreenEdgeClick(",
               "    private func removeScreenEdgeClickMonitors("])
           + "}\n}\n")
     write("NotchScreenRefresh.swift", "import Foundation\n\nextension NotchScreenRefreshContract {\nfinal class Service: State {\n"

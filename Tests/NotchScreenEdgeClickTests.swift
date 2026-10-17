@@ -54,7 +54,12 @@ enum NotchScreenEdgeClickTests {
         var hoverState = NotchHoverState()
         var compactActivity: NotchCompactActivity?
         var openings = 0, countdownOpenings = 0
+        var gestureScrolls: [CGPoint] = []
         func openCountdownEvent() { countdownOpenings += 1; expanded = true }
+        func handleGesture(_ event: NSEvent, screenPoint: CGPoint) -> Bool {
+            gestureScrolls.append(screenPoint)
+            return false
+        }
     }
 
     static func run(_ suite: TestSuite) {
@@ -65,7 +70,8 @@ enum NotchScreenEdgeClickTests {
                 service.geometry = NotchGeometry(screen: screen, safeAreaTop: 32, cameraWidth: 180)
                 service.syncScreenEdgeClicks()
                 for _ in 0..<100 { service.syncScreenEdgeClicks() }
-                suite.expect(NSEvent.global.count == 1 && NSEvent.local.count == 1, "refreshes keep exactly one pair of edge-click monitors")
+                suite.expect(NSEvent.global.count == 2 && NSEvent.local.count == 2,
+                             "refreshes keep exactly one pair of edge-click monitors and one pair of edge-scroll monitors")
                 let top = CGPoint(x: screen.midX, y: screen.maxY)
                 func send(_ type: NSEvent.EventType, _ point: CGPoint, window: Panel? = nil) {
                     let event = NSEvent(type, point: point, window: window)
@@ -176,5 +182,22 @@ enum NotchScreenEdgeClickTests {
                          "a click \(depth) points below the top edge \(opens ? "opens" : "leaves") a floating capsule")
             capsule.removeScreenEdgeClickMonitors()
         }
+        // The menu bar takes the top row's scrolls, so a two-finger swipe over
+        // the closed island never reaches the panel. The edge monitor hands
+        // those to the island's gesture handler in screen coordinates, and
+        // leaves a scroll the panel itself received alone.
+        let scrolling = Service()
+        scrolling.syncScreenEdgeClicks()
+        let barPoint = CGPoint(x: scrolling.geometry.screen.midX, y: scrolling.geometry.screen.maxY)
+        for handler in Array(NSEvent.local.values) { _ = handler(NSEvent(.scrollWheel, point: barPoint)) }
+        suite.expect(scrolling.gestureScrolls == [barPoint],
+               "a scroll the menu bar took over the closed island reaches the island's own gesture handler")
+        scrolling.gestureScrolls = []
+        for handler in Array(NSEvent.local.values) {
+            _ = handler(NSEvent(.scrollWheel, point: barPoint, window: scrolling.panel))
+        }
+        suite.expect(scrolling.gestureScrolls.isEmpty,
+               "a scroll the panel itself received is left to the panel, so one swipe is never counted twice")
+        scrolling.removeScreenEdgeClickMonitors()
     }
 }

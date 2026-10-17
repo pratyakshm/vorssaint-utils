@@ -3045,6 +3045,26 @@ final class NotchService: ObservableObject {
             self?.handleScreenEdgeEvent(event)
             return event
         }) { screenEdgeClickMonitors.append(token) }
+        // The menu bar takes the first screen row's scrolls before the closed
+        // island can, so the two-finger swipe down that should open it never
+        // reaches the panel. Watch those too and hand them to the island's own
+        // gesture handler, exactly as the edge-click monitors do for clicks.
+        if let token = NSEvent.addGlobalMonitorForEvents(matching: .scrollWheel, handler: { [weak self] event in
+            self?.handleScreenEdgeScroll(event)
+        }) { screenEdgeClickMonitors.append(token) }
+        if let token = NSEvent.addLocalMonitorForEvents(matching: .scrollWheel, handler: { [weak self] event in
+            self?.handleScreenEdgeScroll(event)
+            return event
+        }) { screenEdgeClickMonitors.append(token) }
+    }
+
+    /// Feeds a scroll the panel never saw, because the menu bar owns the row it
+    /// happened on, to the same gesture handler the panel uses. The panel's own
+    /// events are left to it, so a swipe is never counted twice.
+    private func handleScreenEdgeScroll(_ event: NSEvent) {
+        guard event.type == .scrollWheel, let panel, event.window !== panel else { return }
+        guard let location = event.cgEvent?.location, let primary = NSScreen.withMenuBar else { return }
+        _ = handleGesture(event, screenPoint: CGPoint(x: location.x, y: primary.frame.maxY - location.y))
     }
 
     private func handleScreenEdgeEvent(_ event: NSEvent) {
@@ -3601,7 +3621,9 @@ final class NotchService: ObservableObject {
     /// The gallery steps its rows from the wheel; every other scroll over the
     /// island is a gesture candidate.
     private func handleScroll(_ event: NSEvent) -> Bool {
-        handleSectionScroll(event) || handleGesture(event)
+        guard let panel else { return false }
+        return handleSectionScroll(event)
+            || handleGesture(event, screenPoint: panel.convertPoint(toScreen: event.locationInWindow))
     }
 
     private func handleSectionScroll(_ event: NSEvent) -> Bool {
@@ -3626,20 +3648,24 @@ final class NotchService: ObservableObject {
         return true
     }
 
-    private func handleGesture(_ event: NSEvent) -> Bool {
+    /// `screenPoint` is where the pointer is on screen: the panel's own events
+    /// carry it in window coordinates, while the screen-edge monitor, which
+    /// sees the scrolls the menu bar takes before the closed island can, passes
+    /// it in screen coordinates already.
+    private func handleGesture(_ event: NSEvent, screenPoint: CGPoint) -> Bool {
         guard running, !suspended, NotchGestureSupport.isEnabled(), let panel,
               !trackingMenu, captureControls == nil, !heldDrag,
               event.modifierFlags.intersection([.command, .control, .option, .shift]).isEmpty else {
             gesture = NotchGestureSupport()
             return false
         }
-        let screenPoint = panel.convertPoint(toScreen: event.locationInWindow)
         guard windowHost?.contains(screenPoint) == true else { gesture = NotchGestureSupport(); return false }
         let fromTop = panel.frame.maxY - screenPoint.y
         let inHeader = NotchSupport.gestureIsOverHeader(expanded: expanded, peeking: peeking,
                                                        fromTop: fromTop, safeTop: expanded ? expandedGeometry.headerTopInset : geometry.safeContentTop,
                                                        height: expanded ? expandedGeometry.headerRowHeight : NotchLayout.headerHeight)
-        let interaction = NotchGestureSupport.nativeInteraction(at: panel.contentView?.hitTest(event.locationInWindow))
+        let interaction = NotchGestureSupport.nativeInteraction(
+            at: panel.contentView?.hitTest(panel.convertPoint(fromScreen: screenPoint)))
         let musicSurface = modules.contains(.music)
             && (compactMusicIsVisible || (expanded && selected == .music && !showingAppPanel && !showingSections
                                           && !showingCommandBar))
