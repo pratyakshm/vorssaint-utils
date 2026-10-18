@@ -1,0 +1,56 @@
+name: Sync upstream
+
+# Pulls vorssaint/vorssaint-utils into this fork every third day and merges
+# upstream/main. Conflicts abort the job before anything is pushed, so a
+# failed run never rewrites history; GitHub emails the owner on failure.
+
+on:
+  schedule:
+    # Fires daily; the gate step below keeps work to every third day. Cron
+    # cannot express "every 3 days" directly (day-of-month steps drift at
+    # month boundaries), so a UTC epoch check gives exact 72-hour spacing.
+    - cron: "0 5 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-upstream
+  cancel-in-progress: true
+
+jobs:
+  sync:
+    name: Merge upstream main
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Gate to every third day
+        id: gate
+        run: echo "due=$(( ($(date -u +'%s') / 86400) % 3 ))" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        if: steps.gate.outputs.due == '0'
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Merge upstream
+        if: steps.gate.outputs.due == '0'
+        run: |
+          git config user.name "vorssaint-sync"
+          git config user.email "actions@users.noreply.github.com"
+          git remote add upstream https://github.com/vorssaint/vorssaint-utils.git
+          git fetch upstream main --no-tags
+          git merge upstream/main --no-edit
+
+      - name: Push
+        if: steps.gate.outputs.due == '0'
+        env:
+          # A fine-grained PAT stored as SYNC_TOKEN makes the push count as a
+          # normal user push, so CI runs on the synced commit. Pushing with
+          # github.token would skip that (GitHub blocks recursive workflow
+          # runs), leaving CI red-lagging by a day.
+          SYNC_TOKEN: ${{ secrets.SYNC_TOKEN || github.token }}
+        run: |
+          git push "https://x-access-token:${SYNC_TOKEN}@github.com/${{ github.repository }}.git" HEAD:main
