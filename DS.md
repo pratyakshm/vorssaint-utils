@@ -135,6 +135,39 @@ suite passes except the pre-existing environment failures in `notch`
 stashed. `command-bar` OK (768 checks, incl. new
 `CommandBarAppearTransitionTests`), `repository` OK (314 checks).
 
+### 2026-10-18 — upstream merge (109 commits to `b67dcf1c`): DS held on the touched panels
+
+Resolved (merge commit `4170078e` on `merge/upstream-oct18`; fork behaviors
+kept, upstream's new layouts adopted): `NotchView`, `NotchService`,
+`NotchClipboardView`, `NotchMusicView`, `NotchComponents`,
+`NotchDownloadsView`, `NotchLockScreenView`, `NotchAgentsView`,
+`NotchAgentsSettings`, `NotchService`, `MixerSection`, `PowerSection`,
+`QuickLauncherView`, `AgentLogParser`, `AgentUsageService`,
+`CommandBarService`, tests/README/build script.
+
+- Upstream's rewrites adopted and re-tokened on the way in:
+  `MixerSection` (3 literals → `DS.Font.panelFloorEmphasis`), `PowerSection`
+  (2 → `DS.Space.xSmall`, + new peripheral-battery row), `QuickLauncherView`
+  (1 → `DS.Space.medium`, band chrome by upstream). All three stay
+  token-clean (76/27/38 DS refs, 0 literals).
+- `NotchView` resolved to upstream's #3140 island layout with the fork's
+  section-title swipe re-attached, DS tokens in the re-inserted pieces
+  (0 literals; `expansionGeometry.headerTitleFont` was upstream-deleted —
+  fork's header title now `DS.Font.cardTitle`).
+- Back to literals after upstream's rewrites (re-migration pending):
+  `NotchClipboardView` (15, was already Remaining), `NotchMusicView` (12,
+  upstream head/transport rewrite — new in Remaining), `NotchComponents`
+  (5, regressed from the second slice's rail work).
+- `build.sh`/test target: `Harness/CursorReader.swift` (fork's Cursor
+  parser, now behind upstream's harness-reader protocol) added to
+  `TEST_SOURCES`; `Tests/mutation_checks.py` progress-filter check pinned
+  to the fork's cursor-excluding variant.
+
+Verified: `./build.sh --test` exits 0 — TESTS OK (112,707 checks),
+preference cleanup, uninstall spaces and developer isolation OK. All
+suites pass on this machine, including the previously flaky `notch`
+(66,200 checks), `dock-autohide` and `switcher`.
+
 ## Remaining
 
 ### Settings detail pages (shell is done; per-file literals remain)
@@ -162,8 +195,9 @@ reviewed (no SwiftUI literals).
 
 ### Dynamic Island / Notch (core + strips done)
 
-- `NotchClipboardView`, `NotchControlsView`, `NotchMixerView`,
-  `NotchSystemView`, rest of `UI/Notch/`.
+- `NotchClipboardView`, `NotchMusicView`, `NotchControlsView`, `NotchMixerView`,
+  `NotchSystemView`, rest of `UI/Notch/`. `NotchComponents` re-picked up 5
+  literals in the 2026-10-18 upstream merge — re-migrate with these.
 
 ### Other active-feature UI
 
