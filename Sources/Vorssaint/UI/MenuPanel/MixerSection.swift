@@ -475,7 +475,6 @@ struct MixerSection: View {
                                     visibleIDs: visibleApps.compactMap(\.persistenceID))
                         }
                     }))
-                .help(FeatureStrings.mixer(l10n.language).arrange)
         }
     }
 
@@ -920,6 +919,7 @@ private struct MixerRow: View {
                         .offset(x: -1, y: -1)
                 }
             }
+            .help(arrangementStrings.arrange)
 
             VStack(alignment: .leading, spacing: DS.Space.xSmall) {
                 HStack(spacing: DS.Space.rowTitleGap) {
@@ -927,6 +927,7 @@ private struct MixerRow: View {
                         .font(DS.Font.footnote)
                         .lineLimit(1)
                         .truncationMode(.middle)
+                        .help(arrangementStrings.arrange)
 
                     if isPinned {
                         Image(systemName: "pin.fill")
