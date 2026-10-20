@@ -934,6 +934,12 @@ final class NotchService: ObservableObject {
         // so it keeps the shape-only emphasis it had; a chooser is its own
         // surface, already sized to what it shows.
         guard capsuleSurfaceSize == nil, !showsCompactActivityPicker else { return .whole(size) }
+        // The scale reads the emphasized size against the resting one, so it
+        // fits the closed island alone. Opening keeps the emphasis set until
+        // the next mouse move, and a banner, a drag or a capture can arrive
+        // the same way: those draw at their own size, never stretched by it.
+        guard !expanded, !peeking, !dragPlaceholder, notice == nil, captureControls == nil,
+              !fullscreenCompact else { return .whole(size) }
         let resting = closedRestingSize
         guard resting.width > 0, resting.height > 0 else { return .whole(size) }
         return NotchSurfacePresentation(layout: resting,

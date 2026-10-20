@@ -447,11 +447,17 @@ enum NotchMusicVisibilityTests {
                      "the hover emphasis scales the named strip and reaches past the menus")
         naming.namedMusicWings = NotchNoticeWings(leading: musicWing + 120, trailing: musicWing)
         naming.notice = notice
+        suite.expect(naming.surfacePresentation.layout == naming.geometry.noticeSize(wings: notice.wings(in: naming.geometry))
+                     && naming.surfacePresentation.scale == CGSize(width: 1, height: 1),
+                     "a notice arrives over the emphasized strip and draws at its own size, never stretched by it")
         suite.expect(naming.surfaceShift == naming.geometry.noticeShift(notice.wings(in: naming.geometry)),
                      "a notice over the strip keeps its own sides")
         naming.notice = nil
         naming.expanded = true
         suite.expect(naming.surfaceShift == 0, "the open island stays on the camera's centre")
+        suite.expect(naming.surfacePresentation.layout == naming.surfaceSize
+                     && naming.surfacePresentation.scale == CGSize(width: 1, height: 1),
+                     "opening over the emphasized strip draws the page at its own size, never stretched by it")
         naming.expanded = false
         naming.hoverEmphasized = false
         naming.namedMusicWings = nil
