@@ -15,6 +15,27 @@ Append one timestamped entry per migration slice below.
 
 ## Log
 
+### 2026-10-21 — clipboard quick panel: proportional columns + sidebar stragglers
+
+Done (`swiftc -parse` OK; `./build.sh --test` exits 0 — 112,766 checks,
+preference cleanup, uninstall spaces, developer isolation OK):
+
+- `UI/MenuPanel/ClipboardQuickPanelView.swift` — preview pane fixed
+  `width: 280` → proportional `GeometryReader` split: list 35%,
+  sidebar 65% of the window when the preview is open; list alone still
+  spans the full width. Window minimum-size math
+  (`ClipboardHistoryWindowSizing`) unchanged.
+- `UI/MenuPanel/ClipboardEntryPreviewSidebar.swift` — Information header
+  `.subheadline.weight(.medium)` → `DS.Font.panelTitle`; info rows
+  `.callout` → `DS.Font.panelBody` (exact 12pt match).
+
+Kept on purpose: `ClipboardTextPreview` default
+`systemFont(ofSize: 12)` and JSON's `monospacedSystemFont(ofSize: 11.5)`
+(AppKit `NSFont`, monospaced design has no DS token); the path rows'
+`.system(size: 11, design: .monospaced)` (same), search field's 20pt and
+empty-state's 27pt glyph (search-field/display sizes, kept by the second
+slice), thumbnail `cornerRadius: 6`.
+
 ### 2026-10-14 — DS created, first slice (most-used screens)
 
 Done:

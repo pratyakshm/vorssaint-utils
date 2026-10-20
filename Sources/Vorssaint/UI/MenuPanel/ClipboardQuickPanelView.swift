@@ -36,16 +36,22 @@ struct ClipboardQuickPanelView: View {
         VStack(spacing: 0) {
             toolbar
             Divider()
-            HStack(spacing: 0) {
-                content
-                if history.quickPreviewPresented {
-                    Divider()
-                    QuickPreviewPane(text: text,
-                                     selection: previewSelection,
-                                     isEditing: $previewIsEditing,
-                                     onClose: { history.setQuickPreviewPresented(false) })
-                        .frame(width: 280)
-                        .transition(.opacity)
+            // Two proportional columns while the preview is open: the list
+            // takes a third, the sidebar takes the rest. A fixed sidebar
+            // width starved the preview on wide windows.
+            GeometryReader { geo in
+                HStack(spacing: 0) {
+                    content
+                        .frame(width: history.quickPreviewPresented ? geo.size.width * 0.35 : nil)
+                    if history.quickPreviewPresented {
+                        Divider()
+                        QuickPreviewPane(text: text,
+                                         selection: previewSelection,
+                                         isEditing: $previewIsEditing,
+                                         onClose: { history.setQuickPreviewPresented(false) })
+                            .frame(maxWidth: .infinity)
+                            .transition(.opacity)
+                    }
                 }
             }
             Divider()

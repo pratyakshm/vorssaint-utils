@@ -406,7 +406,7 @@ struct ClipboardHistoryInfoSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: DS.Space.xSmall) {
             Text("Information")
-                .font(.subheadline.weight(.medium))
+                .font(DS.Font.panelTitle)
                 .foregroundStyle(.secondary)
             VStack(spacing: 0) {
                 let rows = self.rows
@@ -422,7 +422,7 @@ struct ClipboardHistoryInfoSection: View {
                         }
                         Text(row.value).lineLimit(1).truncationMode(.middle)
                     }
-                    .font(.callout)
+                    .font(DS.Font.panelBody)
                     .padding(.vertical, DS.Space.xSmall)
                 }
             }
