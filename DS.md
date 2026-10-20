@@ -168,6 +168,29 @@ preference cleanup, uninstall spaces and developer isolation OK. All
 suites pass on this machine, including the previously flaky `notch`
 (66,200 checks), `dock-autohide` and `switcher`.
 
+### 2026-10-20 — fourth slice (notch clipboard page)
+
+Done (token swaps only, no layout reflows; file passes
+`swiftc -parse`; `./build.sh --test` exits 0 — TESTS OK
+(112,766 checks), preference cleanup, uninstall spaces and
+developer isolation OK):
+
+- `UI/Notch/NotchClipboardView.swift` — all font literals swapped:
+  sub-11pt floors (9/9.5/10) → `DS.Font.panelFloor`, 11 → `panelFloor`,
+  12 → `panelBody`, preview text 13 → `rowTitle`, kind icons 13 →
+  `rowIcon`. Radii: card/search/open backing 14 → `DS.Radius.card`,
+  selected row highlight 10 → `DS.Radius.row`. Spacing exact matches:
+  6 → `DS.Space.xSmall`, 8 → `DS.Space.small`, search-field inset 12 →
+  `DS.Space.medium`.
+- `SearchHighlightText` calls keep their raw `fontSize` values
+  (panel-cluster precedent: the matched-range attributed font pins the
+  highlight to the row's nominal size; the outer token governs).
+
+Kept on purpose (no token at these values, or pinned geometry): row
+paddings of 10 (text starts 10 pt in, which `openTextWidth()` derives
+and the open-card backing's edge rests on), 2/5/7-pt stacks, thumbnail
+clips at radius 6, and the empty-state VStack's 10.
+
 ## Remaining
 
 ### Settings detail pages (shell is done; per-file literals remain)
@@ -195,7 +218,7 @@ reviewed (no SwiftUI literals).
 
 ### Dynamic Island / Notch (core + strips done)
 
-- `NotchClipboardView`, `NotchMusicView`, `NotchControlsView`, `NotchMixerView`,
+- `NotchMusicView`, `NotchControlsView`, `NotchMixerView`,
   `NotchSystemView`, rest of `UI/Notch/`. `NotchComponents` re-picked up 5
   literals in the 2026-10-18 upstream merge — re-migrate with these.
 

@@ -116,7 +116,7 @@ struct NotchClipboardView: View {
                 NotchIconButton(symbol: "magnifyingglass", title: text.search, action: service.requestClipboardSearch)
             }
         }, trailing: {
-            HStack(spacing: 6) { NotchClipboardHeaderActions(service: service) }
+            HStack(spacing: DS.Space.xSmall) { NotchClipboardHeaderActions(service: service) }
         })
         .onChange(of: query) { _, query in queryChanged(query) }
         // Resting on an entry with the arrow keys opens it, as resting the pointer does.
@@ -255,7 +255,7 @@ struct NotchClipboardView: View {
             card(entry, lifted: true) { expandedCard(entry, place: place) }
                 .frame(height: height)
                 .background {
-                    let backing = RoundedRectangle(cornerRadius: 14, style: .continuous).inset(by: -1)
+                    let backing = RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous).inset(by: -1)
                     Group {
                         if glassSurface { backing.fill(.ultraThickMaterial) } else { backing.fill(.black) }
                     }
@@ -345,7 +345,7 @@ struct NotchClipboardView: View {
                 .accessibilityLabel(app.name)
         } else {
             Image(systemName: kindSymbol(entry))
-                .font(.system(size: 10)).foregroundStyle(.secondary)
+                .font(DS.Font.panelFloor).foregroundStyle(.secondary)
         }
     }
 
@@ -360,9 +360,9 @@ struct NotchClipboardView: View {
     /// Liquid Glass instead, as an opaque gray would stand out of the glass.
     private func card<Content: View>(_ entry: ClipboardHistoryEntry, lifted: Bool = false,
                                      @ViewBuilder content: () -> Content) -> some View {
-        let shape = RoundedRectangle(cornerRadius: 14, style: .continuous)
+        let shape = RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous)
         return content()
-            .modifier(NotchControlSurface(cornerRadius: 14, selected: entry.isPinned))
+            .modifier(NotchControlSurface(cornerRadius: DS.Radius.card, selected: entry.isPinned))
             .background {
                 if lifted {
                     if glassSurface { shape.fill(.ultraThickMaterial) } else { shape.fill(Color(white: 0.09)) }
@@ -393,7 +393,7 @@ struct NotchClipboardView: View {
             Image(systemName: entry.isPinned ? "pin.fill"
                     : entry.kind == .image ? "photo"
                     : entry.kind == .files ? "folder" : "doc.text")
-                .font(.system(size: 13))
+                .font(DS.Font.rowIcon)
                 .foregroundStyle(entry.isPinned ? .yellow : .secondary)
                 .frame(width: 22, alignment: .center)
             rowPreview(entry)
@@ -416,17 +416,17 @@ struct NotchClipboardView: View {
                 }
                 .transition(.opacity)
             } else {
-                HStack(spacing: 6) {
+                HStack(spacing: DS.Space.xSmall) {
                     Text(entry.copiedAt, style: .time)
-                        .font(.system(size: 11)).foregroundStyle(.tertiary).lineLimit(1)
+                        .font(DS.Font.panelFloor).foregroundStyle(.tertiary).lineLimit(1)
                     if place < 9, service.panelIsKey {
                         Text("⌘\(place + 1)")
-                            .font(.system(size: 11, weight: .medium)).monospacedDigit()
+                            .font(DS.Font.panelFloor).monospacedDigit()
                             .foregroundStyle(.tertiary)
                             .accessibilityHidden(true)
                     } else if entry.isPinned {
                         Image(systemName: "pin.fill")
-                            .font(.system(size: 9)).foregroundStyle(.tertiary.opacity(0.7))
+                            .font(DS.Font.panelFloor).foregroundStyle(.tertiary.opacity(0.7))
                             .accessibilityHidden(true)
                     }
                 }
@@ -435,11 +435,11 @@ struct NotchClipboardView: View {
         .padding(.horizontal, 10)
         .frame(maxWidth: .infinity, minHeight: 38, alignment: .leading)
         .background {
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
+            RoundedRectangle(cornerRadius: DS.Radius.row, style: .continuous)
                 .fill(selected ? .white.opacity(0.1) : .clear)
         }
         .overlay {
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
+            RoundedRectangle(cornerRadius: DS.Radius.row, style: .continuous)
                 .strokeBorder(.white.opacity(selected ? 0.18 : 0), lineWidth: 1)
                 .allowsHitTesting(false)
         }
@@ -458,7 +458,7 @@ struct NotchClipboardView: View {
                 Image(nsImage: icon).resizable().interpolation(.high).frame(width: 14, height: 14)
                     .accessibilityHidden(true)
             } else {
-                Image(systemName: kindSymbol(entry)).font(.system(size: 10)).foregroundStyle(.secondary)
+                Image(systemName: kindSymbol(entry)).font(DS.Font.panelFloor).foregroundStyle(.secondary)
             }
         }
         .frame(width: 14)
@@ -466,7 +466,7 @@ struct NotchClipboardView: View {
 
     /// The whole entry, with its actions in the bottom row.
     private func expandedCard(_ entry: ClipboardHistoryEntry, place: Int) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: DS.Space.xSmall) {
             Button { activate(entry) } label: {
                 preview(entry, compact: false, open: !comfortable)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -479,11 +479,11 @@ struct NotchClipboardView: View {
                 sourceBadge(entry)
                 Text(entry.copiedAt, format: .dateTime.month(.abbreviated).day().hour().minute())
                     .environment(\.locale, l10n.language.formattingLocale())
-                    .font(.system(size: 9.5)).foregroundStyle(.tertiary).lineLimit(1)
+                    .font(DS.Font.panelFloor).foregroundStyle(.tertiary).lineLimit(1)
                 Spacer(minLength: 0)
                 if place < 9, service.panelIsKey {
                     Text("⌘\(place + 1)")
-                        .font(.system(size: 9.5, weight: .medium)).monospacedDigit()
+                        .font(DS.Font.panelFloor).monospacedDigit()
                         .foregroundStyle(.tertiary)
                         .accessibilityHidden(true)
                 }
@@ -530,18 +530,18 @@ struct NotchClipboardView: View {
     /// editor and any input method get every key from the first one. The
     /// magnifier or typing shows it; until then the entries keep its room.
     private var searchField: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: DS.Space.small) {
             Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
             TextField(text.search, text: $query).textFieldStyle(.plain)
-                .font(.system(size: 12))
+                .font(DS.Font.panelBody)
                 .focused($searching)
                 .accessibilityLabel(text.search)
         }
-        .padding(.horizontal, 12)
+        .padding(.horizontal, DS.Space.medium)
         .frame(height: NotchLayout.clipboardSearchHeight)
-        .modifier(NotchControlSurface(cornerRadius: 14))
+        .modifier(NotchControlSurface(cornerRadius: DS.Radius.card))
         .overlay {
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
+            RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous)
                 .strokeBorder(.white.opacity(searching ? 0.34 : 0), lineWidth: 1)
                 .allowsHitTesting(false)
         }
@@ -645,7 +645,7 @@ struct NotchClipboardView: View {
                     .help("\(text.imageEntryLabel) · \(entry.imageDimensionsLabel)")
             } else {
                 searchText("\(text.imageEntryLabel) · \(entry.imageDimensionsLabel)", matching: searchTokens)
-                    .font(.system(size: 12))
+                    .font(DS.Font.panelBody)
                     .frame(maxWidth: .infinity, alignment: .topLeading)
             }
         case .files:
@@ -672,7 +672,7 @@ struct NotchClipboardView: View {
                         Label { name } icon: { if open { leadingIcon(entry) } else { Image(systemName: "folder") } }
                     }
                 }
-                .font(.system(size: 12))
+                .font(DS.Font.panelBody)
                 .lineLimit(compact ? 1 : 2)
                 .truncationMode(.middle)
                 .frame(maxWidth: .infinity, alignment: .topLeading)
@@ -685,7 +685,7 @@ struct NotchClipboardView: View {
                         .alignmentGuide(.firstTextBaseline) { $0[.bottom] - 1 }
                 }
                 searchText(open ? openText(entry) : entry.preview, matching: searchTokens)
-                    .font(.system(size: 12))
+                    .font(DS.Font.panelBody)
                     .lineLimit(compact ? 2 : open ? NotchClipboardCardSize.maximumOpenLines : 3)
                     .multilineTextAlignment(.leading)
             }
@@ -698,7 +698,7 @@ struct NotchClipboardView: View {
     @ViewBuilder private func rowPreview(_ entry: ClipboardHistoryEntry) -> some View {
         switch entry.kind {
         case .image:
-            HStack(spacing: 8) {
+            HStack(spacing: DS.Space.small) {
                 if let name = entry.imageFile {
                     ClipboardThumbnailImage(source: .stored(name: name),
                                             aspectRatio: entry.imageAspectRatio,
@@ -707,13 +707,13 @@ struct NotchClipboardView: View {
                         .clipShape(RoundedRectangle(cornerRadius: 6))
                 }
                 searchText("\(text.imageEntryLabel) · \(entry.imageDimensionsLabel)", matching: searchTokens)
-                    .font(.system(size: 13))
+                    .font(DS.Font.rowTitle)
                     .lineLimit(1)
                     .truncationMode(.tail)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         case .files:
-            HStack(spacing: 8) {
+            HStack(spacing: DS.Space.small) {
                 if entry.filePaths.count == 1, let path = entry.filePaths.first,
                    ClipboardImageStore.isImageFile(atPath: path) {
                     ClipboardThumbnailImage(source: .file(path: path),
@@ -724,8 +724,8 @@ struct NotchClipboardView: View {
                 searchText(entry.filePaths.count == 1
                                ? (entry.fileNames.first ?? entry.preview)
                                : String(format: text.fileCountFormat, entry.filePaths.count),
-                           matching: entry.filePaths.count == 1 ? searchTokens : [])
-                    .font(.system(size: 13))
+                            matching: entry.filePaths.count == 1 ? searchTokens : [])
+                    .font(DS.Font.rowTitle)
                     .lineLimit(1)
                     .truncationMode(.middle)
             }
@@ -738,7 +738,7 @@ struct NotchClipboardView: View {
                         .alignmentGuide(.firstTextBaseline) { $0[.bottom] - 1 }
                 }
                 searchText(entry.preview.replacingOccurrences(of: "\n", with: " "), matching: searchTokens)
-                    .font(.system(size: 13))
+                    .font(DS.Font.rowTitle)
                     .lineLimit(1)
                     .truncationMode(.tail)
             }
