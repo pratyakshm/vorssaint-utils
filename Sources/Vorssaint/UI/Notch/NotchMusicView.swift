@@ -578,7 +578,6 @@ private struct NotchMusicTransport: View {
                 .foregroundStyle(.white)
                 .contentTransition(.symbolEffect(.replace))
                 .scaleEffect(showsPlaying ? 1 : 0.88)
-                .rotationEffect(.degrees(showsPlaying ? 0 : -12))
                 .animation(reduceMotion ? nil : .spring(response: 0.28, dampingFraction: 0.7), value: showsPlaying)
                 .frame(width: height, height: height)
                 .contentShape(Circle())
