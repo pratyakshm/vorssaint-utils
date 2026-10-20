@@ -1610,7 +1610,7 @@ enum MixerFeatureTests {
         let rowList = section(from: "private var rowList: some View {", to: "private func updateArrangement")
         suite.expect(!rowList.isEmpty && !rowList.contains(".help("),
                "the mixer row does not replace its controls' tooltips with the reorder hint")
-        let icon = section(from: "ZStack(alignment: .bottomTrailing) {", to: "VStack(alignment: .leading, spacing: 5)")
+        let icon = section(from: "ZStack(alignment: .bottomTrailing) {", to: "VStack(alignment: .leading, spacing: DS.Space.xSmall)")
         let name = section(from: "Text(app.name)", to: "if isPinned {")
         let hint = ".help(arrangementStrings.arrange)"
         suite.expect(icon.contains("ResponsibleProcess.icon(for: app.ownerPid") && icon.hasSuffix(hint)
