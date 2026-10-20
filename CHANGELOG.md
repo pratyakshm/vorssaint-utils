@@ -10,6 +10,7 @@ All notable changes to this project are documented here. The format follows
 More reliable mouse scrolling, display controls and battery updates, with fixes for Dynamic Island navigation, Dock Preview, screen capture, mixer tooltips and calculator precision.
 
 ### Fixed
+- Dynamic Island's opening content and swapped pages come in like they did before again: they grow from slightly small about the island's top centre, without a vertical slide. A ride's direction had been resolved for an unflipped axis, so the page rose from below while it landed.
 - Dynamic Island's Now Playing page shows the Explore button again when Explore is not a floating button, and can grow a little to fit it while a song plays. The System page shows it too where it had no top row, such as on displays without a notch.
 - Smooth scrolling keeps its remaining motion in the original window or scroll area when the pointer moves. New wheel input elsewhere starts there immediately. Thanks to @bebricoOOOOOOf.
 - Dock Preview avoids waiting on a frozen neighboring app when hovering the uncovered Dock. Thanks to @root-daemon.
