@@ -1092,7 +1092,8 @@ def main():
           + "}\n}\n")
     write("NotchSectionScrollRoute.swift", "import AppKit\nextension NotchSectionPagingTests {\nfinal class Service: State {\n"
           + "".join(declaration(notch, prefix).replace("    private ", "    ", 1) for prefix in [
-              "    private func handleScroll(", "    private func handleSectionScroll("])
+              "    private func handleScroll(", "    private func interruptHoverExpand(",
+              "    private func handleSectionScroll("])
           + "}\n}\n")
     write("NotchMascotHiding.swift", "import CoreGraphics\nimport Foundation\n"
           + "extension NotchMascotHidingContract {\nfinal class Service: State {\n"

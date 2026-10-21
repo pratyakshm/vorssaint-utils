@@ -532,6 +532,18 @@ final class NotchWindowHost: NSObject, CAAnimationDelegate {
         for action in actions { DispatchQueue.main.async(execute: action) }
     }
 
+    /// Whether the shell is still moving toward its target size.
+    var isAnimatingShell: Bool { isAnimating }
+
+    /// A gesture that begins while hover is still expanding the island cuts
+    /// the motion short: the shell lands at its full size at once, so the
+    /// gesture then works against a settled surface rather than one still
+    /// moving under the fingers.
+    func expandToFullNow() {
+        guard isAnimating else { return }
+        settle()
+    }
+
     /// The stationary island must stay on Show Desktop for file drops, but it
     /// covers desktop names in Mission Control. A full-screen overview window
     /// is the cheap hint, and the frame probe, which waits on the window

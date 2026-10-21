@@ -3736,8 +3736,24 @@ final class NotchService: ObservableObject {
     /// island is a gesture candidate.
     private func handleScroll(_ event: NSEvent) -> Bool {
         guard let panel else { return false }
+        interruptHoverExpand(for: event)
         return handleSectionScroll(event)
             || handleGesture(event, screenPoint: panel.convertPoint(toScreen: event.locationInWindow))
+    }
+
+    /// A two-finger drag that begins while hover is still springing the island
+    /// open cuts the motion short, landing the shell at its full size at once.
+    /// The drag is measured against the settled island, not one still growing
+    /// under the fingers, so its gestures read the final geometry. Over the
+    /// destination only: mid-animation the visible shape is smaller than where
+    /// it is heading, and the drag may start on ground the island has not
+    /// covered yet.
+    private func interruptHoverExpand(for event: NSEvent) {
+        guard expanded, openedByHover, windowHost?.isAnimatingShell == true else { return }
+        guard event.phase.contains(.began) else { return }
+        let point = panel?.convertPoint(toScreen: event.locationInWindow) ?? .zero
+        guard windowHost?.containsDestination(point) == true else { return }
+        windowHost?.expandToFullNow()
     }
 
     private func handleSectionScroll(_ event: NSEvent) -> Bool {
@@ -3773,6 +3789,7 @@ final class NotchService: ObservableObject {
             gesture = NotchGestureSupport()
             return false
         }
+        interruptHoverExpand(for: event)
         guard windowHost?.contains(screenPoint) == true else { gesture = NotchGestureSupport(); return false }
         let fromTop = panel.frame.maxY - screenPoint.y
         // A page with no top row keeps the strip above it for the gesture.

@@ -88,10 +88,15 @@ enum NotchSectionPagingTests {
     }
     final class Host {
         var acceptsPoint = true
+        var isAnimatingShell = false
+        var expandCalls = 0
         func containsSurface(_ point: CGPoint) -> Bool { acceptsPoint }
+        func containsDestination(_ point: CGPoint) -> Bool { acceptsPoint }
+        func expandToFullNow() { expandCalls += 1 }
     }
     class State {
         var running = true, suspended = false, expanded = true, showingSections = true, trackingMenu = false
+        var openedByHover = false
         var panel: Panel? = Panel()
         var windowHost: Host? = Host()
         var geometry = NotchGeometry(screen: CGRect(x: 0, y: 0, width: 1470, height: 956),
