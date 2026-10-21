@@ -184,6 +184,10 @@ struct CommandBarFeatureStrings {
     let emojiSkinToneCaption: String
     let asciiLayoutToggle: String
     let asciiLayoutCaption: String
+    let openingStyleTitle: String
+    let openingStyleIsland: String
+    let openingStylePopup: String
+    let openingStyleCaption: String
 }
 
 extension FeatureStrings {
@@ -375,7 +379,11 @@ extension CommandBarFeatureStrings {
         emojiSkinToneLabel: "Skin tone",
         emojiSkinToneCaption: "By default, emoji that can take a tone use this one. Open the actions on an emoji row to choose a different one.",
         asciiLayoutToggle: "Switch to an ABC layout while the bar is open",
-        asciiLayoutCaption: "The field types Latin characters whatever layout was active, and the previous layout comes back when the bar closes.")
+        asciiLayoutCaption: "The field types Latin characters whatever layout was active, and the previous layout comes back when the bar closes.",
+        openingStyleTitle: "Opens as",
+        openingStyleIsland: "Dynamic Island",
+        openingStylePopup: "Normal popup",
+        openingStyleCaption: "The popup opens in its own window over whatever you are doing, like Raycast.")
 
     static let ptBR = CommandBarFeatureStrings(
         pageTitle: "Barra de comando",
@@ -543,7 +551,11 @@ extension CommandBarFeatureStrings {
         emojiSkinToneLabel: "Tom de pele",
         emojiSkinToneCaption: "Por padrão, os emojis que aceitam tom usam este. Abra as ações em uma linha de emoji para escolher outro.",
         asciiLayoutToggle: "Mudar para um layout ABC enquanto a barra está aberta",
-        asciiLayoutCaption: "O campo digita caracteres latinos independente do layout ativo, e o layout anterior volta quando a barra fecha.")
+        asciiLayoutCaption: "O campo digita caracteres latinos independente do layout ativo, e o layout anterior volta quando a barra fecha.",
+        openingStyleTitle: "Abre como",
+        openingStyleIsland: "Dynamic Island",
+        openingStylePopup: "Popup normal",
+        openingStyleCaption: "O popup abre na própria janela por cima do que você estiver fazendo, como no Raycast.")
 
     static let tr = CommandBarFeatureStrings(
         pageTitle: "Komut çubuğu",
@@ -711,7 +723,11 @@ extension CommandBarFeatureStrings {
         emojiSkinToneLabel: "Ten rengi",
         emojiSkinToneCaption: "Ton alabilen emojiler varsayılan olarak bunu kullanır. Farklı birini seçmek için bir emoji satırında eylemleri açın.",
         asciiLayoutToggle: "Çubuk açıkken ABC düzene geç",
-        asciiLayoutCaption: "Alan, etkin düzen ne olursa olsun Latin karakterler yazar; çubuk kapandığında önceki düzen geri gelir.")
+        asciiLayoutCaption: "Alan, etkin düzen ne olursa olsun Latin karakterler yazar; çubuk kapandığında önceki düzen geri gelir.",
+        openingStyleTitle: "Açılış biçimi",
+        openingStyleIsland: "Dynamic Island",
+        openingStylePopup: "Normal açılır pencere",
+        openingStyleCaption: "Açılır pencere, ne yapıyorsanız onun üzerinde kendi penceresinde, Raycast gibi açılır.")
 
     static let ru = CommandBarFeatureStrings(
         pageTitle: "Командная панель",
@@ -879,7 +895,11 @@ extension CommandBarFeatureStrings {
         emojiSkinToneLabel: "Тон кожи",
         emojiSkinToneCaption: "По умолчанию эмодзи с поддержкой тона используют этот. Чтобы выбрать другой, откройте действия в строке эмодзи.",
         asciiLayoutToggle: "Переключаться на ABC-раскладку, пока открыта строка",
-        asciiLayoutCaption: "Поле набирает латиницу, какая бы раскладка ни была активна; при закрытии строки прежняя раскладка возвращается.")
+        asciiLayoutCaption: "Поле набирает латиницу, какая бы раскладка ни была активна; при закрытии строки прежняя раскладка возвращается.",
+        openingStyleTitle: "Открывается как",
+        openingStyleIsland: "Dynamic Island",
+        openingStylePopup: "Обычное всплывающее окно",
+        openingStyleCaption: "Всплывающее окно открывается в собственном окне поверх того, что вы делаете, как в Raycast.")
 
     static let es = CommandBarFeatureStrings(
         pageTitle: "Barra de comandos",
@@ -1047,7 +1067,11 @@ extension CommandBarFeatureStrings {
         emojiSkinToneLabel: "Tono de piel",
         emojiSkinToneCaption: "De forma predeterminada, los emojis que admiten tono usan este. Abre las acciones en una fila de emoji para elegir otro.",
         asciiLayoutToggle: "Cambiar a una disposición ABC mientras la barra esté abierta",
-        asciiLayoutCaption: "El campo escribe caracteres latinos aunque haya otra disposición activa, y la anterior vuelve al cerrar la barra.")
+        asciiLayoutCaption: "El campo escribe caracteres latinos aunque haya otra disposición activa, y la anterior vuelve al cerrar la barra.",
+        openingStyleTitle: "Se abre como",
+        openingStyleIsland: "Dynamic Island",
+        openingStylePopup: "Ventana emergente normal",
+        openingStyleCaption: "La ventana emergente se abre en su propia ventana por encima de lo que estés haciendo, al estilo de Raycast.")
 
     static let sk = CommandBarFeatureStrings(
         pageTitle: "Príkazová lišta",
@@ -1215,7 +1239,11 @@ extension CommandBarFeatureStrings {
         emojiSkinToneLabel: "Odtieň pleti",
         emojiSkinToneCaption: "Emoji, ktoré môžu mať odtieň, štandardne použijú tento. Otvorte akcie na riadku s emoji a vyberte iný.",
         asciiLayoutToggle: "Prepnúť na rozloženie ABC, kým je lišta otvorená",
-        asciiLayoutCaption: "Pole píše latinské znaky bez ohľadu na aktívne rozloženie a po zatvorení lišty sa vráti predchádzajúce rozloženie.")
+        asciiLayoutCaption: "Pole píše latinské znaky bez ohľadu na aktívne rozloženie a po zatvorení lišty sa vráti predchádzajúce rozloženie.",
+        openingStyleTitle: "Otvorí sa ako",
+        openingStyleIsland: "Dynamic Island",
+        openingStylePopup: "Bežné vyskakovacie okno",
+        openingStyleCaption: "Vyskakovacie okno sa otvorí vo vlastnom okne nad tým, čo robíte, v štýle Raycastu.")
 
     static let de = CommandBarFeatureStrings(
         pageTitle: "Befehlsleiste",
@@ -1383,7 +1411,11 @@ extension CommandBarFeatureStrings {
         emojiSkinToneLabel: "Hautton",
         emojiSkinToneCaption: "Emojis mit Hautton verwenden standardmäßig diesen. Öffne die Aktionen in einer Emoji-Zeile, um einen anderen zu wählen.",
         asciiLayoutToggle: "Bei geöffneter Leiste zum ABC-Layout wechseln",
-        asciiLayoutCaption: "Das Feld tippt lateinische Zeichen, egal welches Layout aktiv ist; beim Schließen kehrt das vorherige Layout zurück.")
+        asciiLayoutCaption: "Das Feld tippt lateinische Zeichen, egal welches Layout aktiv ist; beim Schließen kehrt das vorherige Layout zurück.",
+        openingStyleTitle: "Öffnet als",
+        openingStyleIsland: "Dynamic Island",
+        openingStylePopup: "Normales Pop-up",
+        openingStyleCaption: "Das Pop-up öffnet sich in einem eigenen Fenster über dem, was du tust, im Raycast-Stil.")
 
     static let fr = CommandBarFeatureStrings(
         pageTitle: "Barre de commande",
@@ -1551,7 +1583,11 @@ extension CommandBarFeatureStrings {
         emojiSkinToneLabel: "Teinte de peau",
         emojiSkinToneCaption: "Par défaut, les émojis qui acceptent une teinte utilisent celle-ci. Ouvrez les actions sur une ligne d’émoji pour en choisir une autre.",
         asciiLayoutToggle: "Passer en disposition ABC quand la barre est ouverte",
-        asciiLayoutCaption: "Le champ saisit des caractères latins quelle que soit la disposition active, et la précédente revient à la fermeture de la barre.")
+        asciiLayoutCaption: "Le champ saisit des caractères latins quelle que soit la disposition active, et la précédente revient à la fermeture de la barre.",
+        openingStyleTitle: "S’ouvre en",
+        openingStyleIsland: "Dynamic Island",
+        openingStylePopup: "Fenêtre contextuelle normale",
+        openingStyleCaption: "La fenêtre s’ouvre dans sa propre fenêtre par-dessus ce que vous faites, à la façon de Raycast.")
 
     static let it = CommandBarFeatureStrings(
         pageTitle: "Barra dei comandi",
@@ -1719,7 +1755,11 @@ extension CommandBarFeatureStrings {
         emojiSkinToneLabel: "Tonalità della pelle",
         emojiSkinToneCaption: "Per impostazione predefinita, le emoji che accettano una tonalità usano questa. Apri le azioni su una riga di emoji per sceglierne un’altra.",
         asciiLayoutToggle: "Passa a un layout ABC mentre la barra è aperta",
-        asciiLayoutCaption: "Il campo digita caratteri latini indipendentemente dal layout attivo; alla chiusura torna il layout precedente.")
+        asciiLayoutCaption: "Il campo digita caratteri latini indipendentemente dal layout attivo; alla chiusura torna il layout precedente.",
+        openingStyleTitle: "Si apre come",
+        openingStyleIsland: "Dynamic Island",
+        openingStylePopup: "Finestra normale",
+        openingStyleCaption: "Il popup si apre in una finestra propria sopra quello che stai facendo, allo stile di Raycast.")
 
     static let ja = CommandBarFeatureStrings(
         pageTitle: "コマンドバー",
@@ -1887,7 +1927,11 @@ extension CommandBarFeatureStrings {
         emojiSkinToneLabel: "肌の色",
         emojiSkinToneCaption: "肌の色を持てる絵文字は標準でこの色になります。別の色を選ぶには、絵文字の行でアクションを開きます。",
         asciiLayoutToggle: "バーを開いている間はABCレイアウトに切り替える",
-        asciiLayoutCaption: "アクティブなレイアウトに関係なく、フィールドにはラテン文字が入力されます。バーを閉じると元のレイアウトに戻ります。")
+        asciiLayoutCaption: "アクティブなレイアウトに関係なく、フィールドにはラテン文字が入力されます。バーを閉じると元のレイアウトに戻ります。",
+        openingStyleTitle: "開き方",
+        openingStyleIsland: "Dynamic Island",
+        openingStylePopup: "通常のポップアップ",
+        openingStyleCaption: "ポップアップは、作業中の内容の上にRaycastスタイルの独立ウィンドウとして開きます。")
 
     static let ko = CommandBarFeatureStrings(
         pageTitle: "명령 막대",
@@ -2055,7 +2099,11 @@ extension CommandBarFeatureStrings {
         emojiSkinToneLabel: "피부색",
         emojiSkinToneCaption: "기본적으로 피부색을 가질 수 있는 이모티콘은 이 색을 사용합니다. 다른 색을 선택하려면 이모티콘 행에서 동작을 여세요.",
         asciiLayoutToggle: "막대가 열려 있는 동안 ABC 자판으로 전환",
-        asciiLayoutCaption: "활성 자판과 관계없이 입력 필드에는 라틴 문자가 입력되고, 막대를 닫으면 이전 자판으로 돌아갑니다.")
+        asciiLayoutCaption: "활성 자판과 관계없이 입력 필드에는 라틴 문자가 입력되고, 막대를 닫으면 이전 자판으로 돌아갑니다.",
+        openingStyleTitle: "열리는 방식",
+        openingStyleIsland: "Dynamic Island",
+        openingStylePopup: "일반 팝업",
+        openingStyleCaption: "팝업은 작업 중인 내용 위에 Raycast 스타일의 별도 창으로 열립니다.")
 
     static let uk = CommandBarFeatureStrings(
         pageTitle: "Панель команд",
@@ -2223,7 +2271,11 @@ extension CommandBarFeatureStrings {
         emojiSkinToneLabel: "Тон шкіри",
         emojiSkinToneCaption: "Типово емодзі з підтримкою тону використовують цей. Щоб вибрати інший, відкрийте дії в рядку емодзі.",
         asciiLayoutToggle: "Перемикатися на розкладку ABC, поки відкрита панель команд",
-        asciiLayoutCaption: "У полі вводяться латинські символи незалежно від активної розкладки. Після закриття панелі команд повертається попередня розкладка."
+        asciiLayoutCaption: "У полі вводяться латинські символи незалежно від активної розкладки. Після закриття панелі команд повертається попередня розкладка.",
+        openingStyleTitle: "Відкривається як",
+        openingStyleIsland: "Dynamic Island",
+        openingStylePopup: "Звичайне спливне вікно",
+        openingStyleCaption: "Спливне вікно відкривається у власному вікні над тим, що ви робите, у стилі Raycast."
     )
     static let zhHans = CommandBarFeatureStrings(
         pageTitle: "命令栏",
@@ -2391,7 +2443,11 @@ extension CommandBarFeatureStrings {
         emojiSkinToneLabel: "肤色",
         emojiSkinToneCaption: "支持肤色的表情默认使用此肤色。若要选择其他肤色，请在表情结果行打开操作。",
         asciiLayoutToggle: "命令栏打开时切换到 ABC 布局",
-        asciiLayoutCaption: "无论当前布局为何，输入栏都会键入拉丁字符；命令栏关闭后恢复原布局。")
+        asciiLayoutCaption: "无论当前布局为何，输入栏都会键入拉丁字符；命令栏关闭后恢复原布局。",
+        openingStyleTitle: "打开方式",
+        openingStyleIsland: "Dynamic Island",
+        openingStylePopup: "普通弹出窗口",
+        openingStyleCaption: "弹出窗口会在你正在做的任何内容上方以独立窗口打开，类似 Raycast。")
 
     static let zhTW = CommandBarFeatureStrings(
         pageTitle: "指令列",
@@ -2559,7 +2615,11 @@ extension CommandBarFeatureStrings {
         emojiSkinToneLabel: "膚色",
         emojiSkinToneCaption: "支援膚色的表情符號預設使用此膚色。若要選擇其他膚色，請在表情符號列打開動作。",
         asciiLayoutToggle: "指令列開啟時切換到 ABC 配置",
-        asciiLayoutCaption: "無論目前配置為何，輸入欄都會鍵入拉丁字元；指令列關閉後恢復原配置。")
+        asciiLayoutCaption: "無論目前配置為何，輸入欄都會鍵入拉丁字元；指令列關閉後恢復原配置。",
+        openingStyleTitle: "開啟方式",
+        openingStyleIsland: "Dynamic Island",
+        openingStylePopup: "一般彈出視窗",
+        openingStyleCaption: "彈出視窗會在您正在操作的內容上方以獨立視窗開啟，類似 Raycast。")
 
     static let zhHK = CommandBarFeatureStrings(
         pageTitle: "指令列",
@@ -2727,5 +2787,9 @@ extension CommandBarFeatureStrings {
         emojiSkinToneLabel: "膚色",
         emojiSkinToneCaption: "支援膚色的表情符號預設使用此膚色。若要選擇其他膚色，請在表情符號列打開動作。",
         asciiLayoutToggle: "指令列開啟時切換到 ABC 配置",
-        asciiLayoutCaption: "無論目前配置為何，輸入欄都會鍵入拉丁字元；指令列關閉後恢復原配置。")
+        asciiLayoutCaption: "無論目前配置為何，輸入欄都會鍵入拉丁字元；指令列關閉後恢復原配置。",
+        openingStyleTitle: "開啟方式",
+        openingStyleIsland: "Dynamic Island",
+        openingStylePopup: "一般彈出視窗",
+        openingStyleCaption: "彈出視窗會在您正在操作的內容上方以獨立視窗開啟，類似 Raycast。")
 }

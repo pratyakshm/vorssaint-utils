@@ -621,6 +621,7 @@ enum DefaultsKey {
     static let commandBarPositionOffset = "commandBarPositionOffset" // "dx,dy" from the default spot
     static let commandBarAppearTransition = "commandBarAppearTransition" // JSON: CommandBarAppearTransition, "" is the built-in default
     static let commandBarEmojiSkinTone = "commandBarEmojiSkinTone" // "" is the yellow default
+    static let commandBarOpeningStyle = "commandBarOpeningStyle" // CommandBarOpeningStyle.rawValue; "island" is today's behavior
     // The folders a file search looks in, one per line, written with a tilde
     // so an exported list still points somewhere on another Mac. Empty means
     // the bar looks for no files at all, which is the setting out of the box.
@@ -1827,6 +1828,7 @@ enum Defaults {
         DefaultsKey.commandBarPositionOffset: "",
         DefaultsKey.commandBarAppearTransition: "",
         DefaultsKey.commandBarEmojiSkinTone: "",
+        DefaultsKey.commandBarOpeningStyle: CommandBarOpeningStyle.island.rawValue,
         DefaultsKey.panelUtilityCommandBar: true,
         DefaultsKey.scratchpadRetention: ScratchpadRetention.never.rawValue,
         DefaultsKey.scratchpadCloseOnClickOutside: true,

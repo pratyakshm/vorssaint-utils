@@ -253,6 +253,16 @@ enum NotchCommandBarStyle: String, CaseIterable, Identifiable {
     var id: String { rawValue }
 }
 
+/// How the Command Bar opens at all: from the island, or as its own window.
+enum CommandBarOpeningStyle: String, CaseIterable, Identifiable {
+    /// The island's own style decides — the drop or the open island.
+    case island
+    /// Always the bar's own ordinary window, wherever the island is.
+    case popup
+
+    var id: String { rawValue }
+}
+
 /// Where the Command Bar shows when it opens.
 enum CommandBarPresentation: Equatable {
     /// Its own window, as it always has.
@@ -1267,9 +1277,11 @@ enum NotchMascotSupport {
     }
 
     /// How the Command Bar comes out of the island, or nil when it opens in
-    /// its own window as it always has.
+    /// its own window as it always has. Chosen popup keeps its own window
+    /// whatever the island says.
     static func commandBarStyle(in defaults: UserDefaults = .standard) -> NotchCommandBarStyle? {
-        guard isEnabled(in: defaults), AppFeature.commandBar.isAvailable(in: defaults),
+        guard CommandBarOpeningStyle(rawValue: defaults.string(forKey: DefaultsKey.commandBarOpeningStyle) ?? "") != .popup,
+              isEnabled(in: defaults), AppFeature.commandBar.isAvailable(in: defaults),
               defaults.bool(forKey: DefaultsKey.notchCommandBar) else { return nil }
         return NotchCommandBarStyle(rawValue: defaults.string(forKey: DefaultsKey.notchCommandBarStyle) ?? "") ?? .droplet
     }

@@ -130,6 +130,16 @@ enum NotchMascotTests {
         suite.expect(NotchMascotSupport.commandBarStyle(in: defaults) == .island, "the bar can open inside the island instead")
         defaults.set("puddle", forKey: DefaultsKey.notchCommandBarStyle)
         suite.expect(NotchMascotSupport.commandBarStyle(in: defaults) == .droplet, "an unknown style falls back to the drop")
+        defaults.set(CommandBarOpeningStyle.popup.rawValue, forKey: DefaultsKey.commandBarOpeningStyle)
+        suite.expect(NotchMascotSupport.commandBarStyle(in: defaults) == nil,
+                     "the popup opening style keeps the bar in its own window whatever the island says")
+        defaults.set(CommandBarOpeningStyle.island.rawValue, forKey: DefaultsKey.commandBarOpeningStyle)
+        suite.expect(NotchMascotSupport.commandBarStyle(in: defaults) == .droplet,
+                     "back on the island opening style the island decides again")
+        suite.expect(Defaults.registeredDefaults[DefaultsKey.commandBarOpeningStyle] as? String
+                        == CommandBarOpeningStyle.island.rawValue
+                     && SettingsBackupSupport.exportKeys().contains(DefaultsKey.commandBarOpeningStyle),
+                     "the opening style is registered with today's island behavior and travels in a backup")
         defaults.set(false, forKey: DefaultsKey.notchCommandBar)
         suite.expect(NotchMascotSupport.commandBarStyle(in: defaults) == nil, "turned off, the bar keeps its own window")
         defaults.set(true, forKey: DefaultsKey.notchCommandBar)

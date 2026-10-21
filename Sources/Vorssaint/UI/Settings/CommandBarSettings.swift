@@ -11,6 +11,7 @@ struct CommandBarSettings: View {
     @AppStorage(DefaultsKey.commandBarShortcutEnabled) private var shortcutEnabled = false
     @AppStorage(DefaultsKey.commandBarCompactMode) private var compactMode = false
     @AppStorage(DefaultsKey.commandBarMinimalLook) private var minimalLook = true
+    @AppStorage(DefaultsKey.commandBarOpeningStyle) private var openingStyle = CommandBarOpeningStyle.island.rawValue
     @AppStorage(DefaultsKey.commandBarEmojiSkinTone) private var emojiSkinTone = ""
     @AppStorage(DefaultsKey.commandBarASCIILayoutEnabled) private var asciiLayoutEnabled = false
     @AppStorage(DefaultsKey.commandBarDisabledSources) private var disabledSources = ""
@@ -91,6 +92,25 @@ struct CommandBarSettings: View {
                 Text(text.minimalLookCaption)
                     .font(DS.Font.caption)
                     .foregroundStyle(.secondary)
+                // Like the toggles above this needs no callback: the bar
+                // reads it on every open, and the island flags cannot be
+                // flipped while Settings is up.
+                if AppFeature.commandBar.isAvailable {
+                    Text(text.openingStyleTitle)
+                    HStack(spacing: DS.Space.small) {
+                        ForEach(CommandBarOpeningStyle.allCases) { item in
+                            CommandBarOpeningTile(title: openingStyleTitle(item),
+                                                  selected: (CommandBarOpeningStyle(rawValue: openingStyle) ?? .island) == item) {
+                                openingStyle = item.rawValue
+                            } preview: {
+                                CommandBarOpeningSample(style: item)
+                            }
+                        }
+                    }
+                    Text(text.openingStyleCaption)
+                        .font(DS.Font.caption)
+                        .foregroundStyle(.secondary)
+                }
                 if CommandBarPreferences.isEnabled(.emoji, disabledRaw: disabledSources) {
                     Picker(text.emojiSkinToneLabel, selection: $emojiSkinTone) {
                         ForEach(CommandBarEmoji.SkinTone.allCases) { tone in
@@ -507,6 +527,10 @@ struct CommandBarSettings: View {
         }
     }
 
+    private func openingStyleTitle(_ style: CommandBarOpeningStyle) -> String {
+        style == .island ? text.openingStyleIsland : text.openingStylePopup
+    }
+
     // MARK: - The folders a file search looks in
 
     private var fileScopes: [String] {
@@ -712,5 +736,81 @@ private struct CommandBarLinkEditor: View {
         guard panel.runModal() == .OK, let url = panel.url else { return }
         draft.destination = url.path
         if draft.name.isEmpty { draft.name = url.lastPathComponent }
+    }
+}
+
+// MARK: - Tiles
+
+/// A choice drawn as what it gives, with its name under it, like the island
+/// page's companion tiles.
+private struct CommandBarOpeningTile<Preview: View>: View {
+    let title: String
+    let selected: Bool
+    let action: () -> Void
+    @ViewBuilder let preview: () -> Preview
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: DS.Space.small) {
+                preview()
+                Text(title).font(DS.Font.panelFloorEmphasis).lineLimit(2).multilineTextAlignment(.center)
+            }
+            .frame(maxWidth: .infinity, minHeight: 68)
+            .padding(DS.Space.small)
+            .foregroundStyle(selected ? Color.accentColor : .primary)
+            .background(selected ? Color.accentColor.opacity(0.12) : Color.secondary.opacity(0.06),
+                        in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .strokeBorder(selected ? Color.accentColor.opacity(0.7) : .clear, lineWidth: 1)
+            }
+            .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        // The button keeps its own element, so VoiceOver can press it.
+        .accessibilityLabel(title)
+        .accessibilityAddTraits(selected ? .isSelected : [])
+        .animation(reduceMotion ? nil : .easeOut(duration: 0.15), value: selected)
+    }
+}
+
+/// Black reads as the island's own color on a light page, and needs a faint
+/// edge to stand off a dark one.
+private extension Shape {
+    func barOpeningSample() -> some View {
+        fill(.black).overlay(stroke(Color.primary.opacity(0.14), lineWidth: 0.5))
+    }
+}
+
+/// How the bar opens: inside the island, or as its own rounded popup.
+private struct CommandBarOpeningSample: View {
+    let style: CommandBarOpeningStyle
+
+    var body: some View {
+        Group {
+            switch style {
+            case .island:
+                NotchShape(attached: true, radius: NotchLayout.surfaceRadius(height: 32))
+                    .barOpeningSample()
+                    .frame(width: 92, height: 34)
+                    .overlay(alignment: .bottom) {
+                        field.padding(.bottom, 6)
+                    }
+            case .popup:
+                RoundedRectangle(cornerRadius: 9, style: .continuous)
+                    .barOpeningSample()
+                    .frame(width: 84, height: 18)
+                    .overlay { field }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+            }
+        }
+        .frame(height: 38, alignment: .top)
+        .accessibilityHidden(true)
+    }
+
+    /// The bar's field: a pale line where the text goes.
+    private var field: some View {
+        Capsule().fill(.white.opacity(0.28)).frame(width: 38, height: 3)
     }
 }
