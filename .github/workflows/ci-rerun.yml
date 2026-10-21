@@ -1,9 +1,10 @@
 name: CI rerun on cancellation
 
 on:
-  workflow_run:
-    workflows: [CI]
-    types: [completed]
+  schedule:
+    # Every 15 minutes, offset from :00/:15/:30/:45 to dodge the cron crowd.
+    # A poller instead of workflow_run: one run entry here, not one per CI run.
+    - cron: '2,17,32,47 * * * *'
 
 permissions:
   actions: write
@@ -15,29 +16,31 @@ concurrency:
 
 jobs:
   rerun:
-    name: Re-run cancelled CI
-    if: github.event.workflow_run.conclusion == 'cancelled'
+    name: Rescue cancelled CI
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Re-run unless superseded
+      - name: Re-run eligible cancelled runs
         env:
           GH_TOKEN: ${{ github.token }}
-          RUN_ID: ${{ github.event.workflow_run.id }}
-          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
           set -euo pipefail
-          attempt="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID" --jq .run_attempt)"
-          if (( attempt >= 3 )); then
-            echo "run already attempted $attempt times; leaving cancelled"
-            exit 0
-          fi
-          created="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID" --jq .created_at)"
-          newer="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs?head_sha=$HEAD_SHA&per_page=100" \
-            --jq "[.workflow_runs[] | select(.name == \"CI\" and .id != $RUN_ID and .created_at > \"$created\")] | length")"
-          if (( newer > 0 )); then
-            echo "a newer CI run covers $HEAD_SHA; concurrency cancel, skipping"
-            exit 0
-          fi
-          echo "re-running cancelled run $RUN_ID (attempt $attempt)"
-          gh run rerun "$RUN_ID" --repo "$GITHUB_REPOSITORY"
+          cutoff="$(date -u -d '24 hours ago' +%Y-%m-%dT%H:%M:%SZ)"
+          gh run list --repo "$GITHUB_REPOSITORY" --workflow ci.yml --status cancelled --limit 30 \
+            --json databaseId,headSha,createdAt \
+            --jq ".[] | select(.createdAt > \"$cutoff\") | [.databaseId, .headSha, .createdAt] | @tsv" \
+          | while IFS=$'\t' read -r run_id head_sha created; do
+              attempt="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run_id" --jq .run_attempt)"
+              if (( attempt >= 3 )); then
+                echo "run $run_id attempted $attempt times; skipping"
+                continue
+              fi
+              newer="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs?head_sha=$head_sha&per_page=100" \
+                --jq "[.workflow_runs[] | select(.name == \"CI\" and .id != $run_id and .created_at > \"$created\")] | length")"
+              if (( newer > 0 )); then
+                echo "run $run_id superseded; skipping"
+                continue
+              fi
+              echo "re-running cancelled run $run_id (attempt $attempt)"
+              gh run rerun "$run_id" --repo "$GITHUB_REPOSITORY" || echo "rerun failed for $run_id; continuing"
+            done
