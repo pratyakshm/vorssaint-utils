@@ -94,8 +94,11 @@ enum ClipboardHistoryLayout: String, CaseIterable {
 }
 
 enum ClipboardHistoryWindowSizing {
-    static let compactDefault = NSSize(width: 750, height: 475)
+    static let compactDefault = NSSize(width: 640, height: 475)
     static let compactMinimum = NSSize(width: 560, height: 300)
+    /// Caps the list width on open, so a wider saved size from an older
+    /// version cannot bring the window back too wide.
+    static let compactMaximumWidth: CGFloat = 700
     static let previewExtra = NSSize(width: 280, height: 80)
 
     static func minimumSize(preview: Bool) -> NSSize {
@@ -106,8 +109,9 @@ enum ClipboardHistoryWindowSizing {
     static func contentSize(preview: Bool, savedWidth: Double, savedHeight: Double,
                             visibleFrame: NSRect) -> NSSize {
         let minimum = minimumSize(preview: preview)
-        let width = savedWidth.isFinite && savedWidth >= compactMinimum.width
-            ? CGFloat(savedWidth) : compactDefault.width
+        let width = min(savedWidth.isFinite && savedWidth >= compactMinimum.width
+            ? CGFloat(savedWidth) : compactDefault.width,
+                         compactMaximumWidth)
         let height = savedHeight.isFinite && savedHeight >= compactMinimum.height
             ? CGFloat(savedHeight) : compactDefault.height
         let requested = NSSize(width: width + (preview ? previewExtra.width : 0),

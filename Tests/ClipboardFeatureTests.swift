@@ -691,8 +691,8 @@ enum ClipboardFeatureTests {
             preview: false, savedWidth: 0, savedHeight: 0, visibleFrame: desktop)
         let previewSize = ClipboardHistoryWindowSizing.contentSize(
             preview: true, savedWidth: 0, savedHeight: 0, visibleFrame: desktop)
-        suite.expect(compactSize == NSSize(width: 750, height: 475)
-                && previewSize == NSSize(width: 1030, height: 555),
+        suite.expect(compactSize == NSSize(width: 640, height: 475)
+                && previewSize == NSSize(width: 920, height: 555),
                 "clipboard quick window retains its original compact and preview sizes by default")
         suite.expect(ClipboardHistoryWindowSizing.minimumSize(preview: false)
                 == NSSize(width: 560, height: 300)
@@ -708,7 +708,7 @@ enum ClipboardFeatureTests {
         let shortScreen = NSRect(x: 0, y: 0, width: 1050, height: 700)
         suite.expect(ClipboardHistoryWindowSizing.contentSize(
             preview: true, savedWidth: 1000, savedHeight: 900, visibleFrame: shortScreen)
-                == NSSize(width: 1018, height: 668),
+                == NSSize(width: 980, height: 668),
                "a saved size is limited to the visible display")
         suite.expect(ClipboardHistoryWindowSizing.contentSize(
             preview: false, savedWidth: .infinity, savedHeight: -1, visibleFrame: desktop)
@@ -774,7 +774,7 @@ enum ClipboardFeatureTests {
         let placementScreen = PanelPlacementHost.Screen.pointerVisibleFrame
         placement.position(placementPanel)
         suite.expect(placementPanel.styleMask.contains(.resizable)
-                     && placementPanel.frame.size == NSSize(width: 750, height: 475)
+                     && placementPanel.frame.size == NSSize(width: 640, height: 475)
                      && abs(placementPanel.frame.midX - placementScreen.midX) < 1,
                "every opening lands on the two-column list: a resizable window at its original size, centered: \(placementPanel.frame)")
         placementPanel.setFrame(NSRect(origin: placementPanel.frame.origin, size: NSSize(width: 700, height: 500)),

@@ -371,6 +371,9 @@ private struct QuickEntryView: View, Equatable {
     /// each time.
     @State private var previewFollowTask: Task<Void, Never>?
     private static let previewFollowDelay: Duration = .milliseconds(120)
+    /// Fixed 3:2 thumbnail slot, the text row's 26pt content height, so an
+    /// image row never grows taller than a text row.
+    private static let thumbnailSlot = CGSize(width: 39, height: 26)
 
     private var history: ClipboardHistoryService { .shared }
     private var l10n: L10n { .shared }
@@ -441,12 +444,6 @@ private struct QuickEntryView: View, Equatable {
                                     isBatchSelected: isBatchSelected,
                                     isHovered: isHovered))
         )
-        .overlay(
-            RoundedRectangle(cornerRadius: DS.Radius.row, style: .continuous)
-                .strokeBorder(isBatchSelected ? Color.accentColor.opacity(0.38)
-                              : isSelected ? Color.accentColor.opacity(0.24) : Color.clear,
-                              lineWidth: 1)
-        )
     }
 
     private var selectionButton: some View {
@@ -479,14 +476,14 @@ private struct QuickEntryView: View, Equatable {
             HStack(alignment: .center, spacing: DS.Space.rowTitleGap) {
                 if let name = entry.imageFile {
                     ClipboardThumbnailImage(source: .stored(name: name),
-                                            aspectRatio: entry.imageAspectRatio)
-                        .frame(maxWidth: 240, maxHeight: 120)
+                                            aspectRatio: entry.imageAspectRatio,
+                                            contentMode: .fill)
+                        .frame(width: Self.thumbnailSlot.width, height: Self.thumbnailSlot.height)
                         .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
                 }
                 SearchHighlightText.text("\(text.imageEntryLabel) · \(entry.imageDimensionsLabel)",
-                                         tokens: tokens, fontSize: 11.5)
-                    .font(DS.Font.footnote)
-                    .foregroundStyle(.secondary)
+                                         tokens: tokens, fontSize: 12)
+                    .font(DS.Font.panelBody)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .help("\(text.imageEntryLabel) · \(entry.imageDimensionsLabel)")
@@ -496,8 +493,9 @@ private struct QuickEntryView: View, Equatable {
                ClipboardImageStore.isImageFile(atPath: path) {
                 HStack(alignment: .center, spacing: DS.Space.rowTitleGap) {
                     ClipboardThumbnailImage(source: .file(path: path),
-                                            aspectRatio: ClipboardImageStore.imageAspectRatio(atPath: path))
-                        .frame(maxWidth: 240, maxHeight: 120)
+                                            aspectRatio: ClipboardImageStore.imageAspectRatio(atPath: path),
+                                            contentMode: .fill)
+                        .frame(width: Self.thumbnailSlot.width, height: Self.thumbnailSlot.height)
                         .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
                     VStack(alignment: .leading, spacing: 2) {
                         SearchHighlightText.text(entry.fileNames.first ?? entry.preview, tokens: tokens, fontSize: 12)
@@ -506,8 +504,7 @@ private struct QuickEntryView: View, Equatable {
                             .truncationMode(.middle)
                         if let dim = ClipboardImageStore.imageDimensionsLabel(atPath: path) {
                             Text("\(text.imageEntryLabel) · \(dim)")
-                                .font(DS.Font.footnote)
-                                .foregroundStyle(.secondary)
+                                .font(DS.Font.panelBody)
                         }
                     }
                 }
@@ -523,7 +520,7 @@ private struct QuickEntryView: View, Equatable {
                         .lineLimit(1)
                         .truncationMode(.middle)
                     if entry.filePaths.count > 1 {
-                        SearchHighlightText.text(entry.preview, tokens: tokens, fontSize: 10)
+                        SearchHighlightText.text(entry.preview, tokens: tokens, fontSize: 11)
                             .font(DS.Font.panelFloor)
                             .foregroundStyle(.tertiary)
                             .lineLimit(1)
@@ -660,13 +657,17 @@ private struct QuickEntryView: View, Equatable {
             Image(systemName: "circle")
                 .foregroundStyle(Color.accentColor.opacity(0.7))
                 .frame(width: 25, height: 25)
+        } else if entry.kind == .image {
+            Color.clear
+                .frame(width: 25, height: 25)
         } else if entry.kind == .files,
                   entry.filePaths.count == 1,
                   let path = entry.filePaths.first,
                   ClipboardImageStore.isImageFile(atPath: path) {
-            Image(systemName: entry.isPinned ? "pin.fill" : "photo")
-                .font(DS.Font.panelFloorEmphasis)
-                .foregroundStyle(entry.isPinned ? Color.accentColor : Color.secondary)
+            Color.clear
+                .frame(width: 25, height: 25)
+        } else if entry.kind == .text {
+            Color.clear
                 .frame(width: 25, height: 25)
         } else if let icon = fileIcon(for: entry) {
             Image(nsImage: icon)
@@ -674,7 +675,7 @@ private struct QuickEntryView: View, Equatable {
                 .frame(width: 20, height: 20)
                 .frame(width: 25, height: 25)
         } else {
-            Image(systemName: entry.isPinned ? "pin.fill" : kindSymbol(entry.kind))
+            Image(systemName: entry.isPinned ? "pin.fill" : "folder")
                 .font(DS.Font.panelFloorEmphasis)
                 .foregroundStyle(entry.isPinned ? Color.accentColor : Color.secondary)
                 .frame(width: 25, height: 25)
@@ -688,19 +689,11 @@ private struct QuickEntryView: View, Equatable {
         return ClipboardImageStore.fileIcon(atPath: path)
     }
 
-    private func kindSymbol(_ kind: ClipboardHistoryEntryKind) -> String {
-        switch kind {
-        case .text: return "doc.text"
-        case .image: return "photo"
-        case .files: return "folder"
-        }
-    }
-
     private func rowBackground(isSelected: Bool,
                                isBatchSelected: Bool,
                                isHovered: Bool) -> Color {
         if isBatchSelected { return Color.accentColor.opacity(isHovered ? 0.17 : 0.13) }
-        if isSelected { return Color.accentColor.opacity(isHovered ? 0.13 : 0.09) }
+        if isSelected { return Color.white.opacity(isHovered ? 0.13 : 0.10) }
         if isHovered { return Color.primary.opacity(0.055) }
         return .clear
     }

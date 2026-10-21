@@ -59,12 +59,12 @@ struct ClipboardEntryPreviewSidebar: View {
     private var sidebarHeader: some View {
         HStack(spacing: DS.Space.small) {
             Label(text.previewLabel, systemImage: "doc.text.magnifyingglass")
-                .font(DS.Font.panelFloorEmphasis)
+                .font(DS.Font.body)
                 .foregroundStyle(.secondary)
             Spacer()
             Button(action: onClose) {
                 Image(systemName: "xmark")
-                    .font(DS.Font.panelFloorEmphasis)
+                    .font(DS.Font.panelBody)
                     .foregroundStyle(.secondary)
                     .frame(width: 20, height: 20)
             }
@@ -72,7 +72,7 @@ struct ClipboardEntryPreviewSidebar: View {
             .help(l10n.s.menuClose)
             .accessibilityLabel(l10n.s.menuClose)
         }
-        .padding(.horizontal, DS.Space.medium)
+        .padding(.horizontal, DS.Space.large)
         .padding(.vertical, DS.Space.medium)
     }
 
@@ -91,7 +91,8 @@ struct ClipboardEntryPreviewSidebar: View {
     private func contentScrollView(_ entry: ClipboardHistoryEntry) -> some View {
         ScrollView {
             previewContent(entry)
-                .padding(DS.Space.medium)
+                .padding(.horizontal, DS.Space.large)
+                .padding(.vertical, DS.Space.medium)
                 .frame(maxWidth: .infinity, alignment: .topLeading)
         }
         .frame(maxHeight: .infinity)
@@ -269,14 +270,14 @@ struct ClipboardEntryPreviewSidebar: View {
     }
 
     private func sidebarFooter(_ entry: ClipboardHistoryEntry) -> some View {
-        HStack(spacing: DS.Space.xSmall) {
+        HStack(spacing: DS.Space.small) {
             if entry.isPinned {
                 Image(systemName: "pin.fill")
-                    .font(DS.Font.panelFloor)
+                    .font(DS.Font.panelBody)
                     .foregroundStyle(Color.accentColor)
             }
             Text(entry.copiedAt, style: .time)
-                .font(DS.Font.panelFloor)
+                .font(DS.Font.panelBody)
                 .foregroundStyle(.tertiary)
             Spacer()
             if editingEntryID == entry.id {
@@ -307,7 +308,7 @@ struct ClipboardEntryPreviewSidebar: View {
             }
         }
         .controlSize(.mini)
-        .padding(.horizontal, DS.Space.medium)
+        .padding(.horizontal, DS.Space.large)
         .padding(.vertical, DS.Space.medium)
     }
 
@@ -404,30 +405,33 @@ struct ClipboardHistoryInfoSection: View {
     }()
 
     var body: some View {
-        VStack(alignment: .leading, spacing: DS.Space.xSmall) {
+        VStack(alignment: .leading, spacing: DS.Space.small) {
             Text("Information")
-                .font(DS.Font.panelTitle)
+                .font(DS.Font.cardTitle)
                 .foregroundStyle(.secondary)
             VStack(spacing: 0) {
                 let rows = self.rows
                 ForEach(rows) { row in
                     if row.id != rows.first?.id { Divider() }
-                    HStack(spacing: DS.Space.xSmall) {
+                    HStack(spacing: DS.Space.large) {
                         Text(row.label).foregroundStyle(.secondary)
-                        Spacer(minLength: DS.Space.medium)
+                        Spacer(minLength: DS.Space.large)
                         if let icon = sourceIcon, row.label == "Source" {
                             Image(nsImage: icon)
                                 .resizable()
                                 .frame(width: 20, height: 20)
                         }
-                        Text(row.value).lineLimit(1).truncationMode(.middle)
+                        Text(row.value)
+                            .foregroundStyle(.primary)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
                     }
-                    .font(DS.Font.panelBody)
-                    .padding(.vertical, DS.Space.xSmall)
+                    .font(DS.Font.body)
+                    .padding(.vertical, DS.Space.medium)
                 }
             }
         }
-        .padding(.horizontal, DS.Space.medium)
+        .padding(.horizontal, DS.Space.large)
         .padding(.top, DS.Space.medium)
         .padding(.bottom, DS.Space.xxSmall)
     }
