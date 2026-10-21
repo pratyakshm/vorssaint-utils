@@ -90,6 +90,7 @@ enum NotchHoverTests {
         var showsSystemFeedback = true, routesNotices = true
         var running = true, suspended = false, inside = false, hoverEmphasized = false
         var pinned = false, heldDrag = false, keepsWorkingSurface = false
+        var showingCommandBar = false
         var expanded = false, peeking = false, dragPlaceholder = false, openedByHover = false
         var captureControls: Bool?, notice: NotchNotice?
         var noticeExpanded = false
@@ -514,8 +515,8 @@ enum NotchHoverTests {
         clickOpened.windowHost?.controls = [CGRect(x: island.midX - 38, y: island.minY - 72, width: 76, height: 88)]
         NSEvent.mouseLocation = CGPoint(x: island.midX, y: island.minY - 60)
         clickOpened.hover(false)
-        suite.expect(NSEvent.global.isEmpty && NSEvent.local.isEmpty,
-                     "an island opened by a click, which leaving does not close, never follows the pointer")
+        suite.expect(NSEvent.global.count == 1 && NSEvent.local.count == 1,
+                     "an island opened by a click follows the pointer too, so leaving closes it")
         // Passing quickly over the closed island to a display above: the last
         // exit arrives while the pointer still touches the island's top edge.
         do {
@@ -832,7 +833,7 @@ enum NotchHoverTests {
         clicked.open(nil, takeFocus: true)
         leave(clicked)
         DispatchQueue.main.advance(1)
-        suite.expect(clicked.closures == 0, "a panel opened by click stays open when the pointer leaves")
+        suite.expect(clicked.closures == 1, "a panel opened by click closes when the pointer leaves")
 
         let keyboard = fixture()
         keyboard.open(nil, takeFocus: false)

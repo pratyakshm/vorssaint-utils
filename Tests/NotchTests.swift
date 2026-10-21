@@ -2328,11 +2328,10 @@ enum NotchTests {
         suite.expect(NotchSupport.filteredModules(allModules, query: "", title: { $0.rawValue }) == allModules
                && NotchSupport.filteredModules(allModules, query: "unmatched", title: { $0.rawValue }).isEmpty,
                "empty queries preserve configured ordering and unmatched queries have no action")
-        suite.expect(!NotchSupport.closesOnPointerExit(expanded: true, peeking: false, openedByHover: false),
-               "menu bar and keyboard openings survive a pointer outside the notch")
-        suite.expect(NotchSupport.closesOnPointerExit(expanded: true, peeking: false, openedByHover: true)
-               && NotchSupport.closesOnPointerExit(expanded: false, peeking: true, openedByHover: false),
-               "hover presentations still close when the pointer leaves")
+        suite.expect(NotchSupport.closesOnPointerExit(expanded: true, peeking: false)
+               && NotchSupport.closesOnPointerExit(expanded: false, peeking: true)
+               && !NotchSupport.closesOnPointerExit(expanded: false, peeking: false),
+               "an open island closes when the pointer leaves, however it opened")
         var hover = NotchHoverState()
         hover.close(pointerInside: true)
         for _ in 0..<4 { hover.update(pointerInside: true) }

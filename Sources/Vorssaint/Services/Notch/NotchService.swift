@@ -1599,7 +1599,8 @@ final class NotchService: ObservableObject {
             let delay = NotchSupport.sanitizedHoverDelay(UserDefaults.standard.double(forKey: DefaultsKey.notchHoverDelay))
             DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: work)
         } else if holdsNotification
-                    || NotchSupport.closesOnPointerExit(expanded: expanded, peeking: peeking, openedByHover: openedByHover) {
+                    || (!showingCommandBar
+                        && NotchSupport.closesOnPointerExit(expanded: expanded, peeking: peeking)) {
             let work = DispatchWorkItem { [weak self] in
                 guard let self else { return }
                 self.hoverWork = nil
@@ -1608,8 +1609,9 @@ final class NotchService: ObservableObject {
                       !self.pointerOverChildWindow(NSEvent.mouseLocation) else { return }
                 self.releaseNotification()
                 guard !self.pinned, !self.heldDrag, !self.keepsWorkingSurface, self.captureControls == nil,
+                      !self.showingCommandBar,
                       !AssistiveKeyboard.ownsCocoaPoint(NSEvent.mouseLocation),
-                      NotchSupport.closesOnPointerExit(expanded: self.expanded, peeking: self.peeking, openedByHover: self.openedByHover) else { return }
+                      NotchSupport.closesOnPointerExit(expanded: self.expanded, peeking: self.peeking) else { return }
                 self.collapse()
             }
             hoverWork = work
@@ -1640,7 +1642,8 @@ final class NotchService: ObservableObject {
         // until the pointer leaves, with or without an emphasis to follow.
         let keepsMusicStrip = musicStripNamed || musicStripHeldSong != nil
         let watching = ((hoverEmphasized || followsClosedHover || keepsMusicStrip) && captureHover == nil
-                || !entered && NotchSupport.closesOnPointerExit(expanded: expanded, peeking: peeking, openedByHover: openedByHover))
+                || !entered && !showingCommandBar
+                    && NotchSupport.closesOnPointerExit(expanded: expanded, peeking: peeking))
             && captureControls == nil && !pinned && !heldDrag && !hiddenUntilHover && !keepsWorkingSurface
             // Once watching, a pointer that leaves and slips back unreported is still seen.
             && (!hoverExitMonitors.isEmpty || windowHost?.containsHover(point) == true)

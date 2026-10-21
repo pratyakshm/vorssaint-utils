@@ -2005,10 +2005,11 @@ enum NotchSupport {
             + (AppFeature.connectedDevices.isAvailable(in: defaults) ? 1 : 0)
     }
 
-    /// Direct openings are dismissed explicitly, never by the pointer's
-    /// initial position at the menu bar or in the application being used.
-    static func closesOnPointerExit(expanded: Bool, peeking: Bool, openedByHover: Bool) -> Bool {
-        peeking || (expanded && openedByHover)
+    /// An open island closes when the pointer leaves it, however it opened.
+    /// A pointer that never touched the island reports no exit, so openings
+    /// from the menu bar or the keyboard stay until dismissed or revisited.
+    static func closesOnPointerExit(expanded: Bool, peeking: Bool) -> Bool {
+        expanded || peeking
     }
 
     /// Another app becoming active closes the open island like a click away.
