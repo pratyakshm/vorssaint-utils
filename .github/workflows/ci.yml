@@ -4,6 +4,10 @@ on:
   push:
     branches: [main]
   pull_request:
+  schedule:
+    # Nightly Swift 6.0.3 compatibility check: 02:17 UTC (08:17 IST), off-peak
+    # for GitHub's macOS runner capacity and off the top-of-hour cron crowd.
+    - cron: '17 2 * * *'
 
 permissions:
   contents: read
@@ -15,6 +19,8 @@ concurrency:
 jobs:
   compatibility:
     name: Swift 6.0.3 compatibility
+    # PRs get one macOS runner; this job runs on main pushes and the nightly.
+    if: github.event_name != 'pull_request'
     runs-on: macos-15
     timeout-minutes: 30
     env:
@@ -40,6 +46,8 @@ jobs:
 
   build:
     name: Build & selftest
+    # The nightly exists only for the Swift 6.0.3 compatibility job.
+    if: github.event_name != 'schedule'
     runs-on: macos-26
     timeout-minutes: 30
     steps:

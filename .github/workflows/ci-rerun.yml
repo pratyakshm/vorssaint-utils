@@ -1,0 +1,43 @@
+name: CI rerun on cancellation
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+
+permissions:
+  actions: write
+  contents: read
+
+concurrency:
+  group: ci-rerun
+  cancel-in-progress: false
+
+jobs:
+  rerun:
+    name: Re-run cancelled CI
+    if: github.event.workflow_run.conclusion == 'cancelled'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Re-run unless superseded
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          attempt="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID" --jq .run_attempt)"
+          if (( attempt >= 3 )); then
+            echo "run already attempted $attempt times; leaving cancelled"
+            exit 0
+          fi
+          created="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID" --jq .created_at)"
+          newer="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs?head_sha=$HEAD_SHA&per_page=100" \
+            --jq "[.workflow_runs[] | select(.name == \"CI\" and .id != $RUN_ID and .created_at > \"$created\")] | length")"
+          if (( newer > 0 )); then
+            echo "a newer CI run covers $HEAD_SHA; concurrency cancel, skipping"
+            exit 0
+          fi
+          echo "re-running cancelled run $RUN_ID (attempt $attempt)"
+          gh run rerun "$RUN_ID"
