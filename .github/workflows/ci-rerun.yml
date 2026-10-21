@@ -40,4 +40,4 @@ jobs:
             exit 0
           fi
           echo "re-running cancelled run $RUN_ID (attempt $attempt)"
-          gh run rerun "$RUN_ID"
+          gh run rerun "$RUN_ID" --repo "$GITHUB_REPOSITORY"
