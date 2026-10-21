@@ -45,8 +45,11 @@ enum NotchSectionSwipeLogic {
 /// Catches 2-finger scroll over the header title.
 /// `scrollWheel` carries the 2-finger trackpad scroll and a mouse tilt.
 /// It reports through callbacks so the content follows the fingers.
+/// Over a whole page it takes only scrolls: clicks, drags and menus fall
+/// through to the controls beneath it.
 struct NotchSectionSwipeCatcher: NSViewRepresentable {
     var enabled: Bool
+    var takesOnlyScrolls = false
     var onChanged: (CGFloat) -> Void
     var onCommit: (NotchSectionSwipeDirection) -> Void
     var onCancelled: () -> Void
@@ -57,6 +60,7 @@ struct NotchSectionSwipeCatcher: NSViewRepresentable {
         view.onCommit = onCommit
         view.onCancelled = onCancelled
         view.isEnabled = enabled
+        view.takesOnlyScrolls = takesOnlyScrolls
         return view
     }
 
@@ -65,17 +69,22 @@ struct NotchSectionSwipeCatcher: NSViewRepresentable {
         view.onCommit = onCommit
         view.onCancelled = onCancelled
         view.isEnabled = enabled
+        view.takesOnlyScrolls = takesOnlyScrolls
     }
 }
 
 final class NotchSectionSwipeNSView: NSView {
     var isEnabled = true
+    var takesOnlyScrolls = false
     var onChanged: ((CGFloat) -> Void)?
     var onCommit: ((NotchSectionSwipeDirection) -> Void)?
     var onCancelled: (() -> Void)?
 
     private var accumulated: CGFloat = 0
     private var tracking = false
+    /// Set while the view looks for what sits beneath itself, so its own
+    /// hit test steps aside and the search reaches the page's controls.
+    private var seekingUnderneath = false
 
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
@@ -89,6 +98,10 @@ final class NotchSectionSwipeNSView: NSView {
     override var acceptsFirstResponder: Bool { false }
     override func hitTest(_ point: NSPoint) -> NSView? {
         guard isEnabled, bounds.contains(point) else { return nil }
+        if seekingUnderneath { return nil }
+        // Over a page only a scroll lands here; every other event finds
+        // the player's own controls beneath.
+        if takesOnlyScrolls, NSApp.currentEvent?.type != .scrollWheel { return nil }
         return self
     }
 
@@ -108,9 +121,10 @@ final class NotchSectionSwipeNSView: NSView {
         }
 
         // Vertical travel belongs to the island's open/close gesture;
-        // let it reach the panel's own handler.
+        // let it reach the panel's own handler, or the scroll view a page
+        // keeps under the pointer.
         if abs(dy) > abs(dx) * 1.5, !tracking {
-            super.scrollWheel(with: event)
+            forwardVertically(event)
             return
         }
 
@@ -138,5 +152,21 @@ final class NotchSectionSwipeNSView: NSView {
                 onCancelled?()
             }
         }
+    }
+
+    /// Hands a non-section scroll to what sits under the pointer: a page's
+    /// own scroll view takes it, and anything else rides the responder chain
+    /// to the island's gesture handler, as if this view were not there.
+    private func forwardVertically(_ event: NSEvent) {
+        guard takesOnlyScrolls, let window, let contentView = window.contentView else {
+            super.scrollWheel(with: event)
+            return
+        }
+        seekingUnderneath = true
+        let point = contentView.convert(event.locationInWindow, from: nil)
+        var target = contentView.hitTest(point)
+        seekingUnderneath = false
+        while let view = target, !(view is NSScrollView) { target = view.superview }
+        if let target { target.scrollWheel(with: event) } else { super.scrollWheel(with: event) }
     }
 }

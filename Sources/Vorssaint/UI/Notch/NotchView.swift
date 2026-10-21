@@ -351,6 +351,21 @@ struct NotchView: View {
             // The page follows a title swipe, then springs to the next one.
             .offset(x: canSwipeSections ? sectionSwipeOffset : 0)
             .opacity(canSwipeSections ? 1 - min(0.25, abs(sectionSwipeOffset) / max(1, service.contentSize.width) * 0.6) : 1)
+            // The player has no header title of its own, so its page takes
+            // the same two-finger swipe: over the player and around its
+            // controls, clicks and drags still reach them.
+            .overlay {
+                if canSwipeSections, service.selected == .music {
+                    NotchSectionSwipeCatcher(
+                        enabled: true,
+                        takesOnlyScrolls: true,
+                        onChanged: { swipeChanged($0) },
+                        onCommit: { swipeCommitted($0) },
+                        onCancelled: { swipeCancelled() }
+                    )
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+            }
             .onChange(of: canSwipeSections) { _, enabled in
                 guard !enabled else { return }
                 sectionSwipeOffset = 0

@@ -69,8 +69,9 @@ struct NotchAgentsView: View {
                     }
                 }
                 // The period drives several cards, so it sits in the island's
-                // top row, beside the camera, while any of them shows.
-                .notchBand(leading: {
+                // top row's trailing corner, across from the title, while any
+                // of them shows; the leading side stays free for the title.
+                .notchBand(trailing: {
                     if rows.joined().contains(where: { $0.card.followsPeriod }) { periodMenu }
                 })
             }
