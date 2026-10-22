@@ -87,18 +87,6 @@ struct ClipboardQuickPanelView: View {
                 .focused($searchFocused)
                 .frame(height: 44)
             Button {
-                history.toggleQuickPreview()
-            } label: {
-                Label(text.previewLabel,
-                      systemImage: history.quickPreviewPresented ? "sidebar.right" : "eye")
-                    .foregroundStyle(history.quickPreviewPresented ? Color.accentColor : Color.secondary)
-            }
-            .buttonStyle(.bordered)
-            .controlSize(.small)
-            .disabled(history.selectedQuickEntry == nil && !history.quickPreviewPresented)
-            .help(text.previewLabel)
-            .accessibilityLabel(text.previewLabel)
-            Button {
                 history.hideHistoryWindow()
             } label: {
                 Image(systemName: "xmark")
@@ -378,6 +366,7 @@ private struct QuickEntryView: View, Equatable {
     private var history: ClipboardHistoryService { .shared }
     private var l10n: L10n { .shared }
     private var text: ClipboardFeatureStrings { FeatureStrings.clipboard(language) }
+    private var rowFontSize: CGFloat { isSelected ? 20 : 12 }
 
     // Preview selection is a channel to the sidebar, not part of this row's
     // appearance, so it stays out of the comparison.
@@ -466,8 +455,8 @@ private struct QuickEntryView: View, Equatable {
                 if let color = entry.color {
                     ColorSwatch(color: color, size: 14)
                 }
-                SearchHighlightText.text(entry.preview, tokens: tokens, fontSize: 12)
-                    .font(DS.Font.panelBody)
+                SearchHighlightText.text(entry.preview, tokens: tokens, fontSize: rowFontSize)
+                    .font(.system(size: rowFontSize))
                     .lineLimit(1)
                     .truncationMode(.tail)
             }
@@ -482,8 +471,8 @@ private struct QuickEntryView: View, Equatable {
                         .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
                 }
                 SearchHighlightText.text("\(text.imageEntryLabel) · \(entry.imageDimensionsLabel)",
-                                         tokens: tokens, fontSize: 12)
-                    .font(DS.Font.panelBody)
+                                         tokens: tokens, fontSize: rowFontSize)
+                    .font(.system(size: rowFontSize))
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .help("\(text.imageEntryLabel) · \(entry.imageDimensionsLabel)")
@@ -498,8 +487,8 @@ private struct QuickEntryView: View, Equatable {
                         .frame(width: Self.thumbnailSlot.width, height: Self.thumbnailSlot.height)
                         .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
                     VStack(alignment: .leading, spacing: 2) {
-                        SearchHighlightText.text(entry.fileNames.first ?? entry.preview, tokens: tokens, fontSize: 12)
-                            .font(DS.Font.panelBody)
+                        SearchHighlightText.text(entry.fileNames.first ?? entry.preview, tokens: tokens, fontSize: rowFontSize)
+                            .font(.system(size: rowFontSize))
                             .lineLimit(1)
                             .truncationMode(.middle)
                         if let dim = ClipboardImageStore.imageDimensionsLabel(atPath: path) {
@@ -515,8 +504,8 @@ private struct QuickEntryView: View, Equatable {
                     // A count of several files is no text the search reads.
                     SearchHighlightText.text(fileTitle(entry),
                                              tokens: entry.filePaths.count == 1 ? tokens : [],
-                                             fontSize: 12)
-                        .font(DS.Font.panelBody)
+                                             fontSize: rowFontSize)
+                        .font(.system(size: rowFontSize))
                         .lineLimit(1)
                         .truncationMode(.middle)
                     if entry.filePaths.count > 1 {
@@ -548,27 +537,6 @@ private struct QuickEntryView: View, Equatable {
                     .help(text.edit)
                     .accessibilityLabel(text.edit)
                 }
-                Button {
-                    history.copyOnlyQuickEntry(entry)
-                } label: {
-                    Image(systemName: "doc.on.doc")
-                        .font(DS.Font.panelFloorEmphasis)
-                        .frame(width: 24, height: 24)
-                        .background(Color.primary.opacity(0.07), in: RoundedRectangle(cornerRadius: 6))
-                }
-                .buttonStyle(.plain)
-                .help(text.copy)
-                Menu {
-                    entryActions(entry)
-                } label: {
-                    Image(systemName: "ellipsis")
-                        .font(DS.Font.panelFloorEmphasis)
-                        .frame(width: 24, height: 24)
-                        .background(Color.primary.opacity(0.07), in: RoundedRectangle(cornerRadius: 6))
-                }
-                .menuStyle(.borderlessButton)
-                .menuIndicator(.hidden)
-                .fixedSize()
             }
         } else {
             // Tinycast parity: no timestamp. Pinned rows show their ⌘-digit
@@ -693,7 +661,7 @@ private struct QuickEntryView: View, Equatable {
                                isBatchSelected: Bool,
                                isHovered: Bool) -> Color {
         if isBatchSelected { return Color.accentColor.opacity(isHovered ? 0.17 : 0.13) }
-        if isSelected { return Color.white.opacity(isHovered ? 0.13 : 0.10) }
+        if isSelected { return Color.white.opacity(0.30) }
         if isHovered { return Color.primary.opacity(0.055) }
         return .clear
     }
