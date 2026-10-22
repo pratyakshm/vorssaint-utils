@@ -367,6 +367,7 @@ struct ClipboardEntryPreviewSidebar: View {
     private func beginEditing(_ entry: ClipboardHistoryEntry) {
         draft = entry.text
         editingEntryID = entry.id
+        ClipboardHistoryService.shared.editingEntryID = entry.id
         isEditing = true
         DispatchQueue.main.async { editorFocused = true }
     }
@@ -374,6 +375,7 @@ struct ClipboardEntryPreviewSidebar: View {
     private func cancelEditing() {
         editorFocused = false
         editingEntryID = nil
+        ClipboardHistoryService.shared.editingEntryID = nil
         draft = ""
         isEditing = false
     }
