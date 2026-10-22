@@ -2851,8 +2851,17 @@ final class NotchService: ObservableObject {
         // The song the strip shows, which may still be the one a skip left.
         let live = NotchMusicService.shared.playback
         let track = (heldMusic ?? musicStripStandIn(for: live))?.playback.track ?? live?.track
-        return NotchMusicStripLayout.namedWings(title: track?.title, artist: track?.artist, geometry: compactActivityGeometry,
-                                                room: geometry.compactSideRoom ?? 0)
+        if let title = track?.title, !title.isEmpty {
+            return NotchMusicStripLayout.namedWings(title: title, artist: track?.artist,
+                                                    geometry: compactActivityGeometry,
+                                                    room: geometry.compactSideRoom ?? 0)
+        }
+        // With no song to name, the strip names its section: the icon grows
+        // the same side the words would, so a pointer resting on the cover
+        // still says what the island was set to.
+        guard live == nil, heldMusic == nil else { return nil }
+        return NotchMusicStripLayout.sectionIconWings(geometry: compactActivityGeometry,
+                                                      room: geometry.compactSideRoom ?? 0)
     }
 
     /// Whether a reading is the song paused from the strip's button, or one

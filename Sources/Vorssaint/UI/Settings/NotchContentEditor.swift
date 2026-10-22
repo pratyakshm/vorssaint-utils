@@ -116,10 +116,11 @@ struct NotchIslandPreview: View {
                         if !wraps {
                             if band.sectionsButton { NotchSectionsButton(action: {}) }
                             items.leading
+                        } else if band.trailingSectionsButton || band.pageSectionsButton {
+                            NotchIconButton(symbol: "chevron.left", title: l10n.s.obBack, action: {})
                         }
                     } trailing: {
                         items.trailing
-                        if band.trailingSectionsButton { NotchSectionsButton(action: {}) }
                     }
                 }
             }

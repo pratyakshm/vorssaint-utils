@@ -67,6 +67,9 @@ struct NotchMusicStrip: View {
     /// The left side while the pointer has the song named, nil otherwise. A
     /// strip on its way out keeps the name it had, which leaves with it.
     private var namedWing: CGFloat? { live ? service.namedMusicWings?.leading : snapshot?.namedWing }
+    /// The strip names its section instead of a song while nothing plays:
+    /// the icon stands where the title and the artist would.
+    private var namesSection: Bool { namedWing != nil && playback?.track.title?.isEmpty != false }
     private var showsControl: Bool { live && service.musicStripShowsControl }
     /// A click's request shows at once, before the player says so.
     private var playing: Bool { (live ? service.musicStripRequest : nil) ?? playback?.isPlaying == true }
@@ -76,9 +79,13 @@ struct NotchMusicStrip: View {
         let named = namedWing
         Button { live ? service.activateMusicStrip() : service.openActivity(.music) } label: {
             HStack(spacing: 0) {
-                HStack(spacing: Layout.spacing) {
-                    // The words grow out from behind the cover, which keeps its place.
-                    if named != nil { namedLabel }
+            HStack(spacing: Layout.spacing) {
+                // The words grow out from behind the cover, which keeps its
+                // place; with no song to name, the section's icon stands
+                // where the words would.
+                if named != nil {
+                    if namesSection { sectionMark } else { namedLabel }
+                }
                     if wing > 0 {
                         // Circular corners, like the strip's, so the two stay parallel.
                         NotchMusicCover(artwork: artwork, side: artworkSide, radius: artworkRadius,
@@ -160,6 +167,18 @@ struct NotchMusicStrip: View {
         }
         .frame(maxWidth: .infinity, alignment: .trailing)
         .accessibilityHidden(true)
+    }
+
+    /// The section's own icon where the song's name would stand, in the
+    /// section's colour, so a strip at rest with nothing playing still says
+    /// what the island was set to under the pointer.
+    private var sectionMark: some View {
+        Image(systemName: NotchModule.music.symbol)
+            .font(.system(size: NotchTimerSupport.stripIconSize(height: geometry.compactActivityContentHeight),
+                          weight: .medium))
+            .foregroundStyle(.pink)
+            .frame(maxWidth: .infinity, alignment: .trailing)
+            .accessibilityHidden(true)
     }
 
     private var trackLabel: some View {

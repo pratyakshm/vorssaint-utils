@@ -558,28 +558,22 @@ enum NotchTests {
     }
 
     /// The views put the island's way to the sections where the band says:
-    /// every fallback of the row's trailing side ends a wrapping page's
-    /// controls with it, and the player shows it where the row does not.
+    /// every other page leads its row with the grid button, and the player,
+    /// which lays out its own leading side, leads its row with the way back
+    /// to the sections instead and shows no button of its own.
     private static func sectionsButtonPlacementContracts(_ suite: TestSuite) {
         func source(_ path: String) -> String { (try? String(contentsOfFile: path, encoding: .utf8)) ?? "" }
         let island = source("Sources/Vorssaint/UI/Notch/NotchView.swift")
         let row = (island.components(separatedBy: "private func bandRow(").dropFirst().first ?? "")
             .components(separatedBy: "private func updateControl(").first ?? ""
         let fallbacks = row.components(separatedBy: "HStack(spacing: 6) {").count - 1
-        let ends = row.components(separatedBy: "items.trailing; trailingSections(band)").count - 1
-        suite.expect(fallbacks == 4 && ends == fallbacks
-                     && row.contains("if band.trailingSectionsButton { NotchSectionsButton(action: service.toggleSections) }"),
-                     "every fallback of the row's trailing side ends a wrapping page's controls with the sections button")
+        suite.expect(fallbacks == 4 && !row.contains("trailingSections(band)")
+                     && row.contains("} else if band.trailingSectionsButton || band.pageSectionsButton {")
+                     && row.contains(#"NotchIconButton(symbol: "chevron.left", title: l10n.s.obBack, action: service.toggleSections)"#),
+                     "the row leads with the way to the sections on a page that wraps the camera, and its trailing fallbacks never end with the grid button")
         let player = source("Sources/Vorssaint/UI/Notch/NotchMusicView.swift")
-        let corners = player.components(separatedBy: "} corner: {").dropFirst().map { $0.components(separatedBy: "}").first ?? "" }
-        let cornersShowIt = corners.count == 2 && corners.allSatisfy { $0.contains("sectionsButton") }
-        let rowItems = (player.components(separatedBy: ".notchBand(trailing: {").dropFirst().first ?? "")
-            .components(separatedBy: "})").first ?? ""
-        suite.expect(player.contains("if band.pageSectionsButton { NotchSectionsButton(action: NotchService.shared.toggleSections) }")
-                     && cornersShowIt && player.contains("extraButtons; sectionsButton }")
-                     && player.contains("if band.besideCamera { sectionsButton }") && !rowItems.contains("sectionsButton")
-                     && player.contains(".overlay(alignment: .topLeading) { sectionsButton.frame(height: band.height) }"),
-                     "the player shows the sections button in its corners, its row of toggles, beside its bars and on the cover's side of the row while it is away, where the row does not")
+        suite.expect(!player.contains("sectionsButton"),
+                     "the player leaves the way to the sections to its row and shows none of its own")
     }
 
     /// The home page's rail never scrolls a tile it could show whole. Where

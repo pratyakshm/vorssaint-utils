@@ -64,9 +64,8 @@ struct NotchMusicView: View {
             } else if band.besideCamera {
                 // The cover's side of the row is free while the player is away.
                 Color.clear.frame(height: reserve - NotchLayout.rowSpacing)
-                    .overlay(alignment: .topLeading) { sectionsButton.frame(height: band.height) }
             } else {
-                HStack(spacing: 6) { Spacer(minLength: 0); extraButtons; sectionsButton }.frame(height: 28)
+                HStack(spacing: 6) { Spacer(minLength: 0); extraButtons }.frame(height: 28)
             }
             if let openExtra, let playback = service.playback {
                 Group {
@@ -158,7 +157,7 @@ struct NotchMusicView: View {
         let opens = player != nil
         let openTitle = player.map { NotchPreferredPlayer.openTitle(for: $0) } ?? ""
         return VStack(spacing: NotchLayout.musicHeadSpacing) {
-            head(corner: !band.besideCamera && band.pageSectionsButton) {
+            head {
                 // With a music app to open, the cover and the buttons below open it.
                 Button { NotchPreferredPlayer.open() } label: {
                     NotchArtwork(image: nil, size: NotchLayout.musicArtworkSize)
@@ -181,8 +180,6 @@ struct NotchMusicView: View {
                 }
             } accessory: {
                 EmptyView()
-            } corner: {
-                sectionsButton
             }
             Group {
                 if opens {
@@ -211,11 +208,6 @@ struct NotchMusicView: View {
         if showsQueue {
             extraButton(.queue, title: FeatureStrings.notchMusicExtras(l10n.language).queue, symbol: "list.bullet")
         }
-    }
-
-    /// The island's way to its sections where its row does not hold it.
-    @ViewBuilder private var sectionsButton: some View {
-        if band.pageSectionsButton { NotchSectionsButton(action: NotchService.shared.toggleSections) }
     }
 
     private func extraButton(_ target: MusicExtra, title: String, symbol: String) -> some View {
@@ -256,7 +248,7 @@ struct NotchMusicView: View {
     /// of buttons, as a phone's island lays out its player.
     private func player(_ playback: NotchPlayback) -> some View {
         VStack(spacing: 0) {
-            head(corner: !band.besideCamera && (showsLyrics || showsQueue || band.pageSectionsButton)) {
+            head(corner: !band.besideCamera && (showsLyrics || showsQueue)) {
                 Button { RadialNowPlayingApplication.open(playback.track) } label: {
                     NotchArtwork(image: service.artwork, size: NotchLayout.musicArtworkSize, source: playback.track)
                         .scaleEffect(playback.isPlaying || reduceMotion ? 1 : 0.94)
@@ -286,10 +278,8 @@ struct NotchMusicView: View {
                 // bars rest flat while paused, so the title keeps its width.
                 NotchLiveEqualizerBars(isPlaying: playback.isPlaying, bars: 4, barWidth: 2.5, height: 15,
                                        tint: .white.opacity(0.5))
-                if band.besideCamera { sectionsButton }
             } corner: {
                 extraButtons
-                sectionsButton
             }
             NotchMusicTimeline(playback: playback, service: service, tint: accent, timesBeside: true)
                 .padding(.top, NotchLayout.musicHeadSpacing)

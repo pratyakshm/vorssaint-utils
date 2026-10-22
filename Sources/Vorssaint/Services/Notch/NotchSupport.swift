@@ -839,6 +839,19 @@ enum NotchMusicStripLayout {
         let leading = min(named, geometry.noticeWingWidth(preferred: named), max(0, room).rounded(.down))
         return leading > wing ? NotchNoticeWings(leading: leading, trailing: wing) : nil
     }
+
+    /// The strip's sides while it names its section instead of a song: the
+    /// section's icon stands where the words would, so a strip resting with
+    /// nothing playing still says what the island was set to under the
+    /// pointer. Nil without wings to grow.
+    static func sectionIconWings(geometry: NotchGeometry, room: CGFloat) -> NotchNoticeWings? {
+        let wing = geometry.compactActivityWingWidth
+        guard wing > 0, !fillsCameraGap(geometry) else { return nil }
+        let icon = NotchTimerSupport.stripIconSize(height: geometry.compactActivityContentHeight)
+        let named = (endInset + icon + NotchCapsuleLayout.air + spacing + wing - coverInset(geometry)).rounded(.up)
+        let leading = min(named, geometry.noticeWingWidth(preferred: named), max(0, room).rounded(.down))
+        return leading > wing ? NotchNoticeWings(leading: leading, trailing: wing) : nil
+    }
 }
 
 enum NotchCompactActivity: String, Identifiable {
