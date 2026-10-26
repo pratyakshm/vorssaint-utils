@@ -188,6 +188,17 @@ struct CommandBarFeatureStrings {
     let openingStyleIsland: String
     let openingStylePopup: String
     let openingStyleCaption: String
+    /// Footer primary action, built from a verb and the row's own kind noun:
+    /// "Open %@" makes "Open Application" / "Open Folder" / "Open File", and
+    /// "Copy %@" makes "Copy Answer" / "Copy Color". One format per verb keeps
+    /// every language's word order rather than gluing two strings together.
+    let primaryOpenFormat: String
+    let primaryCopyFormat: String
+    /// The footer's generic verb for a command row with no opening or copying.
+    let primaryRunCommand: String
+    /// The noun half of "Open File" and "Copy Color".
+    let kindFile: String
+    let kindColor: String
 }
 
 extension FeatureStrings {
@@ -219,14 +230,14 @@ extension CommandBarFeatureStrings {
         panelCaption: "Type to find and run anything",
         settingsCaption: "One shortcut opens a field over whatever you are doing. Type a few letters, press Return and it happens. Nothing you type is saved.",
         openButton: "Open the bar now",
-        searchPlaceholder: "Type what you want to do",
+        searchPlaceholder: "Search for apps and commands…",
         suggestionsLabel: "Suggestions",
         noResultsTitle: "Nothing here by that name.",
         noResultsAction: "See suggestions",
         argumentRangeFormat: "%d to %d",
         argumentHint: "Return applies · Esc goes back",
         confirmHint: "Return confirms · Esc cancels",
-        kindApp: "App",
+        kindApp: "Application",
         kindClipboard: "Paste from history",
         kindSnippet: "Insert snippet",
         soundOutputSubtitle: "Switch sound output",
@@ -383,7 +394,12 @@ extension CommandBarFeatureStrings {
         openingStyleTitle: "Opens as",
         openingStyleIsland: "Dynamic Island",
         openingStylePopup: "Normal popup",
-        openingStyleCaption: "The popup opens in its own window over whatever you are doing, like Raycast.")
+        openingStyleCaption: "The popup opens in its own window over whatever you are doing, like Raycast.",
+        primaryOpenFormat: "Open %@",
+        primaryCopyFormat: "Copy %@",
+        primaryRunCommand: "Run Command",
+        kindFile: "File",
+        kindColor: "Color")
 
     static let ptBR = CommandBarFeatureStrings(
         pageTitle: "Barra de comando",
@@ -398,7 +414,7 @@ extension CommandBarFeatureStrings {
         argumentRangeFormat: "%d a %d",
         argumentHint: "Return aplica · Esc volta",
         confirmHint: "Return confirma · Esc cancela",
-        kindApp: "App",
+        kindApp: "Aplicativo",
         kindClipboard: "Colar do histórico",
         kindSnippet: "Inserir snippet",
         soundOutputSubtitle: "Trocar a saída de som",
@@ -555,7 +571,12 @@ extension CommandBarFeatureStrings {
         openingStyleTitle: "Abre como",
         openingStyleIsland: "Dynamic Island",
         openingStylePopup: "Popup normal",
-        openingStyleCaption: "O popup abre na própria janela por cima do que você estiver fazendo, como no Raycast.")
+        openingStyleCaption: "O popup abre na própria janela por cima do que você estiver fazendo, como no Raycast.",
+        primaryOpenFormat: "Abrir %@",
+        primaryCopyFormat: "Copiar %@",
+        primaryRunCommand: "Executar comando",
+        kindFile: "Arquivo",
+        kindColor: "Cor")
 
     static let tr = CommandBarFeatureStrings(
         pageTitle: "Komut çubuğu",
@@ -727,7 +748,12 @@ extension CommandBarFeatureStrings {
         openingStyleTitle: "Açılış biçimi",
         openingStyleIsland: "Dynamic Island",
         openingStylePopup: "Normal açılır pencere",
-        openingStyleCaption: "Açılır pencere, ne yapıyorsanız onun üzerinde kendi penceresinde, Raycast gibi açılır.")
+        openingStyleCaption: "Açılır pencere, ne yapıyorsanız onun üzerinde kendi penceresinde, Raycast gibi açılır.",
+        primaryOpenFormat: "%@ aç",
+        primaryCopyFormat: "%@ kopyala",
+        primaryRunCommand: "Komutu çalıştır",
+        kindFile: "Dosya",
+        kindColor: "Renk")
 
     static let ru = CommandBarFeatureStrings(
         pageTitle: "Командная панель",
@@ -899,7 +925,12 @@ extension CommandBarFeatureStrings {
         openingStyleTitle: "Открывается как",
         openingStyleIsland: "Dynamic Island",
         openingStylePopup: "Обычное всплывающее окно",
-        openingStyleCaption: "Всплывающее окно открывается в собственном окне поверх того, что вы делаете, как в Raycast.")
+        openingStyleCaption: "Всплывающее окно открывается в собственном окне поверх того, что вы делаете, как в Raycast.",
+        primaryOpenFormat: "Открыть %@",
+        primaryCopyFormat: "Скопировать %@",
+        primaryRunCommand: "Выполнить команду",
+        kindFile: "Файл",
+        kindColor: "Цвет")
 
     static let es = CommandBarFeatureStrings(
         pageTitle: "Barra de comandos",
@@ -914,7 +945,7 @@ extension CommandBarFeatureStrings {
         argumentRangeFormat: "%d a %d",
         argumentHint: "Retorno aplica · Esc vuelve",
         confirmHint: "Retorno confirma · Esc cancela",
-        kindApp: "App",
+        kindApp: "Aplicación",
         kindClipboard: "Pegar del historial",
         kindSnippet: "Insertar fragmento",
         soundOutputSubtitle: "Cambiar la salida de sonido",
@@ -1071,7 +1102,12 @@ extension CommandBarFeatureStrings {
         openingStyleTitle: "Se abre como",
         openingStyleIsland: "Dynamic Island",
         openingStylePopup: "Ventana emergente normal",
-        openingStyleCaption: "La ventana emergente se abre en su propia ventana por encima de lo que estés haciendo, al estilo de Raycast.")
+        openingStyleCaption: "La ventana emergente se abre en su propia ventana por encima de lo que estés haciendo, al estilo de Raycast.",
+        primaryOpenFormat: "Abrir %@",
+        primaryCopyFormat: "Copiar %@",
+        primaryRunCommand: "Ejecutar comando",
+        kindFile: "Archivo",
+        kindColor: "Color")
 
     static let sk = CommandBarFeatureStrings(
         pageTitle: "Príkazová lišta",
@@ -1243,7 +1279,12 @@ extension CommandBarFeatureStrings {
         openingStyleTitle: "Otvorí sa ako",
         openingStyleIsland: "Dynamic Island",
         openingStylePopup: "Bežné vyskakovacie okno",
-        openingStyleCaption: "Vyskakovacie okno sa otvorí vo vlastnom okne nad tým, čo robíte, v štýle Raycastu.")
+        openingStyleCaption: "Vyskakovacie okno sa otvorí vo vlastnom okne nad tým, čo robíte, v štýle Raycastu.",
+        primaryOpenFormat: "Otvoriť %@",
+        primaryCopyFormat: "Kopírovať %@",
+        primaryRunCommand: "Spustiť príkaz",
+        kindFile: "Súbor",
+        kindColor: "Farba")
 
     static let de = CommandBarFeatureStrings(
         pageTitle: "Befehlsleiste",
@@ -1258,7 +1299,7 @@ extension CommandBarFeatureStrings {
         argumentRangeFormat: "%d bis %d",
         argumentHint: "Return übernimmt · Esc geht zurück",
         confirmHint: "Return bestätigt · Esc bricht ab",
-        kindApp: "App",
+        kindApp: "Programm",
         kindClipboard: "Aus dem Verlauf einsetzen",
         kindSnippet: "Textbaustein einfügen",
         soundOutputSubtitle: "Tonausgabe wechseln",
@@ -1415,7 +1456,12 @@ extension CommandBarFeatureStrings {
         openingStyleTitle: "Öffnet als",
         openingStyleIsland: "Dynamic Island",
         openingStylePopup: "Normales Pop-up",
-        openingStyleCaption: "Das Pop-up öffnet sich in einem eigenen Fenster über dem, was du tust, im Raycast-Stil.")
+        openingStyleCaption: "Das Pop-up öffnet sich in einem eigenen Fenster über dem, was du tust, im Raycast-Stil.",
+        primaryOpenFormat: "%@ öffnen",
+        primaryCopyFormat: "%@ kopieren",
+        primaryRunCommand: "Befehl ausführen",
+        kindFile: "Datei",
+        kindColor: "Farbe")
 
     static let fr = CommandBarFeatureStrings(
         pageTitle: "Barre de commande",
@@ -1430,7 +1476,7 @@ extension CommandBarFeatureStrings {
         argumentRangeFormat: "%d à %d",
         argumentHint: "Retour applique · Échap revient",
         confirmHint: "Retour confirme · Échap annule",
-        kindApp: "App",
+        kindApp: "Application",
         kindClipboard: "Coller depuis l’historique",
         kindSnippet: "Insérer un extrait",
         soundOutputSubtitle: "Changer la sortie audio",
@@ -1587,7 +1633,12 @@ extension CommandBarFeatureStrings {
         openingStyleTitle: "S’ouvre en",
         openingStyleIsland: "Dynamic Island",
         openingStylePopup: "Fenêtre contextuelle normale",
-        openingStyleCaption: "La fenêtre s’ouvre dans sa propre fenêtre par-dessus ce que vous faites, à la façon de Raycast.")
+        openingStyleCaption: "La fenêtre s’ouvre dans sa propre fenêtre par-dessus ce que vous faites, à la façon de Raycast.",
+        primaryOpenFormat: "Ouvrir %@",
+        primaryCopyFormat: "Copier %@",
+        primaryRunCommand: "Exécuter la commande",
+        kindFile: "Fichier",
+        kindColor: "Couleur")
 
     static let it = CommandBarFeatureStrings(
         pageTitle: "Barra dei comandi",
@@ -1602,7 +1653,7 @@ extension CommandBarFeatureStrings {
         argumentRangeFormat: "da %d a %d",
         argumentHint: "Invio applica · Esc torna indietro",
         confirmHint: "Invio conferma · Esc annulla",
-        kindApp: "App",
+        kindApp: "Applicazione",
         kindClipboard: "Incolla dalla cronologia",
         kindSnippet: "Inserisci snippet",
         soundOutputSubtitle: "Cambia uscita audio",
@@ -1759,7 +1810,12 @@ extension CommandBarFeatureStrings {
         openingStyleTitle: "Si apre come",
         openingStyleIsland: "Dynamic Island",
         openingStylePopup: "Finestra normale",
-        openingStyleCaption: "Il popup si apre in una finestra propria sopra quello che stai facendo, allo stile di Raycast.")
+        openingStyleCaption: "Il popup si apre in una finestra propria sopra quello che stai facendo, allo stile di Raycast.",
+        primaryOpenFormat: "Apri %@",
+        primaryCopyFormat: "Copia %@",
+        primaryRunCommand: "Esegui comando",
+        kindFile: "File",
+        kindColor: "Colore")
 
     static let ja = CommandBarFeatureStrings(
         pageTitle: "コマンドバー",
@@ -1931,7 +1987,12 @@ extension CommandBarFeatureStrings {
         openingStyleTitle: "開き方",
         openingStyleIsland: "Dynamic Island",
         openingStylePopup: "通常のポップアップ",
-        openingStyleCaption: "ポップアップは、作業中の内容の上にRaycastスタイルの独立ウィンドウとして開きます。")
+        openingStyleCaption: "ポップアップは、作業中の内容の上にRaycastスタイルの独立ウィンドウとして開きます。",
+        primaryOpenFormat: "%@を開く",
+        primaryCopyFormat: "%@をコピー",
+        primaryRunCommand: "コマンドを実行",
+        kindFile: "ファイル",
+        kindColor: "カラー")
 
     static let ko = CommandBarFeatureStrings(
         pageTitle: "명령 막대",
@@ -2103,7 +2164,12 @@ extension CommandBarFeatureStrings {
         openingStyleTitle: "열리는 방식",
         openingStyleIsland: "Dynamic Island",
         openingStylePopup: "일반 팝업",
-        openingStyleCaption: "팝업은 작업 중인 내용 위에 Raycast 스타일의 별도 창으로 열립니다.")
+        openingStyleCaption: "팝업은 작업 중인 내용 위에 Raycast 스타일의 별도 창으로 열립니다.",
+        primaryOpenFormat: "%@ 열기",
+        primaryCopyFormat: "%@ 복사",
+        primaryRunCommand: "명령 실행",
+        kindFile: "파일",
+        kindColor: "색상")
 
     static let uk = CommandBarFeatureStrings(
         pageTitle: "Панель команд",
@@ -2275,7 +2341,12 @@ extension CommandBarFeatureStrings {
         openingStyleTitle: "Відкривається як",
         openingStyleIsland: "Dynamic Island",
         openingStylePopup: "Звичайне спливне вікно",
-        openingStyleCaption: "Спливне вікно відкривається у власному вікні над тим, що ви робите, у стилі Raycast."
+        openingStyleCaption: "Спливне вікно відкривається у власному вікні над тим, що ви робите, у стилі Raycast.",
+        primaryOpenFormat: "Відкрити %@",
+        primaryCopyFormat: "Скопіювати %@",
+        primaryRunCommand: "Виконати команду",
+        kindFile: "Файл",
+        kindColor: "Колір"
     )
     static let zhHans = CommandBarFeatureStrings(
         pageTitle: "命令栏",
@@ -2290,7 +2361,7 @@ extension CommandBarFeatureStrings {
         argumentRangeFormat: "%d 到 %d",
         argumentHint: "Return 确定 · Esc 返回",
         confirmHint: "Return 确认 · Esc 取消",
-        kindApp: "App",
+        kindApp: "应用",
         kindClipboard: "从历史记录粘贴",
         kindSnippet: "插入片段",
         soundOutputSubtitle: "切换声音输出",
@@ -2447,7 +2518,12 @@ extension CommandBarFeatureStrings {
         openingStyleTitle: "打开方式",
         openingStyleIsland: "Dynamic Island",
         openingStylePopup: "普通弹出窗口",
-        openingStyleCaption: "弹出窗口会在你正在做的任何内容上方以独立窗口打开，类似 Raycast。")
+        openingStyleCaption: "弹出窗口会在你正在做的任何内容上方以独立窗口打开，类似 Raycast。",
+        primaryOpenFormat: "打开 %@",
+        primaryCopyFormat: "复制 %@",
+        primaryRunCommand: "运行命令",
+        kindFile: "文件",
+        kindColor: "颜色")
 
     static let zhTW = CommandBarFeatureStrings(
         pageTitle: "指令列",
@@ -2462,7 +2538,7 @@ extension CommandBarFeatureStrings {
         argumentRangeFormat: "%d 到 %d",
         argumentHint: "Return 套用 · Esc 返回",
         confirmHint: "Return 確認 · Esc 取消",
-        kindApp: "App",
+        kindApp: "應用程式",
         kindClipboard: "從歷史記錄貼上",
         kindSnippet: "插入片段",
         soundOutputSubtitle: "切換聲音輸出",
@@ -2619,7 +2695,12 @@ extension CommandBarFeatureStrings {
         openingStyleTitle: "開啟方式",
         openingStyleIsland: "Dynamic Island",
         openingStylePopup: "一般彈出視窗",
-        openingStyleCaption: "彈出視窗會在您正在操作的內容上方以獨立視窗開啟，類似 Raycast。")
+        openingStyleCaption: "彈出視窗會在您正在操作的內容上方以獨立視窗開啟，類似 Raycast。",
+        primaryOpenFormat: "打開 %@",
+        primaryCopyFormat: "拷貝 %@",
+        primaryRunCommand: "執行指令",
+        kindFile: "檔案",
+        kindColor: "顏色")
 
     static let zhHK = CommandBarFeatureStrings(
         pageTitle: "指令列",
@@ -2634,7 +2715,7 @@ extension CommandBarFeatureStrings {
         argumentRangeFormat: "%d 到 %d",
         argumentHint: "Return 套用 · Esc 返回",
         confirmHint: "Return 確認 · Esc 取消",
-        kindApp: "App",
+        kindApp: "應用程式",
         kindClipboard: "從歷史記錄貼上",
         kindSnippet: "插入片段",
         soundOutputSubtitle: "切換聲音輸出",
@@ -2791,5 +2872,10 @@ extension CommandBarFeatureStrings {
         openingStyleTitle: "開啟方式",
         openingStyleIsland: "Dynamic Island",
         openingStylePopup: "一般彈出視窗",
-        openingStyleCaption: "彈出視窗會在您正在操作的內容上方以獨立視窗開啟，類似 Raycast。")
+        openingStyleCaption: "彈出視窗會在您正在操作的內容上方以獨立視窗開啟，類似 Raycast。",
+        primaryOpenFormat: "打開 %@",
+        primaryCopyFormat: "拷貝 %@",
+        primaryRunCommand: "執行指令",
+        kindFile: "檔案",
+        kindColor: "顏色")
 }

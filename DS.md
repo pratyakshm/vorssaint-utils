@@ -15,6 +15,35 @@ Append one timestamped entry per migration slice below.
 
 ## Log
 
+### 2026-10-27 — command bar rebuilt to Tinycast palette metrics
+
+Done (`./build.sh` release bundle OK; `./build.sh --test-suite=command-bar`
+— 808 checks pass; `./build.sh --test` — 113,452 checks pass):
+
+- `UI/CommandBar/CommandBarView.swift` — minimal look now follows
+  Tinycast's palette: 36pt header under 10pt slack with a 22pt icon slot
+  and 20pt search field, list padding 8/4/8 with no row spacing, 11pt
+  medium section headers, 26pt icons with the running dot below, 13pt
+  row titles, 12pt trailing labels and answers, 8pt/6pt row padding with
+  a 10pt continuous radius, white 10% / black 9% selection and white 5%
+  / black 4.5% hover; floating 52pt footer with a frosted 36pt menu
+  circle (two capsule lines) and a frosted trailing capsule holding the
+  localized primary action pill and the Actions chord. The primary pill
+  names what Return does (Open Application/Settings/Folder/File, Copy
+  Answer/Color, Run Command, Paste) and hides with the capsule when the
+  row has nothing to offer; the footer keeps its height so the window
+  does not jump. Legacy, island and compact presentations keep their
+  previous shapes and keyboard behavior.
+- `Core/CommandBarStrings.swift` — `primaryOpenFormat`,
+  `primaryCopyFormat`, `primaryRunCommand`, `kindFile` and `kindColor` in
+  all 15 tables; English placeholder is now "Search for apps and
+  commands…" and English `kindApp` reads "Application".
+- `UI/Theme.swift` — `DS.Font.resultRowTitle`, `resultRowTrailing`,
+  `resultRowValue` and `resultRowGlyph`.
+
+Command Bar files stay under Command Bar Done; no Remaining entries
+moved.
+
 ### 2026-10-27 — clipboard quick panel review fixes
 
 Done (`./build.sh` release bundle OK; `./build.sh --test-suite=clipboard` —

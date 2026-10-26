@@ -63,6 +63,9 @@ struct CommandBarView: View {
     /// What the floating actions menu is filtered to. Local, never the
     /// search: typing there must not disturb the list behind the menu.
     @State private var actionFilter = ""
+    /// The row under the pointer, for the minimal look's fainter wash. Kept
+    /// beside the service's selection, because selection always wins.
+    @State private var hoveredRowID: String?
 
     /// The mark, made a handle. Dragging rides on AppKit's own window
     /// dragging — the same machinery a title bar uses — rather than a
@@ -233,7 +236,9 @@ struct CommandBarView: View {
             if case .actions(let entryID) = service.mode, shownAs == .window {
                 actionsPanel(entryID: entryID)
                     .padding(.trailing, 12)
-                    .padding(.top, 64)
+                    .padding(.top, minimalLook
+                             ? DS.Size.headerPadding + DS.Size.headerHeight + DS.Space.small
+                             : 64)
                     .padding(.bottom, 12)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
             }
@@ -279,7 +284,7 @@ struct CommandBarView: View {
     // MARK: - Field
 
     private var searchBar: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: DS.Space.medium) {
             // A magnifier leads the field, the way launchers do: the mark
             // stays on the quick panel and the radial menu, not here.
             // Both axes are pinned: the panel re-fits on every keystroke and
@@ -288,9 +293,9 @@ struct CommandBarView: View {
             // wherever the hand wants it; a double-click brings it home.
             if shownAs == .window {
                 Image(systemName: "magnifyingglass")
-                    .font(.system(size: 18, weight: .medium))
+                    .font(DS.Font.headerIcon)
                     .foregroundStyle(.secondary)
-                    .frame(width: 22, height: 22)
+                    .frame(width: DS.Size.headerIconSlot, height: DS.Size.headerIconSlot)
                     .allowsHitTesting(false)
                     .overlay(
                         DragHandle()
@@ -300,7 +305,7 @@ struct CommandBarView: View {
                 // Out of the island, the companion is the bar's face, and the
                 // bar stays where the island put it.
                 CommandBarMascot(service: service)
-                    .frame(width: 22, height: 22)
+                    .frame(width: DS.Size.headerIconSlot, height: DS.Size.headerIconSlot)
             }
             if case .naming(let entryID) = service.mode,
                let entry = service.entry(withID: entryID) {
@@ -323,7 +328,8 @@ struct CommandBarView: View {
             }
             TextField(fieldPlaceholder, text: $service.query)
                 .textFieldStyle(.plain)
-                .font(.system(size: shownAs == .window ? 20 : 16))
+                .font(shownAs == .window ? DS.Font.searchField
+                      : .system(size: 16))
                 .focused($searchFocused)
                 .disableAutocorrection(true)
                 .accessibilityLabel(text.pageTitle)
@@ -339,13 +345,17 @@ struct CommandBarView: View {
                 .buttonStyle(.plain)
             }
         }
-        // The window header stands 44 points tall under 10 of top slack,
-        // the room the field needs to breathe; the island copies stay
-        // compact at the height their geometry is built around.
-        .frame(minHeight: shownAs == .window ? 44 : 0)
-        .padding(.horizontal, 16)
-        .padding(.top, 10)
-        .padding(.bottom, minimalLook && shownAs == .window ? 6 : 10)
+        // The window header stands 36 points tall under 10 of top slack, the
+        // room the field needs to breathe; the island copies stay compact at
+        // the height their geometry is built around.
+        .frame(minHeight: shownAs == .window
+               ? (minimalLook ? DS.Size.headerHeight : 44)
+               : 0)
+        .padding(.horizontal, DS.Space.large)
+        .padding(.top, DS.Size.headerPadding)
+        .padding(.bottom, shownAs == .window && minimalLook
+                 ? 0
+                 : (minimalLook ? DS.Space.xSmall : DS.Space.small + DS.Space.micro))
     }
 
     /// The collapsed bar has no footer, so the keys that still work (↓ to
@@ -474,13 +484,15 @@ struct CommandBarView: View {
     /// One outlined keycap for a row's chord, the way launchers draw theirs.
     private func keyCap(_ text: String) -> some View {
         Text(text)
-            .font(.caption)
+            .font(DS.Font.keyCap)
             .foregroundStyle(.secondary)
-            .padding(.horizontal, 4)
-            .frame(minWidth: 18, minHeight: 18)
+            // "↵" seats high in the system face; nudge the glyph only.
+            .offset(y: text == "↵" ? 1 : 0)
+            .padding(.horizontal, DS.Space.xxSmall)
+            .frame(minWidth: DS.Size.keyCap, minHeight: DS.Size.keyCap)
             .background(
-                RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .strokeBorder(Color.primary.opacity(0.20), lineWidth: 1)
+                RoundedRectangle(cornerRadius: DS.Radius.keyCap, style: .continuous)
+                    .strokeBorder(PanelSurface.border(for: colorScheme), lineWidth: 1)
             )
     }
 
@@ -633,9 +645,9 @@ struct CommandBarView: View {
                                 .id(entry.id)
                         }
                     }
-                    .padding(.horizontal, 8)
-                    .padding(.top, minimalLook ? 4 : 8)
-                    .padding(.bottom, 8)
+                    .padding(.horizontal, DS.Space.small)
+                    .padding(.top, minimalLook ? DS.Space.xxSmall : DS.Space.small)
+                    .padding(.bottom, DS.Space.small)
                 }
                 // A short list makes the panel exactly as tall as it needs to
                 // be. A long one is pinned to its ceiling instead: asking the
@@ -686,22 +698,24 @@ struct CommandBarView: View {
     /// later ones get the spacing above, reading as the section's own.
     private func sectionHeader(_ title: String, isFirst: Bool = false) -> some View {
         Text(title)
-            .font(.subheadline.weight(.medium))
+            .font(DS.Font.sectionHeader)
             .foregroundStyle(.secondary)
+            .lineLimit(1)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 8)
-            .padding(.top, isFirst ? 4 : 12)
-            .padding(.bottom, 4)
+            .padding(.horizontal, DS.Space.small)
+            .padding(.top, isFirst ? DS.Space.xxSmall : DS.Space.medium)
+            .padding(.bottom, DS.Space.xxSmall)
     }
 
     private func row(_ entry: CommandBarEntry, index: Int) -> some View {
         let isSelected = index == service.selectedIndex
+        let isHovered = hoveredRowID == entry.id
         return Button {
             // By identity, not by position: a background load can rebuild the
             // list between the click and this call.
             service.run(entry, fromClick: true)
         } label: {
-            HStack(spacing: 10) {
+            HStack(spacing: DS.Space.rowIconGap) {
                 iconView(entry)
                 if minimalLook {
                     // One line: the name, its bound keys, then what it is on
@@ -710,28 +724,28 @@ struct CommandBarView: View {
                     // side instead of a kind label.
                     titleView(entry)
                     if let caps = rowKeyCaps(entry) {
-                        HStack(spacing: 2) {
+                        HStack(spacing: DS.Space.micro) {
                             ForEach(caps, id: \.self) { cap in
                                 keyCap(cap)
                             }
                         }
                     }
-                    Spacer(minLength: 12)
+                    Spacer(minLength: DS.Space.medium)
                     if entry.trouble != nil {
                         subtitleView(entry)
                     } else if let value = entry.answerValue {
                         Text(value)
-                            .font(.system(size: 12, weight: .semibold, design: .rounded))
+                            .font(DS.Font.resultRowValue)
                             .foregroundStyle(Color.accentColor)
                             .monospacedDigit()
                     } else if service.commandIsHeld, index < 9 {
-                        HStack(spacing: 2) {
+                        HStack(spacing: DS.Space.micro) {
                             keyCap("⌘")
                             keyCap("\(index + 1)")
                         }
                     } else if !entry.subtitle.isEmpty {
                         Text(entry.subtitle)
-                            .font(.callout)
+                            .font(DS.Font.resultRowTrailing)
                             .foregroundStyle(.secondary)
                             .lineLimit(1)
                     }
@@ -778,16 +792,25 @@ struct CommandBarView: View {
                         .opacity(isSelected ? 1 : 0)
                 }
             }
-            .padding(.horizontal, minimalLook ? 8 : 9)
-            .padding(.vertical, entry.isAnswer ? 9 : (minimalLook ? 8 : 7))
-            .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .padding(.horizontal, minimalLook ? DS.Space.small : 9)
+            .padding(.vertical, minimalLook
+                     ? DS.Space.xSmall
+                     : (entry.isAnswer ? 9 : 7))
+            .contentShape(RoundedRectangle(cornerRadius: DS.Radius.row, style: .continuous))
             .background(
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .fill(rowFill(isSelected: isSelected))
+                RoundedRectangle(cornerRadius: DS.Radius.row, style: .continuous)
+                    .fill(rowFill(isSelected: isSelected, isHovered: isHovered))
             )
         }
         .buttonStyle(.plain)
         .onHover { hovering in
+            if minimalLook {
+                if hovering {
+                    hoveredRowID = entry.id
+                } else if hoveredRowID == entry.id {
+                    hoveredRowID = nil
+                }
+            }
             if hovering, !isActionsOpen { service.selectFromHover(index) }
         }
         .accessibilityElement(children: .ignore)
@@ -807,10 +830,16 @@ struct CommandBarView: View {
     }
 
     /// The selection is a neutral wash, the same in every list, never the
-    /// accent: a blue row reads as a button about to be pressed.
-    private func rowFill(isSelected: Bool) -> Color {
-        guard isSelected else { return .clear }
-        return minimalLook ? Color.primary.opacity(0.10) : Color.accentColor.opacity(0.14)
+    /// accent: a blue row reads as a button about to be pressed. The minimal
+    /// look also draws the pointer's fainter layer, and selection wins when a
+    /// row is both.
+    private func rowFill(isSelected: Bool, isHovered: Bool) -> Color {
+        if minimalLook {
+            if isSelected { return PanelSurface.selectionFill(for: colorScheme) }
+            if isHovered { return PanelSurface.rowHoverFill(for: colorScheme) }
+            return .clear
+        }
+        return isSelected ? Color.accentColor.opacity(0.14) : .clear
     }
 
     /// Everything the eye gets from a row, said in words: the name, where it
@@ -834,7 +863,18 @@ struct CommandBarView: View {
     /// The calculator's result gets the loud treatment.
     @ViewBuilder
     private func titleView(_ entry: CommandBarEntry) -> some View {
-        if entry.isAnswer {
+        if minimalLook {
+            // One row, one size: an answer is still a row in this look, so it
+            // keeps the list's rhythm and only its digits stay tabular.
+            Text(entry.title)
+                .font(entry.isAnswer && !entry.isColor
+                      ? DS.Font.resultRowTitle.monospacedDigit()
+                      : DS.Font.resultRowTitle)
+                .foregroundStyle(.primary)
+                .lineLimit(1)
+                .truncationMode(entry.isAnswer ? .middle : .tail)
+                .help(entry.title)
+        } else if entry.isAnswer {
             let font = Font.system(size: 17, weight: .semibold, design: .rounded)
             Text(entry.title)
                 // Tabular digits keep a sum steady while typing; in a color
@@ -843,13 +883,6 @@ struct CommandBarView: View {
                 .foregroundStyle(.primary)
                 .lineLimit(1)
                 .truncationMode(.middle)
-        } else if minimalLook {
-            Text(entry.title)
-                .font(.body)
-                .foregroundStyle(.primary)
-                .lineLimit(1)
-                .truncationMode(.tail)
-                .help(entry.title)
         } else {
             let offsets = service.highlightOffsets(for: entry)
             if offsets.isEmpty {
@@ -888,12 +921,12 @@ struct CommandBarView: View {
         switch entry.trouble {
         case .needsSetup(let featureTitle, _):
             Text(String(format: text.needsSetupFormat, featureTitle))
-                .font(.system(size: 10.5))
+                .font(minimalLook ? DS.Font.resultRowTrailing : DS.Font.panelFloor)
                 .foregroundStyle(.orange)
                 .lineLimit(1)
         case .needsPermission:
             Text(text.needsPermissionHint)
-                .font(.system(size: 10.5))
+                .font(minimalLook ? DS.Font.resultRowTrailing : DS.Font.panelFloor)
                 .foregroundStyle(.orange)
                 .lineLimit(1)
         case nil:
@@ -902,7 +935,7 @@ struct CommandBarView: View {
             // of names instead of a wall of repetition.
             if !entry.subtitle.isEmpty {
                 Text(entry.subtitle)
-                    .font(.system(size: 10.5))
+                    .font(DS.Font.panelFloor)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
                     .truncationMode(.middle)
@@ -910,32 +943,37 @@ struct CommandBarView: View {
         }
     }
 
+    @ViewBuilder
     private func iconView(_ entry: CommandBarEntry) -> some View {
         // The minimal look draws icons bare at one size, with no plate and
-        // no badge: a dot under a running app says it runs.
-        let side: CGFloat = minimalLook ? 26 : 30
-        return ZStack(alignment: .topTrailing) {
-            if minimalLook {
-                iconContent(entry, side: side)
-                    .frame(width: side, height: side)
-            } else if entry.usesPlateIcon {
-                // An app or file icon already has its own shape and padding, so a
-                // plate behind it reads as a second frame; only glyphs get one.
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(entry.isActive ? Color.accentColor.opacity(0.16) : Color.primary.opacity(0.06))
-                    .frame(width: 30, height: 30)
-                    .overlay(iconContent(entry, side: 30))
-            } else {
-                iconContent(entry, side: 30)
-                    .frame(width: 30, height: 30)
-            }
-            if entry.isActive {
-                if minimalLook {
-                    Circle()
-                        .fill(.secondary)
-                        .frame(width: 3, height: 3)
-                        .offset(y: 3)
+        // no badge: a dot under a running app says it runs, the way Tinycast
+        // hangs its own dot below the icon rather than on its corner.
+        if minimalLook {
+            let side = DS.Size.resultRowIcon
+            iconContent(entry, side: side)
+                .frame(width: side, height: side)
+                .overlay(alignment: .bottom) {
+                    if entry.isActive {
+                        Circle()
+                            .fill(.secondary)
+                            .frame(width: 3, height: 3)
+                            .offset(y: 3)
+                    }
+                }
+        } else {
+            ZStack(alignment: .topTrailing) {
+                if entry.usesPlateIcon {
+                    // An app or file icon already has its own shape and padding, so a
+                    // plate behind it reads as a second frame; only glyphs get one.
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .fill(entry.isActive ? Color.accentColor.opacity(0.16) : Color.primary.opacity(0.06))
+                        .frame(width: 30, height: 30)
+                        .overlay(iconContent(entry, side: 30))
                 } else {
+                    iconContent(entry, side: 30)
+                        .frame(width: 30, height: 30)
+                }
+                if entry.isActive {
                     Circle()
                         .fill(.green)
                         .frame(width: 7, height: 7)
@@ -952,8 +990,9 @@ struct CommandBarView: View {
         switch entry.icon {
         case .symbol(let name):
             Image(systemName: name)
-                .font(.system(size: minimalLook ? 14 : 13.5,
-                              weight: minimalLook ? .medium : .semibold))
+                .font(minimalLook
+                      ? DS.Font.resultRowGlyph
+                      : .system(size: 13.5, weight: .semibold))
                 .foregroundStyle(entry.isActive && !minimalLook
                                  ? Color.accentColor : Color.primary.opacity(0.85))
         case .appIcon(let path):
@@ -1381,44 +1420,123 @@ struct CommandBarView: View {
 
     // MARK: - Footer
 
-    /// Floating controls instead of a hint line: the menu circle on the
-    /// left, the action pills on the right. No bar, just controls.
+    /// Floating controls instead of a hint line, copied from Tinycast's own
+    /// palette: the menu circle on the left, one frosted capsule on the
+    /// right holding the row's primary action and the actions chord.
     private var bottomBar: some View {
         HStack(spacing: 0) {
-            Button {
+            CommandBarMenuCircleButton(title: text.actionOpenSettings) {
                 CommandBarService.shared.hide()
                 SettingsRouter.shared.page = .commandBar
                 appDelegate()?.openSettingsWindow()
-            } label: {
-                BrandMark(width: 14, tint: markTint)
-                    .frame(width: 28, height: 28)
-                    .background(Circle().fill(Color.primary.opacity(0.08)))
             }
-            .buttonStyle(.plain)
-            .help(text.actionOpenSettings)
             Spacer(minLength: 0)
-            // The pills advertise exactly what the keys do: ⌘K toggles this
-            // row's menu, so the pill stays up while the menu is open.
-            if service.canOpenActions || isActionsOpen {
-                Button {
-                    if isActionsOpen { service.stepBack() } else { service.openActions() }
-                } label: {
-                    HStack(spacing: 6) {
-                        Text(text.actionsHint)
-                            .font(.callout.weight(.medium))
-                            .foregroundStyle(.secondary)
-                        keyCap("⌘")
-                        keyCap("K")
-                    }
-                    .padding(8)
-                    .background(Capsule().fill(Color.primary.opacity(0.08)))
-                }
-                .buttonStyle(.plain)
+            if primaryActionTitle != nil || showsActions {
+                minimalActionGroup
             }
         }
-        .padding(.horizontal, 8)
-        .frame(height: 52)
+        .padding(.horizontal, DS.Space.small)
+        .frame(height: DS.Size.bottomBarHeight)
         .frame(maxWidth: .infinity)
+    }
+
+    /// The pills advertise exactly what the keys do. The capsule is pinned to
+    /// the trailing edge, so a label changing length never moves the circle,
+    /// and it disappears whole when there is nothing to offer.
+    private var minimalActionGroup: some View {
+        HStack(spacing: DS.Space.micro) {
+            if let title = primaryActionTitle {
+                CommandBarBarButton {
+                    service.runSelected()
+                } label: {
+                    HStack(spacing: DS.Space.xSmall) {
+                        Text(title)
+                            .font(DS.Font.bar)
+                            .foregroundStyle(.primary)
+                            .lineLimit(1)
+                        keyCap("↵")
+                    }
+                }
+                .help(title)
+            }
+            if showsActions {
+                CommandBarBarButton {
+                    if isActionsOpen { service.stepBack() } else { service.openActions() }
+                } label: {
+                    HStack(spacing: DS.Space.xSmall) {
+                        Text(text.actionsHint)
+                            .font(DS.Font.bar)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                        HStack(spacing: DS.Space.micro) {
+                            keyCap("⌘")
+                            keyCap("K")
+                        }
+                    }
+                }
+                .help(text.actionsHint)
+            }
+        }
+        .padding(DS.Space.xxSmall)
+        .background(Capsule().fill(.ultraThinMaterial))
+        .overlay(
+            Capsule().strokeBorder(PanelSurface.border(for: colorScheme), lineWidth: 0.7)
+        )
+    }
+
+    private var showsActions: Bool { service.canOpenActions || isActionsOpen }
+
+    /// The primary pill says what Return does to the selected row. The row
+    /// kinds map to Tinycast's own verbs; anything already a command runs.
+    private var primaryActionTitle: String? {
+        guard case .search = service.mode, let entry = service.selectedEntry else { return nil }
+        if let trouble = entry.trouble, case .needsSetup = trouble {
+            return text.actionOpenSettings
+        }
+        if entry.isAnswer {
+            return String(format: text.primaryCopyFormat,
+                          entry.isColor ? text.kindColor : text.kindAnswer)
+        }
+        if entry.id.hasPrefix("app.") {
+            return String(format: text.primaryOpenFormat, text.kindApp)
+        }
+        if entry.id.hasPrefix("folder.") {
+            return String(format: text.primaryOpenFormat, text.kindFolder)
+        }
+        if entry.id.hasPrefix("file.") {
+            return String(format: text.primaryOpenFormat,
+                          isFolder(entry) ? text.kindFolder : text.kindFile)
+        }
+        if entry.id.hasPrefix("macsettings.")
+            || entry.id.hasPrefix("settings.")
+            || entry.id == "action.openSettings" {
+            return text.actionOpenSettings
+        }
+        if entry.id.hasPrefix("clipboard.") { return l10n.s.menuPaste }
+        if entry.id.hasPrefix("snippet.") { return text.kindSnippet }
+        if entry.id.hasPrefix("emoji.") {
+            return String(format: text.primaryCopyFormat, text.kindEmoji)
+        }
+        if entry.id.hasPrefix("uninstall.") {
+            return String(format: text.uninstallAppFormat, entry.title)
+        }
+        if entry.id == "action.openURL" { return text.openInBrowser }
+        if entry.id.hasPrefix("selection.copy") { return text.selectionCopy }
+        if entry.id.hasPrefix("selection.upper") { return text.selectionUpper }
+        if entry.id.hasPrefix("selection.lower") { return text.selectionLower }
+        if entry.id.hasPrefix("selection.titleCase") { return text.selectionTitleCase }
+        if entry.id.hasPrefix("selection.shelf") { return text.selectionShelf }
+        if entry.id.hasPrefix("selection.search") { return text.selectionSearch }
+        return text.primaryRunCommand
+    }
+
+    /// Whether a row's own path is a folder. Asked for the selected row only,
+    /// because a file row's "Open Folder" depends on what is on disk.
+    private func isFolder(_ entry: CommandBarEntry) -> Bool {
+        guard let path = entry.revealPath else { return false }
+        var directory: ObjCBool = false
+        return FileManager.default.fileExists(atPath: path, isDirectory: &directory)
+            && directory.boolValue
     }
 
     private var footer: some View {
@@ -1460,6 +1578,65 @@ struct CommandBarView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
+    }
+}
+
+/// The footer's menu circle: two horizontal capsule lines, the glyph Tinycast
+/// uses for the same control. Hover lives here so a sweep never re-renders
+/// the list around it.
+private struct CommandBarMenuCircleButton: View {
+    let title: String
+    let action: () -> Void
+    @Environment(\.colorScheme) private var colorScheme
+    @State private var hovered = false
+
+    var body: some View {
+        Button(action: action) {
+            VStack(alignment: .leading, spacing: 3) {
+                Capsule().frame(width: 14, height: 1.5)
+                Capsule().frame(width: 8, height: 1.5)
+            }
+            .foregroundStyle(.secondary)
+            .frame(width: DS.Size.menuButton, height: DS.Size.menuButton)
+            .background(
+                Circle().fill(hovered
+                              ? PanelSurface.rowHoverFill(for: colorScheme) : Color.clear)
+            )
+            .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .background(Circle().fill(.ultraThinMaterial))
+        .overlay(
+            Circle().strokeBorder(PanelSurface.border(for: colorScheme), lineWidth: 0.7)
+        )
+        .onHover { hovered = $0 }
+        .help(title)
+        .accessibilityLabel(Text(title))
+    }
+}
+
+/// A footer pill: bare until hover, then the fainter row wash. Its height and
+/// horizontal padding are the same for both pills, so the capsule reads as
+/// one control family.
+private struct CommandBarBarButton<Label: View>: View {
+    let action: () -> Void
+    @ViewBuilder let label: Label
+    @Environment(\.colorScheme) private var colorScheme
+    @State private var hovered = false
+
+    var body: some View {
+        Button(action: action) {
+            label
+                .padding(.horizontal, DS.Space.small)
+                .frame(height: DS.Size.barButtonHeight)
+                .contentShape(Capsule())
+                .background(
+                    Capsule().fill(hovered
+                                   ? PanelSurface.rowHoverFill(for: colorScheme) : Color.clear)
+                )
+        }
+        .buttonStyle(.plain)
+        .onHover { hovered = $0 }
     }
 }
 

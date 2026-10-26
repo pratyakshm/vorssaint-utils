@@ -12,6 +12,15 @@ enum DS {
         static let cardTitle = SwiftUI.Font.system(size: 15, weight: .semibold)
         /// Row titles in settings and panels (was implicit body, ~13).
         static let rowTitle = SwiftUI.Font.system(size: 14, weight: .regular)
+        /// A palette result row's title: Tinycast's 13pt body, one step
+        /// quieter than a settings row so a long list stays dense.
+        static let resultRowTitle = SwiftUI.Font.system(size: 13, weight: .regular)
+        /// A palette row's trailing kind label or secondary caption.
+        static let resultRowTrailing = SwiftUI.Font.system(size: 12, weight: .regular)
+        /// A palette row's accent value, such as a sum's result.
+        static let resultRowValue = SwiftUI.Font.system(size: 12, weight: .semibold, design: .rounded)
+        /// A symbol drawn in a palette row's icon slot.
+        static let resultRowGlyph = SwiftUI.Font.system(size: 14, weight: .medium)
         /// Standard body text, and the point size for `SearchHighlightText`.
         static let bodySize: CGFloat = 13.5
         static let body = SwiftUI.Font.system(size: bodySize, weight: .regular)
