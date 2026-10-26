@@ -155,8 +155,8 @@ enum CommandBarFeatureTests {
             suite.expect(title("app.mail") == "Open Application", "an app row opens the app")
             suite.expect(title("folder.home") == "Open Folder", "a folder row opens the folder")
             suite.expect(title("file.report.txt") == "Open File", "a file row opens the file")
-            suite.expect(title("file.projects", folder: true) == "Open Folder",
-                         "a file row that metadata marks as a folder opens the folder")
+            suite.expect(title("file./Users/me/Projects", folder: true) == "Open Folder",
+                         "a folder returned by file search maps to Open Folder")
 
             suite.expect(title("emoji.browse", title: "Emoji") == "Open Emoji",
                          "the emoji browser row opens the browser")

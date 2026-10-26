@@ -922,6 +922,7 @@ enum CommandBarCatalog {
                 icon: .filePath(path),
                 countsUsage: false,
                 revealPath: path,
+                revealIsFolder: Self.isDirectory(path),
                 run: { _ in
                     guard FileManager.default.fileExists(atPath: path) else {
                         QuickToolHUD.show(icon: "doc.questionmark", message: url.lastPathComponent)
