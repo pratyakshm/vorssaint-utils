@@ -128,7 +128,116 @@ enum CommandBarFeatureTests {
         typealias DispatchQueue = Queue
     }
 
+    /// The footer pill names what Return does, including the rows whose id
+    /// prefix alone used to lie: emoji rows type, uninstall navigation opens,
+    /// saved scripts run, and the footer never asks the disk what a file is.
+    enum PrimaryActionLabels {
+        static func run(_ suite: TestSuite) {
+            let en = FeatureStrings.commandBar(.enUS)
+            func title(_ id: String,
+                       title: String = "Row",
+                       answer: Bool = false,
+                       color: Bool = false,
+                       setup: Bool = false,
+                       uninstall: URL? = nil,
+                       hasRevealPath: Bool = true,
+                       folder: Bool = false,
+                       link: CommandBarPrimaryActionRow.LinkKind? = nil) -> String? {
+                CommandBarPrimaryAction.title(
+                    for: CommandBarPrimaryActionRow(
+                        id: id, title: title, isAnswer: answer, isColor: color,
+                        needsSetup: setup, uninstallAppURL: uninstall,
+                        hasRevealPath: hasRevealPath,
+                        revealIsFolder: folder, linkKind: link),
+                    text: en)
+            }
+
+            suite.expect(title("app.mail") == "Open Application", "an app row opens the app")
+            suite.expect(title("folder.home") == "Open Folder", "a folder row opens the folder")
+            suite.expect(title("file.report.txt") == "Open File", "a file row opens the file")
+            suite.expect(title("file.projects", folder: true) == "Open Folder",
+                         "a file row that metadata marks as a folder opens the folder")
+
+            suite.expect(title("emoji.browse", title: "Emoji") == "Open Emoji",
+                         "the emoji browser row opens the browser")
+            suite.expect(title("emoji.fire", title: "🔥") == "Insert Emoji",
+                         "an emoji row inserts at the caret instead of copying")
+
+            suite.expect(title("uninstall.browse", title: "Uninstall Application")
+                         == "Uninstall Application",
+                         "the uninstall browse row keeps its own title")
+            suite.expect(title("uninstall.finder", title: "Uninstall app selected in Finder")
+                         == "Uninstall app selected in Finder",
+                         "the uninstall Finder row keeps its own title")
+            let app = URL(fileURLWithPath: "/Applications/Mail.app")
+            suite.expect(title("uninstall.mail", title: "Mail", uninstall: app)
+                         == "Uninstall Mail…",
+                         "a real uninstall row names the app it will remove")
+            suite.expect(title("selection.uninstall", title: "Uninstall Mail…", uninstall: app)
+                         == "Uninstall Mail…",
+                         "a Finder selection review keeps the title it already shows")
+
+            suite.expect(title("link.deploy", link: .script) == "Run Script",
+                         "a saved script runs")
+            suite.expect(title("link.docs", link: .link) == "Open Link",
+                         "a saved site opens")
+            suite.expect(title("link.projects", folder: true, link: .place) == "Open Folder",
+                         "a saved place that is a folder opens the folder")
+            suite.expect(title("link.notes", link: .place) == "Open File",
+                         "a saved place that is not a folder opens the file")
+            suite.expect(title("link.dynamic", hasRevealPath: false, link: .place) == "Run Command",
+                         "a saved place with an unfinished path falls back to running it")
+
+            suite.expect(title("window.inbox", title: "Inbox") == "Switch to Window",
+                         "an open-window row switches to the window")
+            suite.expect(title("quit.mail", title: "Quit Mail") == "Quit Mail",
+                         "a quit row keeps its already-localized title")
+            suite.expect(title("kill.42", title: "Mail") == "Kill Process",
+                         "a process row kills the process")
+            suite.expect(title("menu.send", title: "Send") == "Run Menu Command",
+                         "a menu row runs the menu command")
+
+            suite.expect(title("clipboard.item") == L10n.shared.s.menuPaste,
+                         "a clipboard row pastes")
+            suite.expect(title("snippet.one") == "Insert snippet",
+                         "a snippet row inserts the snippet")
+            suite.expect(title("settings.feature.shelf") == "Open Settings",
+                         "a settings row opens Settings")
+            suite.expect(title("macsettings.appearance") == "Open Settings",
+                         "a System Settings pane opens Settings")
+            suite.expect(title("action.cleaner") == "Open Settings",
+                         "an action that opens Settings says so")
+
+            suite.expect(title("math.result", answer: true) == "Copy Answer",
+                         "an answer row copies the answer")
+            suite.expect(title("color.result", answer: true, color: true) == "Copy Color",
+                         "a color answer copies the color")
+            suite.expect(title("action.openURL", title: "example.com") == "Open in browser",
+                         "a typed address opens in the browser")
+            suite.expect(title("action.screenshot") == "Run Command",
+                         "an ordinary command keeps the generic run label")
+
+            for language in AppLanguage.allCases {
+                let bar = FeatureStrings.commandBar(language)
+                let phrases = [
+                    bar.primaryOpenApp, bar.primaryOpenFolder, bar.primaryOpenFile,
+                    bar.primaryCopyAnswer, bar.primaryCopyColor, bar.primaryInsertEmoji,
+                    bar.primaryOpenEmoji, bar.primaryRunScript, bar.primaryOpenLink,
+                    bar.primarySwitchWindow, bar.primaryKillProcess,
+                    bar.primaryRunMenuCommand, bar.primaryRunCommand,
+                ]
+                suite.expect(phrases.allSatisfy { !$0.isEmpty && !$0.contains("%@") },
+                             "\(language.rawValue) has a full phrase for every primary action")
+            }
+            suite.expect(FeatureStrings.commandBar(.tr).primaryOpenApp == "Uygulamayı aç"
+                         && FeatureStrings.commandBar(.sk).primaryOpenApp == "Otvoriť aplikáciu"
+                         && FeatureStrings.commandBar(.uk).primaryOpenApp == "Відкрити програму",
+                         "the languages that inflect the noun use the accusative full phrase")
+        }
+    }
+
     static func run(_ suite: TestSuite) {
+        PrimaryActionLabels.run(suite)
         CommandBarInputSourceContract.run(suite)
         CommandBarTerminationContract.run(suite)
         CommandBarAppSortContract.run(suite)

@@ -50,6 +50,9 @@ enum DS {
         static let menuRow = SwiftUI.Font.system(size: 13, weight: .regular)
         /// A keycap legend, and a menu row's shortcut.
         static let keyCap = SwiftUI.Font.system(size: 11, weight: .regular)
+        /// A palette keycap legend: Tinycast's 10pt caption, below the 11pt
+        /// body floor because a keycap is a glyph, not prose.
+        static let paletteKeyCap = SwiftUI.Font.system(size: 10, weight: .regular)
         /// The header's back chevron.
         static let headerIcon = SwiftUI.Font.system(size: 18, weight: .medium)
         /// A menu button's leading glyph, and the header filter's.
@@ -210,6 +213,12 @@ enum PanelSurface {
         return scheme == .light
             ? Color.black.opacity(raised ? 0.24 : 0.09)
             : Color.white.opacity(raised ? 0.28 : 0.11)
+    }
+
+    /// An outlined keycap's edge: darker than a panel border so the cap reads
+    /// as a key, at Tinycast's fixed 0.20 dark / 0.18 light.
+    static func keyCapBorder(for scheme: ColorScheme) -> Color {
+        scheme == .light ? Color.black.opacity(0.18) : Color.white.opacity(0.20)
     }
 
     /// A control that sits ON a glass surface rather than in it: the system's

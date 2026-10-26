@@ -73,6 +73,9 @@ struct CommandBarEntry: Identifiable {
     /// rows the bar makes up have no such place, and saying so here is what
     /// keeps ⌘Return and the actions list from ever disagreeing about it.
     let revealPath: String?
+    /// Whether `revealPath` is a folder. Read when the catalog builds the
+    /// row, so the footer never asks the file system what a row is.
+    let revealIsFolder: Bool
     /// Selection must succeed before the bar replaces search with a review.
     let uninstallAppURL: URL?
     let run: (Int?) -> Void
@@ -103,6 +106,7 @@ struct CommandBarEntry: Identifiable {
                         isAnswer: isAnswer, countsUsage: countsUsage,
                         matchTitle: matchTitle, keepsBarOpen: keepsBarOpen,
                         takesArgument: takesArgument, revealPath: revealPath,
+                        revealIsFolder: revealIsFolder,
                         uninstallAppURL: uninstallAppURL, run: run)
     }
 
@@ -139,6 +143,7 @@ struct CommandBarEntry: Identifiable {
          keepsBarOpen: Bool = false,
          takesArgument: Bool = false,
          revealPath: String? = nil,
+         revealIsFolder: Bool = false,
          uninstallAppURL: URL? = nil,
          run: @escaping (Int?) -> Void) {
         self.id = id
@@ -161,6 +166,7 @@ struct CommandBarEntry: Identifiable {
         self.keepsBarOpen = keepsBarOpen
         self.takesArgument = takesArgument
         self.revealPath = revealPath
+        self.revealIsFolder = revealIsFolder
         self.uninstallAppURL = uninstallAppURL
         self.run = run
     }
@@ -832,6 +838,7 @@ enum CommandBarCatalog {
                 icon: .filePath(folder.url.path),
                 countsUsage: true,
                 revealPath: folder.url.path,
+                revealIsFolder: true,
                 run: { _ in NSWorkspace.shared.open(folder.url) }))
         }
 
@@ -1383,7 +1390,8 @@ enum CommandBarCatalog {
     static func linkEntries(_ links: [CommandBarLink],
                             bar: CommandBarFeatureStrings) -> [CommandBarEntry] {
         links.map { link in
-            CommandBarEntry(
+            let revealPath = CommandBarLinks.revealPath(for: link)
+            return CommandBarEntry(
                 id: "link.\(link.id.uuidString)",
                 title: link.name,
                 subtitle: link.kind == .script
@@ -1397,7 +1405,8 @@ enum CommandBarCatalog {
                 // Only a search or a script reads the words that follow its
                 // name; a plain site or folder opens the same either way.
                 takesArgument: link.takesArgument,
-                revealPath: CommandBarLinks.revealPath(for: link),
+                revealPath: revealPath,
+                revealIsFolder: revealPath.map(Self.isDirectory) ?? false,
                 run: { _ in
                     if link.kind == .script {
                         runScript(link)
@@ -1406,6 +1415,13 @@ enum CommandBarCatalog {
                     }
                 })
         }
+    }
+
+    /// Read once while the catalog builds, never from the footer's render.
+    private static func isDirectory(_ path: String) -> Bool {
+        var directory: ObjCBool = false
+        return FileManager.default.fileExists(atPath: path, isDirectory: &directory)
+            && directory.boolValue
     }
 
     private static func open(_ link: CommandBarLink) {

@@ -18,7 +18,9 @@ Append one timestamped entry per migration slice below.
 ### 2026-10-27 — command bar rebuilt to Tinycast palette metrics
 
 Done (`./build.sh` release bundle OK; `./build.sh --test-suite=command-bar`
-— 808 checks pass; `./build.sh --test` — 113,452 checks pass):
+— 852 checks pass; `./build.sh --test` — 113,466 checks, with one notch
+download timing check failing in that run and passing in
+`--test-suite=notch`):
 
 - `UI/CommandBar/CommandBarView.swift` — minimal look now follows
   Tinycast's palette: 36pt header under 10pt slack with a 22pt icon slot
@@ -26,20 +28,42 @@ Done (`./build.sh` release bundle OK; `./build.sh --test-suite=command-bar`
   medium section headers, 26pt icons with the running dot below, 13pt
   row titles, 12pt trailing labels and answers, 8pt/6pt row padding with
   a 10pt continuous radius, white 10% / black 9% selection and white 5%
-  / black 4.5% hover; floating 52pt footer with a frosted 36pt menu
-  circle (two capsule lines) and a frosted trailing capsule holding the
-  localized primary action pill and the Actions chord. The primary pill
-  names what Return does (Open Application/Settings/Folder/File, Copy
-  Answer/Color, Run Command, Paste) and hides with the capsule when the
-  row has nothing to offer; the footer keeps its height so the window
-  does not jump. Legacy, island and compact presentations keep their
-  previous shapes and keyboard behavior.
-- `Core/CommandBarStrings.swift` — `primaryOpenFormat`,
-  `primaryCopyFormat`, `primaryRunCommand`, `kindFile` and `kindColor` in
-  all 15 tables; English placeholder is now "Search for apps and
-  commands…" and English `kindApp` reads "Application".
+  / black 4.5% hover. The floating 52pt footer is a
+  `.safeAreaInset(edge: .bottom)` on the content, so rows scroll under
+  the frosted 36pt menu circle and the frosted action capsule instead of
+  stopping above them, and the panel keeps its height. Hover is now
+  `@State` inside each row, so a pointer move redraws one row and a
+  rebuilt list cannot keep a stale id. Keycap legends use the dedicated
+  10pt token and a 0.20 dark / 0.18 light outline. Legacy rows keep their
+  own shapes and keyboard behavior; their warning and hint text moved
+  from 10.5pt to the 11pt floor.
+- `Services/CommandBar/CommandBarPrimaryAction.swift` (new) — the
+  primary pill's mapping, stripped of the view and the disk. Emoji rows
+  say "Insert Emoji" and the browser says "Open Emoji"; only rows with
+  `uninstallAppURL` say "Uninstall …", while the browse and Finder rows
+  keep their own titles; saved scripts run, saved links open, places
+  open a file or folder from catalog metadata, and window, kill, quit,
+  menu, settings, clipboard and answer rows name their real action.
+  `revealIsFolder` is read once when the catalog builds the row, never
+  from the render path.
+- `Core/CommandBarStrings.swift` — full per-kind primary phrases in all
+  15 tables (`primaryOpenApp`, `primaryOpenFolder`, `primaryOpenFile`,
+  `primaryCopyAnswer`, `primaryCopyColor`, `primaryInsertEmoji`,
+  `primaryOpenEmoji`, `primaryRunScript`, `primaryOpenLink`,
+  `primarySwitchWindow`, `primaryKillProcess`,
+  `primaryRunMenuCommand`), replacing the verb formats so Turkish,
+  Slovak and Ukrainian keep the accusative. English placeholder is now
+  "Search for apps and commands…" and English `kindApp` reads
+  "Application".
 - `UI/Theme.swift` — `DS.Font.resultRowTitle`, `resultRowTrailing`,
-  `resultRowValue` and `resultRowGlyph`.
+  `resultRowValue`, `resultRowGlyph`, `paletteKeyCap`, and
+  `PanelSurface.keyCapBorder`.
+- `Tests/CommandBarFeatureTests.swift` — focused primary-label contract
+  for emoji, uninstall, links/scripts, files/folders, clipboard,
+  snippets, settings, windows, kill/quit, menus and answers, plus a
+  per-language check that every primary phrase is full and contains no
+  format placeholder.
+- `build.sh` — the new pure helper joins the test source list.
 
 Command Bar files stay under Command Bar Done; no Remaining entries
 moved.

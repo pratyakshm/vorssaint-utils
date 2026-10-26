@@ -63,9 +63,6 @@ struct CommandBarView: View {
     /// What the floating actions menu is filtered to. Local, never the
     /// search: typing there must not disturb the list behind the menu.
     @State private var actionFilter = ""
-    /// The row under the pointer, for the minimal look's fainter wash. Kept
-    /// beside the service's selection, because selection always wins.
-    @State private var hoveredRowID: String?
 
     /// The mark, made a handle. Dragging rides on AppKit's own window
     /// dragging — the same machinery a title bar uses — rather than a
@@ -156,6 +153,9 @@ struct CommandBarView: View {
     }
 
     var body: some View {
+        // One lookup per render, shared by both halves of the footer's
+        // decision, so a label change cannot be computed from two rows.
+        let primaryTitle = primaryActionTitle
         // Top-anchored: the menu floats over the list's corner while the
         // field stays exactly where it was, whatever the menu measures.
         ZStack(alignment: .topLeading) {
@@ -218,13 +218,16 @@ struct CommandBarView: View {
                 // A footer under a bare field reads as a second row of chrome on
                 // something meant to be one strip. The minimal look swaps the
                 // hint line for floating controls: a menu circle and pills.
-                if !service.isCompactHome {
-                    if minimalLook {
-                        bottomBar
-                    } else {
-                        Divider()
-                        footer
-                    }
+                // Those ride as a bottom inset on the scrolling content below,
+                // so rows pass under them instead of stopping above them.
+                if !minimalLook, !service.isCompactHome {
+                    Divider()
+                    footer
+                }
+            }
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                if minimalLook, !service.isCompactHome {
+                    bottomBar(primaryTitle: primaryTitle)
                 }
             }
             .frame(width: panelWidth)
@@ -484,7 +487,7 @@ struct CommandBarView: View {
     /// One outlined keycap for a row's chord, the way launchers draw theirs.
     private func keyCap(_ text: String) -> some View {
         Text(text)
-            .font(DS.Font.keyCap)
+            .font(DS.Font.paletteKeyCap)
             .foregroundStyle(.secondary)
             // "↵" seats high in the system face; nudge the glyph only.
             .offset(y: text == "↵" ? 1 : 0)
@@ -492,7 +495,7 @@ struct CommandBarView: View {
             .frame(minWidth: DS.Size.keyCap, minHeight: DS.Size.keyCap)
             .background(
                 RoundedRectangle(cornerRadius: DS.Radius.keyCap, style: .continuous)
-                    .strokeBorder(PanelSurface.border(for: colorScheme), lineWidth: 1)
+                    .strokeBorder(PanelSurface.keyCapBorder(for: colorScheme), lineWidth: 1)
             )
     }
 
@@ -708,8 +711,15 @@ struct CommandBarView: View {
     }
 
     private func row(_ entry: CommandBarEntry, index: Int) -> some View {
+        // Hover lives inside this row: moving the pointer redraws one row,
+        // and a rebuilt list starts with no stale id to match.
+        CommandBarHoverRow { isHovered in
+            rowButton(entry, index: index, isHovered: isHovered)
+        }
+    }
+
+    private func rowButton(_ entry: CommandBarEntry, index: Int, isHovered: Bool) -> some View {
         let isSelected = index == service.selectedIndex
-        let isHovered = hoveredRowID == entry.id
         return Button {
             // By identity, not by position: a background load can rebuild the
             // list between the click and this call.
@@ -804,13 +814,6 @@ struct CommandBarView: View {
         }
         .buttonStyle(.plain)
         .onHover { hovering in
-            if minimalLook {
-                if hovering {
-                    hoveredRowID = entry.id
-                } else if hoveredRowID == entry.id {
-                    hoveredRowID = nil
-                }
-            }
             if hovering, !isActionsOpen { service.selectFromHover(index) }
         }
         .accessibilityElement(children: .ignore)
@@ -1423,7 +1426,7 @@ struct CommandBarView: View {
     /// Floating controls instead of a hint line, copied from Tinycast's own
     /// palette: the menu circle on the left, one frosted capsule on the
     /// right holding the row's primary action and the actions chord.
-    private var bottomBar: some View {
+    private func bottomBar(primaryTitle: String?) -> some View {
         HStack(spacing: 0) {
             CommandBarMenuCircleButton(title: text.actionOpenSettings) {
                 CommandBarService.shared.hide()
@@ -1431,8 +1434,8 @@ struct CommandBarView: View {
                 appDelegate()?.openSettingsWindow()
             }
             Spacer(minLength: 0)
-            if primaryActionTitle != nil || showsActions {
-                minimalActionGroup
+            if primaryTitle != nil || showsActions {
+                minimalActionGroup(primaryTitle: primaryTitle)
             }
         }
         .padding(.horizontal, DS.Space.small)
@@ -1443,21 +1446,21 @@ struct CommandBarView: View {
     /// The pills advertise exactly what the keys do. The capsule is pinned to
     /// the trailing edge, so a label changing length never moves the circle,
     /// and it disappears whole when there is nothing to offer.
-    private var minimalActionGroup: some View {
+    private func minimalActionGroup(primaryTitle: String?) -> some View {
         HStack(spacing: DS.Space.micro) {
-            if let title = primaryActionTitle {
+            if let primaryTitle {
                 CommandBarBarButton {
                     service.runSelected()
                 } label: {
                     HStack(spacing: DS.Space.xSmall) {
-                        Text(title)
+                        Text(primaryTitle)
                             .font(DS.Font.bar)
                             .foregroundStyle(.primary)
                             .lineLimit(1)
                         keyCap("↵")
                     }
                 }
-                .help(title)
+                .help(primaryTitle)
             }
             if showsActions {
                 CommandBarBarButton {
@@ -1487,56 +1490,40 @@ struct CommandBarView: View {
     private var showsActions: Bool { service.canOpenActions || isActionsOpen }
 
     /// The primary pill says what Return does to the selected row. The row
-    /// kinds map to Tinycast's own verbs; anything already a command runs.
+    /// facts go to `CommandBarPrimaryAction`, which names the action without
+    /// touching the disk or the view.
     private var primaryActionTitle: String? {
         guard case .search = service.mode, let entry = service.selectedEntry else { return nil }
-        if let trouble = entry.trouble, case .needsSetup = trouble {
-            return text.actionOpenSettings
+        let needsSetup: Bool
+        if case .needsSetup = entry.trouble {
+            needsSetup = true
+        } else {
+            needsSetup = false
         }
-        if entry.isAnswer {
-            return String(format: text.primaryCopyFormat,
-                          entry.isColor ? text.kindColor : text.kindAnswer)
-        }
-        if entry.id.hasPrefix("app.") {
-            return String(format: text.primaryOpenFormat, text.kindApp)
-        }
-        if entry.id.hasPrefix("folder.") {
-            return String(format: text.primaryOpenFormat, text.kindFolder)
-        }
-        if entry.id.hasPrefix("file.") {
-            return String(format: text.primaryOpenFormat,
-                          isFolder(entry) ? text.kindFolder : text.kindFile)
-        }
-        if entry.id.hasPrefix("macsettings.")
-            || entry.id.hasPrefix("settings.")
-            || entry.id == "action.openSettings" {
-            return text.actionOpenSettings
-        }
-        if entry.id.hasPrefix("clipboard.") { return l10n.s.menuPaste }
-        if entry.id.hasPrefix("snippet.") { return text.kindSnippet }
-        if entry.id.hasPrefix("emoji.") {
-            return String(format: text.primaryCopyFormat, text.kindEmoji)
-        }
-        if entry.id.hasPrefix("uninstall.") {
-            return String(format: text.uninstallAppFormat, entry.title)
-        }
-        if entry.id == "action.openURL" { return text.openInBrowser }
-        if entry.id.hasPrefix("selection.copy") { return text.selectionCopy }
-        if entry.id.hasPrefix("selection.upper") { return text.selectionUpper }
-        if entry.id.hasPrefix("selection.lower") { return text.selectionLower }
-        if entry.id.hasPrefix("selection.titleCase") { return text.selectionTitleCase }
-        if entry.id.hasPrefix("selection.shelf") { return text.selectionShelf }
-        if entry.id.hasPrefix("selection.search") { return text.selectionSearch }
-        return text.primaryRunCommand
+        let row = CommandBarPrimaryActionRow(
+            id: entry.id,
+            title: entry.title,
+            isAnswer: entry.isAnswer,
+            isColor: entry.isColor,
+            needsSetup: needsSetup,
+            uninstallAppURL: entry.uninstallAppURL,
+            hasRevealPath: entry.revealPath != nil,
+            revealIsFolder: entry.revealIsFolder,
+            linkKind: primaryLinkKind(for: entry))
+        return CommandBarPrimaryAction.title(for: row, text: text)
     }
 
-    /// Whether a row's own path is a folder. Asked for the selected row only,
-    /// because a file row's "Open Folder" depends on what is on disk.
-    private func isFolder(_ entry: CommandBarEntry) -> Bool {
-        guard let path = entry.revealPath else { return false }
-        var directory: ObjCBool = false
-        return FileManager.default.fileExists(atPath: path, isDirectory: &directory)
-            && directory.boolValue
+    /// A saved link carries its kind in the symbol the catalog chose. Reading
+    /// it back here keeps the footer free of the link store and its defaults.
+    private func primaryLinkKind(for entry: CommandBarEntry)
+        -> CommandBarPrimaryActionRow.LinkKind? {
+        guard entry.id.hasPrefix("link."),
+              case .symbol(let name) = entry.icon else { return nil }
+        switch name {
+        case "terminal": return .script
+        case "folder": return .place
+        default: return .link
+        }
     }
 
     private var footer: some View {
@@ -1578,6 +1565,18 @@ struct CommandBarView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
+    }
+}
+
+/// One row's pointer state, owned by the row. A panel-level id would redraw
+/// every row on each hover and could name a row the rebuilt list no longer has.
+private struct CommandBarHoverRow<Content: View>: View {
+    @ViewBuilder let content: (Bool) -> Content
+    @State private var hovered = false
+
+    var body: some View {
+        content(hovered)
+            .onHover { hovered = $0 }
     }
 }
 
