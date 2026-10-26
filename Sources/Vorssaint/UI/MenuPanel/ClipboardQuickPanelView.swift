@@ -4,13 +4,20 @@
 import AppKit
 import SwiftUI
 
+/// The clipboard history window, laid out like Tinycast's clipboard palette:
+/// a fixed list column beside a preview, a floating header and footer, and
+/// no chrome of their own behind either bar.
 struct ClipboardQuickPanelView: View {
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var history = ClipboardHistoryService.shared
+    @Environment(\.colorScheme) private var colorScheme
     @FocusState private var searchFocused: Bool
     @State private var previewSelection = QuickPreviewSelection()
-    @State private var previewIsEditing = false
+    @State private var editingEntryID: UUID?
     @State private var clearingIDs: [UUID: Date]?
+    @State private var actionsPresented = false
+    @State private var filterPresented = false
+    @State private var appMenuPresented = false
 
     private var text: ClipboardFeatureStrings {
         FeatureStrings.clipboard(l10n.language)
@@ -28,37 +35,40 @@ struct ClipboardQuickPanelView: View {
         ClipboardHistorySearch.searchTokens(for: history.quickQuery)
     }
 
-    private var layout: ClipboardHistoryLayout {
-        .list
+    /// The row the Actions menu acts on: the one the preview follows, falling
+    /// back to the keyboard selection when the preview is closed.
+    private var actionsEntry: ClipboardHistoryEntry? {
+        ClipboardHistorySelection.previewEntry(
+            preferredID: history.quickPreviewPresented ? previewSelection.entryID : nil,
+            visibleEntries: filtered,
+            selectedEntry: history.selectedQuickEntry)
+    }
+
+    private var anyMenuPresented: Bool {
+        actionsPresented || filterPresented || appMenuPresented
+    }
+
+    private var previewIsEditing: Bool {
+        editingEntryID != nil
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            toolbar
-            Divider()
-            // Two proportional columns while the preview is open: the list
-            // takes a third, the sidebar takes the rest. A fixed sidebar
-            // width starved the preview on wide windows.
-            GeometryReader { geo in
-                HStack(spacing: 0) {
-                    content
-                        .frame(width: history.quickPreviewPresented ? geo.size.width * 0.35 : nil)
-                    if history.quickPreviewPresented {
-                        Divider()
-                        QuickPreviewPane(text: text,
-                                         selection: previewSelection,
-                                         isEditing: $previewIsEditing,
-                                         onClose: { history.setQuickPreviewPresented(false) })
-                            .frame(maxWidth: .infinity)
-                            .transition(.opacity)
-                    }
-                }
+        ZStack(alignment: .bottom) {
+            VStack(spacing: 0) {
+                header
+                content
             }
-            Divider()
             footer
+            menuOverlays
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .background(.regularMaterial)
+        .background(
+            ZStack {
+                Rectangle().fill(.regularMaterial)
+                Rectangle().fill(PanelSurface.baseFill(for: colorScheme))
+            }
+        )
+        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.panel, style: .continuous))
         .ignoresSafeArea(.container, edges: .top)
         .onAppear {
             previewSelection.select(history.selectedQuickEntryID)
@@ -66,7 +76,8 @@ struct ClipboardQuickPanelView: View {
         }
         .onDisappear {
             previewSelection.select(nil)
-            previewIsEditing = false
+            editingEntryID = nil
+            closeMenus()
         }
         .onChange(of: history.quickSelectionID) { _, _ in
             previewSelection.select(history.selectedQuickEntryID)
@@ -74,32 +85,67 @@ struct ClipboardQuickPanelView: View {
         .onChange(of: history.quickQuery) { _, _ in
             previewSelection.select(history.selectedQuickEntryID)
         }
+        .onChange(of: history.quickTypeFilter) { _, _ in
+            previewSelection.select(history.selectedQuickEntryID)
+        }
         .onChange(of: history.quickWindowPresentationID) { _, _ in
             previewSelection.select(history.selectedQuickEntryID)
         }
+        .onChange(of: history.quickActionsRequestID) { _, _ in
+            guard let entry = actionsEntry else { return }
+            history.selectQuickEntry(entry)
+            previewSelection.select(entry.id)
+            filterPresented = false
+            appMenuPresented = false
+            actionsPresented = true
+            syncMenuState()
+        }
+        .onChange(of: history.quickMenuCloseRequestID) { _, _ in
+            closeMenus()
+        }
+        .modifier(ClipboardClearRecentConfirmation(entryIDs: $clearingIDs))
     }
 
-    private var toolbar: some View {
-        HStack(spacing: DS.Space.rowTitleGap) {
-            TextField(text.search, text: $history.quickQuery)
-                .textFieldStyle(.plain)
-                .font(.system(size: 20))
-                .focused($searchFocused)
-                .frame(height: 44)
-            Button {
-                history.hideHistoryWindow()
-            } label: {
-                Image(systemName: "xmark")
-                    .font(DS.Font.panelFloorEmphasis)
-                    .foregroundStyle(.secondary)
-                    .frame(width: 22, height: 22)
+    private var header: some View {
+        HStack(spacing: 0) {
+            // The list's own 16pt inset, so the chevron lines up with its icons.
+            gutter(DS.Space.large)
+            ClipboardHeaderBackButton { history.hideHistoryWindow() }
+                .help(l10n.s.menuClose)
+            gutter(DS.Space.medium)
+            searchField
+            gutter(DS.Space.small)
+            ClipboardFilterButton(
+                filter: history.quickTypeFilter, isOpen: filterPresented
+            ) {
+                filterPresented.toggle()
+                actionsPresented = false
+                appMenuPresented = false
+                syncMenuState()
             }
-            .buttonStyle(.plain)
-            .help(l10n.s.menuClose)
-            .accessibilityLabel(l10n.s.menuClose)
+            gutter(DS.Space.large)
         }
-        .padding(.horizontal, DS.Space.medium)
-        .padding(.vertical, DS.Space.medium)
+        .frame(height: DS.Size.headerHeight)
+        .padding(.top, DS.Size.headerPadding)
+        .frame(maxWidth: .infinity)
+    }
+
+    private var searchField: some View {
+        TextField("", text: $history.quickQuery)
+            .textFieldStyle(.plain)
+            .font(DS.Font.searchField)
+            .focused($searchFocused)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(alignment: .leading) {
+                if history.quickQuery.isEmpty {
+                    Text(Self.searchPrompt)
+                        .font(DS.Font.searchField)
+                        .foregroundStyle(.tertiary)
+                        .lineLimit(1)
+                        .allowsHitTesting(false)
+                }
+            }
+            .accessibilityLabel(Text(Self.searchPrompt))
     }
 
     @ViewBuilder
@@ -107,129 +153,29 @@ struct ClipboardQuickPanelView: View {
         if filtered.isEmpty {
             emptyState(history.entries.isEmpty ? text.empty : text.noResults)
         } else {
-            ScrollViewReader { proxy in
-                // A plain stack for an ordinary history: with every entry
-                // already laid out, scrolling is the clip view moving and
-                // nothing else, which is what makes it smooth. Only a very
-                // large history goes lazy, where building every entry (and
-                // decoding every thumbnail) on open would cost more than the
-                // placement work a lazy stack does per tick.
-                Group {
-                    ScrollView {
-                        Group {
-                            if filtered.count <= Self.eagerRowLimit {
-                                VStack(alignment: .leading, spacing: 0) { topAnchor; sections }
-                            } else {
-                                LazyVStack(alignment: .leading, spacing: 0) { topAnchor; sections }
-                            }
-                        }
-                        .padding(.horizontal, DS.Space.medium)
-                        .padding(.bottom, Self.listVerticalInset)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                }
-                .background(ScrollBounceDisabler())
-                .onChange(of: history.quickSelectionID) { _, _ in
-                    scrollSelectedEntry(with: proxy)
-                }
-                .onChange(of: history.quickSelectionIsVisible) { _, _ in
-                    scrollSelectedEntry(with: proxy)
-                }
-                .onChange(of: history.quickQuery) { _, _ in
-                    scrollSelectedEntry(with: proxy)
-                }
-                // The window is only hidden between uses, so without this it
-                // reopens wherever it was scrolled, while the selection and
-                // ⌘1 to ⌘9 already start from the first entries.
-                .onChange(of: history.quickWindowPresentationID) { _, _ in
-                    proxy.scrollTo(Self.topAnchorID, anchor: .top)
+            HStack(spacing: 0) {
+                ClipboardListColumn(
+                    entries: filtered,
+                    tokens: searchTokens,
+                    canReorderEntries: canReorderEntries,
+                    previewIsEditing: previewIsEditing,
+                    language: l10n.language,
+                    previewSelection: previewSelection
+                )
+                .frame(width: history.quickPreviewPresented ? DS.Size.clipboardListWidth : nil)
+                if history.quickPreviewPresented {
+                    Rectangle()
+                        .fill(PanelSurface.border(for: colorScheme))
+                        .frame(width: 1)
+                    QuickPreviewPane(
+                        text: text,
+                        selection: previewSelection,
+                        editingEntryID: $editingEntryID)
+                        .frame(maxWidth: .infinity)
                 }
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-    }
-
-    /// Emits the headers, rows and cards straight into the enclosing lazy
-    /// stack. If wrapped, the whole section becomes one lazy unit and builds
-    /// every entry.
-    private static let eagerRowLimit = 300
-
-    private static let listVerticalInset: CGFloat = DS.Space.xSmall
-
-    /// The list's top inset, above the first section's header that
-    /// scrolling to the first row would leave cut off. Scrolling it into
-    /// place lands exactly where a first open starts.
-    private static let topAnchorID = "clipboard-list-top"
-
-    private var topAnchor: some View {
-        Color.clear
-            .frame(height: Self.listVerticalInset)
-            .id(Self.topAnchorID)
-    }
-
-    /// Recents bucketed outside the result builder: a `let` plus a `for`
-    /// loop inside a `@ViewBuilder` does not compile.
-    private var bucketedRecents: [(offset: Int, bucket: ClipboardHistoryDateBucket,
-                                   entries: [ClipboardHistoryEntry])] {
-        ClipboardHistoryDateBucket.bucketed(history.recentEntries).enumerated().map {
-            (offset: $0.offset, bucket: $0.element.bucket, entries: $0.element.entries)
-        }
-    }
-
-    /// Tinycast-style sections: Pinned, then Today / Yesterday / This Week /
-    /// This Month / Earlier. A search lists its matches by relevance with no
-    /// headers. No row dividers: selection is a rounded-rect fill.
-    @ViewBuilder
-    private var sections: some View {
-        if history.quickQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            rows(title: text.pinned, entries: history.pinnedEntries, isFirst: true)
-            ForEach(bucketedRecents, id: \.offset) { group in
-                rows(title: group.bucket.title, entries: group.entries,
-                     isFirst: history.pinnedEntries.isEmpty && group.offset == 0)
-            }
-        } else {
-            rows(title: nil, entries: filtered, isFirst: true)
-        }
-    }
-
-    @ViewBuilder
-    private func rows(title: String?, entries: [ClipboardHistoryEntry],
-                      followsSection: Bool = false, isFirst: Bool = false) -> some View {
-        if !entries.isEmpty {
-            if followsSection {
-                Divider()
-                    .padding(.horizontal, DS.Space.xSmall)
-                    .padding(.vertical, DS.Space.xSmall)
-            }
-            if let title {
-                Text(title)
-                    .font(DS.Font.panelTitle)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                    .padding(.horizontal, DS.Space.rowTitleGap)
-                    .padding(.top, isFirst ? DS.Space.xxSmall : DS.Space.medium)
-                    .padding(.bottom, DS.Space.xxSmall)
-            }
-            ForEach(entries, id: \.id) { entry in
-                entryView(entry)
-            }
-        }
-    }
-
-    private func entryView(_ entry: ClipboardHistoryEntry) -> some View {
-        QuickEntryView(layout: layout,
-                       entry: entry,
-                       tokens: searchTokens,
-                       shortcutIndex: shortcutIndex(for: entry),
-                       isSelected: history.quickSelectionIsVisible
-                          && history.selectedQuickEntryID == entry.id,
-                       isBatchSelected: history.isQuickBatchSelected(entry),
-                       canReorderEntries: canReorderEntries,
-                       previewIsEditing: previewIsEditing,
-                       presentationID: history.quickWindowPresentationID,
-                       language: l10n.language,
-                       previewSelection: previewSelection)
-            .equatable()
-            .id(entry.id)
     }
 
     private func emptyState(_ message: String) -> some View {
@@ -244,68 +190,184 @@ struct ClipboardQuickPanelView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
-
     private var footer: some View {
-        HStack(spacing: DS.Space.rowTitleGap) {
-            if history.quickBatchCount > 0 {
-                Button(String(format: text.pasteSelectedFormat, history.quickBatchCount)) {
-                    history.copySelectedQuickEntry()
-                }
-                .buttonStyle(.borderedProminent)
-                Button(String(format: text.copySelectedFormat, history.quickBatchCount)) {
-                    history.copySelectedQuickEntryOnly()
-                }
-                Button(String(format: text.deleteSelectedFormat, history.quickBatchCount), role: .destructive) {
-                    history.removeSelectedQuickEntries()
-                }
-                Button(text.clearSelection) {
-                    history.clearQuickBatchSelection()
-                }
-            } else {
-                Button {
-                    clearingIDs = history.recentEntriesSnapshot
-                } label: {
-                    Label(text.clearRecent, systemImage: "trash")
-                }
-                .disabled(history.recentEntries.isEmpty)
-                .modifier(ClipboardClearRecentConfirmation(entryIDs: $clearingIDs))
+        HStack(spacing: 0) {
+            ClipboardMenuCircleButton {
+                appMenuPresented.toggle()
+                actionsPresented = false
+                filterPresented = false
+                syncMenuState()
             }
-            Spacer()
-            // Tinycast-style primary action: paste names the app it lands in.
-            if history.quickBatchCount == 0, history.selectedQuickEntry != nil {
-                Button("Paste to \(Self.pasteTargetName) ↵") {
-                    history.copySelectedQuickEntry()
-                }
-                .buttonStyle(.borderedProminent)
-            }
-            HStack(spacing: DS.Space.xSmall) {
-                Image(systemName: "doc.on.clipboard")
-                Text("\(history.entries.count)")
-            }
-            .font(DS.Font.panelFloor)
-            .foregroundStyle(.secondary)
+            Spacer(minLength: 0)
+            actionGroup
         }
-        .controlSize(.small)
-        .padding(.horizontal, DS.Space.medium)
-        .padding(.vertical, DS.Space.small)
+        .padding(.horizontal, DS.Space.small)
+        .frame(height: DS.Size.bottomBarHeight)
+        .frame(maxWidth: .infinity)
     }
 
-    private func shortcutIndex(for entry: ClipboardHistoryEntry) -> Int? {
-        filtered.prefix(9).firstIndex(where: { $0.id == entry.id })
+    private var actionGroup: some View {
+        HStack(spacing: DS.Space.micro) {
+            ClipboardBarButton(isEnabled: history.selectedQuickEntry != nil) {
+                history.copySelectedQuickEntry()
+            } label: {
+                HStack(spacing: DS.Space.xSmall) {
+                    Text(primaryActionTitle)
+                        .font(DS.Font.bar)
+                        .foregroundStyle(.primary)
+                        .lineLimit(1)
+                    ClipboardKeyCap(text: "↵")
+                }
+            }
+            ClipboardBarButton(isEnabled: actionsEntry != nil) {
+                if let entry = actionsEntry {
+                    history.selectQuickEntry(entry)
+                    previewSelection.select(entry.id)
+                }
+                actionsPresented.toggle()
+                filterPresented = false
+                appMenuPresented = false
+                syncMenuState()
+            } label: {
+                HStack(spacing: DS.Space.xSmall) {
+                    Text("Actions")
+                        .font(DS.Font.bar)
+                        .foregroundStyle(.secondary)
+                    HStack(spacing: DS.Space.micro) {
+                        ClipboardKeyCap(text: "⌘")
+                        ClipboardKeyCap(text: "K")
+                    }
+                }
+            }
+        }
+        .padding(DS.Space.xxSmall)
+        .background(Capsule().fill(.ultraThinMaterial))
+        .overlay(
+            Capsule().strokeBorder(PanelSurface.border(for: colorScheme), lineWidth: 0.7)
+        )
     }
 
-    /// The app a paste lands in, for the Tinycast-style "Paste to {app}" footer.
-    private static var pasteTargetName: String {
-        NSWorkspace.shared.frontmostApplication?.localizedName ?? "App"
+    private var primaryActionTitle: String {
+        if history.quickBatchCount > 0 {
+            return String(format: text.pasteSelectedFormat, history.quickBatchCount)
+        }
+        return "Paste to \(history.pasteTargetDisplayName ?? "App")"
     }
 
-    private func scrollSelectedEntry(with proxy: ScrollViewProxy) {
-        guard history.quickSelectionIsVisible, let id = history.selectedQuickEntryID else { return }
-        // No anchor and no animation: the list moves only when the selected
-        // row is off screen, and then straight to it, so every arrow press
-        // costs the same and the rows never redraw mid-slide.
-        proxy.scrollTo(id)
+    @ViewBuilder
+    private var menuOverlays: some View {
+        if anyMenuPresented {
+            // A popover's outside click, inside the panel: the first press
+            // closes the menu instead of reaching a row under it.
+            Color.black.opacity(0.001)
+                .ignoresSafeArea()
+                .contentShape(Rectangle())
+                .onTapGesture { closeMenus() }
+        }
+        if filterPresented {
+            VStack(spacing: 0) {
+                HStack(spacing: 0) {
+                    Spacer(minLength: 0)
+                    ClipboardFilterPopover(selection: $history.quickTypeFilter) {
+                        filterPresented = false
+                        syncMenuState()
+                    }
+                    .clipboardMenuSurface(width: DS.Size.clipboardFilterMenuWidth)
+                }
+                Spacer(minLength: 0)
+            }
+            .padding(.top, DS.Size.headerHeight + DS.Size.headerPadding + DS.Space.small)
+            .padding(.trailing, DS.Space.large)
+        }
+        if let entry = actionsEntry, actionsPresented {
+            VStack(spacing: 0) {
+                Spacer(minLength: 0)
+                HStack(spacing: 0) {
+                    Spacer(minLength: 0)
+                    ClipboardActionsPopover(
+                        entry: entry,
+                        canReorder: canReorderEntries,
+                        dismiss: {
+                            actionsPresented = false
+                            syncMenuState()
+                        },
+                        onEdit: {
+                            actionsPresented = false
+                            syncMenuState()
+                            if !history.quickPreviewPresented {
+                                history.toggleQuickPreview()
+                            }
+                            history.selectQuickEntry(entry)
+                            previewSelection.select(entry.id)
+                            editingEntryID = entry.id
+                            history.editingEntryID = entry.id
+                        },
+                        onCopyText: {
+                            actionsPresented = false
+                            syncMenuState()
+                            ClipboardImageTextCopy.copyText(
+                                for: entry, language: l10n.language)
+                        },
+                        onClearRecent: {
+                            actionsPresented = false
+                            syncMenuState()
+                            clearingIDs = history.recentEntriesSnapshot
+                        }
+                    )
+                    .clipboardMenuSurface(width: DS.Size.actionMenuWidth)
+                }
+            }
+            .padding(.bottom, DS.Size.bottomBarHeight + DS.Space.small)
+            .padding(.trailing, DS.Space.small)
+        }
+        if appMenuPresented {
+            VStack(spacing: 0) {
+                Spacer(minLength: 0)
+                HStack(spacing: 0) {
+                    ClipboardAppMenuPopover(
+                        onTogglePreview: {
+                            appMenuPresented = false
+                            syncMenuState()
+                            history.toggleQuickPreview()
+                        },
+                        onClearRecent: {
+                            appMenuPresented = false
+                            syncMenuState()
+                            clearingIDs = history.recentEntriesSnapshot
+                        },
+                        onClose: {
+                            appMenuPresented = false
+                            syncMenuState()
+                            history.hideHistoryWindow()
+                        }
+                    )
+                    .clipboardMenuSurface(width: DS.Size.clipboardFilterMenuWidth)
+                    Spacer(minLength: 0)
+                }
+            }
+            .padding(.bottom, DS.Size.bottomBarHeight + DS.Space.small)
+            .padding(.leading, DS.Space.small)
+        }
     }
+
+    private func gutter(_ width: CGFloat) -> some View {
+        Color.clear.frame(width: width)
+    }
+
+    private func closeMenus() {
+        actionsPresented = false
+        filterPresented = false
+        appMenuPresented = false
+        syncMenuState()
+    }
+
+    /// The key monitor owns Escape, so it has to know a menu is up before it
+    /// decides whether Escape closes a menu or the window.
+    private func syncMenuState() {
+        history.quickMenuIsOpen = anyMenuPresented
+    }
+
+    private static let searchPrompt = "Type to filter entries…"
 }
 
 /// The sidebar alone observes hover selection. Changing its entry never
@@ -322,26 +384,157 @@ private final class QuickPreviewSelection: ObservableObject {
 private struct QuickPreviewPane: View {
     let text: ClipboardFeatureStrings
     @ObservedObject var selection: QuickPreviewSelection
-    @Binding var isEditing: Bool
-    let onClose: () -> Void
+    @Binding var editingEntryID: UUID?
     @ObservedObject private var history = ClipboardHistoryService.shared
 
     var body: some View {
-        ClipboardEntryPreviewSidebar(text: text,
-                                     entry: ClipboardHistorySelection.previewEntry(
-                                        preferredID: selection.entryID,
-                                        visibleEntries: history.filteredQuickEntries,
-                                        selectedEntry: history.selectedQuickEntry),
-                                     isEditing: $isEditing,
-                                     onClose: onClose)
+        ClipboardEntryPreviewSidebar(
+            text: text,
+            entry: ClipboardHistorySelection.previewEntry(
+                preferredID: selection.entryID,
+                visibleEntries: history.filteredQuickEntries,
+                selectedEntry: history.selectedQuickEntry),
+            editingEntryID: $editingEntryID)
     }
 }
 
-/// One entry, as a row of the list. Keep hover within
-/// it so moving the pointer does not rebuild the others. Value inputs let
-/// SwiftUI skip entries unaffected by selection or history changes.
-private struct QuickEntryView: View, Equatable {
-    let layout: ClipboardHistoryLayout
+/// The list column: a fixed 290pt lane of section headers and one-line rows.
+/// No dividers; selection is a rounded fill, and search results have no headers.
+private struct ClipboardListColumn: View {
+    let entries: [ClipboardHistoryEntry]
+    let tokens: [String]
+    let canReorderEntries: Bool
+    let previewIsEditing: Bool
+    let language: AppLanguage
+    let previewSelection: QuickPreviewSelection
+    @ObservedObject private var history = ClipboardHistoryService.shared
+
+    private var text: ClipboardFeatureStrings {
+        FeatureStrings.clipboard(language)
+    }
+
+    private var pinned: [ClipboardHistoryEntry] {
+        entries.filter(\.isPinned)
+    }
+
+    private var bucketedRecents: [(offset: Int, bucket: ClipboardHistoryDateBucket,
+                                   entries: [ClipboardHistoryEntry])] {
+        ClipboardHistoryDateBucket.bucketed(entries.filter { !$0.isPinned }).enumerated().map {
+            (offset: $0.offset, bucket: $0.element.bucket, entries: $0.element.entries)
+        }
+    }
+
+    private var isSearching: Bool {
+        !history.quickQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    var body: some View {
+        ScrollViewReader { proxy in
+            ScrollView {
+                Group {
+                    if entries.count <= Self.eagerRowLimit {
+                        VStack(alignment: .leading, spacing: 0) { topAnchor; sections }
+                    } else {
+                        LazyVStack(alignment: .leading, spacing: 0) { topAnchor; sections }
+                    }
+                }
+                .padding(.horizontal, DS.Space.small)
+                .padding(.bottom, DS.Space.small + DS.Size.bottomBarHeight)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .background(ScrollBounceDisabler())
+            .onChange(of: history.quickSelectionID) { _, _ in scrollSelectedEntry(with: proxy) }
+            .onChange(of: history.quickSelectionIsVisible) { _, _ in
+                scrollSelectedEntry(with: proxy)
+            }
+            .onChange(of: history.quickQuery) { _, _ in scrollSelectedEntry(with: proxy) }
+            .onChange(of: history.quickTypeFilter) { _, _ in scrollSelectedEntry(with: proxy) }
+            // The window is only hidden between uses, so without this it
+            // reopens wherever it was scrolled, while the selection and
+            // ⌘1 to ⌘9 already start from the first entries.
+            .onChange(of: history.quickWindowPresentationID) { _, _ in
+                proxy.scrollTo(Self.topAnchorID, anchor: .top)
+            }
+        }
+    }
+
+    /// Emits the headers and rows straight into the enclosing stack. If
+    /// wrapped, the whole section becomes one lazy unit and builds every entry.
+    private static let eagerRowLimit = 300
+
+    /// The list's top inset, above the first section's header that scrolling
+    /// to the first row would leave cut off. Scrolling it into place lands
+    /// exactly where a first open starts.
+    private static let topAnchorID = "clipboard-list-top"
+
+    private var topAnchor: some View {
+        Color.clear
+            .frame(height: DS.Space.xxSmall)
+            .id(Self.topAnchorID)
+    }
+
+    @ViewBuilder
+    private var sections: some View {
+        if isSearching {
+            rows(title: nil, entries: entries, isFirst: true)
+        } else {
+            rows(title: text.pinned, entries: pinned, isFirst: true)
+            ForEach(bucketedRecents, id: \.offset) { group in
+                rows(title: group.bucket.title, entries: group.entries,
+                     isFirst: pinned.isEmpty && group.offset == 0)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func rows(title: String?, entries: [ClipboardHistoryEntry],
+                      isFirst: Bool = false) -> some View {
+        if !entries.isEmpty {
+            if let title {
+                Text(title)
+                    .font(DS.Font.sectionHeader)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .padding(.horizontal, DS.Space.small)
+                    .padding(.top, isFirst ? DS.Space.xxSmall : DS.Space.medium)
+                    .padding(.bottom, DS.Space.xxSmall)
+            }
+            ForEach(entries, id: \.id) { entry in
+                ClipboardRowView(
+                    entry: entry,
+                    tokens: tokens,
+                    shortcutIndex: shortcutIndex(for: entry),
+                    isSelected: history.selectedQuickEntryID == entry.id,
+                    isBatchSelected: history.isQuickBatchSelected(entry),
+                    canReorderEntries: canReorderEntries,
+                    previewIsEditing: previewIsEditing,
+                    presentationID: history.quickWindowPresentationID,
+                    language: language,
+                    previewSelection: previewSelection
+                )
+                .equatable()
+                .id(entry.id)
+            }
+        }
+    }
+
+    private func shortcutIndex(for entry: ClipboardHistoryEntry) -> Int? {
+        entries.prefix(9).firstIndex(where: { $0.id == entry.id })
+    }
+
+    private func scrollSelectedEntry(with proxy: ScrollViewProxy) {
+        guard history.quickSelectionIsVisible, let id = history.selectedQuickEntryID else { return }
+        // No anchor and no animation: the list moves only when the selected
+        // row is off screen, and then straight to it, so every arrow press
+        // costs the same and the rows never redraw mid-slide.
+        proxy.scrollTo(id)
+    }
+}
+
+/// One entry as a list row. Keep hover within it so moving the pointer does
+/// not rebuild the others. Value inputs let SwiftUI skip entries unaffected
+/// by selection or history changes.
+private struct ClipboardRowView: View, Equatable {
     let entry: ClipboardHistoryEntry
     let tokens: [String]
     let shortcutIndex: Int?
@@ -352,6 +545,7 @@ private struct QuickEntryView: View, Equatable {
     let presentationID: UUID
     let language: AppLanguage
     let previewSelection: QuickPreviewSelection
+    @Environment(\.colorScheme) private var colorScheme
     @State private var isHovered = false
     /// The pane follows a row only once the pointer has rested on it: while
     /// rows stream under a still pointer during a scroll, every one of them
@@ -359,20 +553,15 @@ private struct QuickEntryView: View, Equatable {
     /// each time.
     @State private var previewFollowTask: Task<Void, Never>?
     private static let previewFollowDelay: Duration = .milliseconds(120)
-    /// Fixed 3:2 thumbnail slot, the text row's 26pt content height, so an
-    /// image row never grows taller than a text row.
-    private static let thumbnailSlot = CGSize(width: 39, height: 26)
 
     private var history: ClipboardHistoryService { .shared }
     private var l10n: L10n { .shared }
     private var text: ClipboardFeatureStrings { FeatureStrings.clipboard(language) }
-    private var rowFontSize: CGFloat { isSelected ? 20 : 12 }
 
     // Preview selection is a channel to the sidebar, not part of this row's
     // appearance, so it stays out of the comparison.
-    static func == (lhs: QuickEntryView, rhs: QuickEntryView) -> Bool {
-        lhs.layout == rhs.layout
-            && lhs.entry == rhs.entry
+    static func == (lhs: ClipboardRowView, rhs: ClipboardRowView) -> Bool {
+        lhs.entry == rhs.entry
             && lhs.tokens == rhs.tokens
             && lhs.shortcutIndex == rhs.shortcutIndex
             && lhs.isSelected == rhs.isSelected
@@ -384,7 +573,22 @@ private struct QuickEntryView: View, Equatable {
     }
 
     var body: some View {
-        row
+        HStack(alignment: .center, spacing: DS.Space.rowIconGap) {
+            icon
+                .frame(width: DS.Size.resultRowIcon, height: DS.Size.resultRowIcon)
+            SearchHighlightText.text(previewText, tokens: tokens, fontSize: DS.Font.bodySize)
+                .font(DS.Font.body)
+                .lineLimit(1)
+                .truncationMode(.tail)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            trailing
+        }
+        .padding(.horizontal, DS.Space.small)
+        .padding(.vertical, DS.Space.xSmall)
+        .background(
+            RoundedRectangle(cornerRadius: DS.Radius.row, style: .continuous)
+                .fill(fill)
+        )
         .contentShape(Rectangle())
         .contextMenu { entryActions(entry) }
         .onHover { hovering in
@@ -417,150 +621,117 @@ private struct QuickEntryView: View, Equatable {
         .onTapGesture { activate(entry) }
     }
 
-    private var row: some View {
-        HStack(alignment: .center, spacing: DS.Space.medium) {
-            selectionButton
-            entryContent(entry)
-            Spacer(minLength: 0)
-            entryTrailing(entry, isHovered: isHovered)
-        }
-        .padding(.horizontal, DS.Space.rowTitleGap)
-        .padding(.vertical, DS.Space.xSmall)
-        .frame(minHeight: 38)
-        .background(
-            RoundedRectangle(cornerRadius: DS.Radius.row, style: .continuous)
-                .fill(rowBackground(isSelected: isSelected,
-                                    isBatchSelected: isBatchSelected,
-                                    isHovered: isHovered))
-        )
+    private var fill: Color {
+        if isBatchSelected { return PanelSurface.batchSelectionFill(for: colorScheme) }
+        if isSelected { return PanelSurface.selectionFill(for: colorScheme) }
+        if isHovered { return PanelSurface.rowHoverFill(for: colorScheme) }
+        return .clear
     }
 
-    private var selectionButton: some View {
-        Button {
-            history.toggleQuickBatchSelection(entry)
-        } label: {
-            leadingMarker(entry: entry,
-                          isBatchSelected: isBatchSelected,
-                          isHovered: isHovered)
+    private var previewText: String {
+        switch entry.kind {
+        case .text: return entry.preview
+        case .image: return text.imageEntryLabel
+        case .files: return fileTitle(entry)
         }
-        .buttonStyle(.plain)
-        .help(isBatchSelected ? text.unselectMultiple : text.selectMultiple)
     }
 
     @ViewBuilder
-    private func entryContent(_ entry: ClipboardHistoryEntry) -> some View {
+    private var icon: some View {
         switch entry.kind {
         case .text:
-            HStack(alignment: .center, spacing: DS.Space.rowTitleGap) {
-                if let color = entry.color {
-                    ColorSwatch(color: color, size: 14)
-                }
-                SearchHighlightText.text(entry.preview, tokens: tokens, fontSize: rowFontSize)
-                    .font(.system(size: rowFontSize))
-                    .lineLimit(1)
-                    .truncationMode(.tail)
+            if let color = entry.color {
+                ColorSwatch(color: color, size: DS.Size.resultRowIcon - DS.Space.small)
+            } else {
+                Image(systemName: "doc.text")
+                    .font(DS.Font.rowIcon)
+                    .foregroundStyle(.secondary)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
         case .image:
-            HStack(alignment: .center, spacing: DS.Space.rowTitleGap) {
-                if let name = entry.imageFile {
-                    ClipboardThumbnailImage(source: .stored(name: name),
-                                            aspectRatio: entry.imageAspectRatio,
-                                            contentMode: .fill)
-                        .frame(width: Self.thumbnailSlot.width, height: Self.thumbnailSlot.height)
-                        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
-                }
-                SearchHighlightText.text("\(text.imageEntryLabel) · \(entry.imageDimensionsLabel)",
-                                         tokens: tokens, fontSize: rowFontSize)
-                    .font(.system(size: rowFontSize))
+            if let name = entry.imageFile {
+                ClipboardThumbnailImage(source: .stored(name: name),
+                                        aspectRatio: entry.imageAspectRatio,
+                                        contentMode: .fill)
+                    .frame(width: DS.Size.resultRowIcon, height: DS.Size.resultRowIcon)
+                    .clipShape(
+                        RoundedRectangle(cornerRadius: DS.Radius.thumbnail, style: .continuous))
+            } else {
+                Image(systemName: "photo")
+                    .font(DS.Font.rowIcon)
+                    .foregroundStyle(.secondary)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .help("\(text.imageEntryLabel) · \(entry.imageDimensionsLabel)")
         case .files:
             if entry.filePaths.count == 1,
                let path = entry.filePaths.first,
                ClipboardImageStore.isImageFile(atPath: path) {
-                HStack(alignment: .center, spacing: DS.Space.rowTitleGap) {
-                    ClipboardThumbnailImage(source: .file(path: path),
-                                            aspectRatio: ClipboardImageStore.imageAspectRatio(atPath: path),
-                                            contentMode: .fill)
-                        .frame(width: Self.thumbnailSlot.width, height: Self.thumbnailSlot.height)
-                        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
-                    VStack(alignment: .leading, spacing: 2) {
-                        SearchHighlightText.text(entry.fileNames.first ?? entry.preview, tokens: tokens, fontSize: rowFontSize)
-                            .font(.system(size: rowFontSize))
-                            .lineLimit(1)
-                            .truncationMode(.middle)
-                        if let dim = ClipboardImageStore.imageDimensionsLabel(atPath: path) {
-                            Text("\(text.imageEntryLabel) · \(dim)")
-                                .font(DS.Font.panelBody)
-                        }
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .help(path)
+                ClipboardThumbnailImage(
+                    source: .file(path: path),
+                    aspectRatio: ClipboardImageStore.imageAspectRatio(atPath: path),
+                    contentMode: .fill)
+                    .frame(width: DS.Size.resultRowIcon, height: DS.Size.resultRowIcon)
+                    .clipShape(
+                        RoundedRectangle(cornerRadius: DS.Radius.thumbnail, style: .continuous))
+            } else if let image = fileIcon(for: entry) {
+                Image(nsImage: image)
+                    .resizable()
+                    .frame(width: DS.Size.resultRowIcon - DS.Space.xSmall,
+                           height: DS.Size.resultRowIcon - DS.Space.xSmall)
             } else {
-                VStack(alignment: .leading, spacing: 2) {
-                    // A count of several files is no text the search reads.
-                    SearchHighlightText.text(fileTitle(entry),
-                                             tokens: entry.filePaths.count == 1 ? tokens : [],
-                                             fontSize: rowFontSize)
-                        .font(.system(size: rowFontSize))
-                        .lineLimit(1)
-                        .truncationMode(.middle)
-                    if entry.filePaths.count > 1 {
-                        SearchHighlightText.text(entry.preview, tokens: tokens, fontSize: 11)
-                            .font(DS.Font.panelFloor)
-                            .foregroundStyle(.tertiary)
-                            .lineLimit(1)
-                            .truncationMode(.tail)
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .help(entry.filePaths.joined(separator: "\n"))
+                Image(systemName: "folder")
+                    .font(DS.Font.rowIcon)
+                    .foregroundStyle(.secondary)
             }
         }
     }
 
     @ViewBuilder
-    private func entryTrailing(_ entry: ClipboardHistoryEntry, isHovered: Bool) -> some View {
-        if isHovered {
-            HStack(spacing: DS.Space.rowTextStack) {
-                if entry.kind == .image, AppFeature.screenshot.isAvailable {
-                    Button { history.editImage(entry) } label: {
-                        Image(systemName: "pencil")
-                            .font(DS.Font.panelFloorEmphasis)
-                            .frame(width: 24, height: 24)
-                            .background(Color.primary.opacity(0.07), in: RoundedRectangle(cornerRadius: 6))
-                    }
-                    .buttonStyle(.plain)
-                    .help(text.edit)
-                    .accessibilityLabel(text.edit)
+    private var trailing: some View {
+        HStack(spacing: DS.Space.xSmall) {
+            if isHovered, entry.kind == .image, AppFeature.screenshot.isAvailable {
+                Button { history.editImage(entry) } label: {
+                    Image(systemName: "pencil")
+                        .font(DS.Font.panelFloorEmphasis)
+                        .frame(width: DS.Size.resultRowIcon - DS.Space.micro,
+                               height: DS.Size.resultRowIcon - DS.Space.micro)
+                        .background(
+                            Color.primary.opacity(0.07),
+                            in: RoundedRectangle(cornerRadius: DS.Radius.thumbnail,
+                                                 style: .continuous))
+                }
+                .buttonStyle(.plain)
+                .help(text.edit)
+                .accessibilityLabel(text.edit)
+            }
+            if isHovered, entry.isPinned, let shortcutIndex {
+                HStack(spacing: DS.Space.micro) {
+                    ClipboardKeyCap(text: "⌘")
+                    ClipboardKeyCap(text: "\(shortcutIndex + 1)")
                 }
             }
-        } else {
-            // Tinycast parity: no timestamp. Pinned rows show their ⌘-digit
-            // slot; everything else keeps the trailing edge clean.
-            if entry.isPinned, let shortcutIndex {
-                HStack(spacing: 2) {
-                    Text("⌘")
-                        .font(DS.Font.panelBody)
-                        .padding(.horizontal, DS.Space.xxSmall)
-                        .frame(minWidth: 18, minHeight: 18)
-                        .background(
-                            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                                .strokeBorder(Color.primary.opacity(0.2), lineWidth: 1)
-                        )
-                    Text("\(shortcutIndex + 1)")
-                        .font(DS.Font.panelBody)
-                        .padding(.horizontal, DS.Space.xxSmall)
-                        .frame(minWidth: 18, minHeight: 18)
-                        .background(
-                            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                                .strokeBorder(Color.primary.opacity(0.2), lineWidth: 1)
-                        )
+            if isBatchSelected {
+                Button {
+                    history.toggleQuickBatchSelection(entry)
+                } label: {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(Color.accentColor)
+                        .frame(width: DS.Size.resultRowIcon - DS.Space.xSmall,
+                               height: DS.Size.resultRowIcon - DS.Space.xSmall)
                 }
-                .foregroundStyle(.secondary)
+                .buttonStyle(.plain)
+                .help(text.unselectMultiple)
+                .accessibilityLabel(text.unselectMultiple)
+            } else if isHovered {
+                Button {
+                    history.toggleQuickBatchSelection(entry)
+                } label: {
+                    Image(systemName: "circle")
+                        .foregroundStyle(Color.accentColor.opacity(0.7))
+                        .frame(width: DS.Size.resultRowIcon - DS.Space.xSmall,
+                               height: DS.Size.resultRowIcon - DS.Space.xSmall)
+                }
+                .buttonStyle(.plain)
+                .help(text.selectMultiple)
+                .accessibilityLabel(text.selectMultiple)
             }
         }
     }
@@ -613,57 +784,387 @@ private struct QuickEntryView: View, Equatable {
         return String(format: text.fileCountFormat, entry.filePaths.count)
     }
 
-    @ViewBuilder
-    private func leadingMarker(entry: ClipboardHistoryEntry,
-                               isBatchSelected: Bool,
-                               isHovered: Bool) -> some View {
-        if isBatchSelected {
-            Image(systemName: "checkmark.circle.fill")
-                .foregroundStyle(Color.accentColor)
-                .frame(width: 25, height: 25)
-        } else if isHovered {
-            Image(systemName: "circle")
-                .foregroundStyle(Color.accentColor.opacity(0.7))
-                .frame(width: 25, height: 25)
-        } else if entry.kind == .image {
-            Color.clear
-                .frame(width: 25, height: 25)
-        } else if entry.kind == .files,
-                  entry.filePaths.count == 1,
-                  let path = entry.filePaths.first,
-                  ClipboardImageStore.isImageFile(atPath: path) {
-            Color.clear
-                .frame(width: 25, height: 25)
-        } else if entry.kind == .text {
-            Color.clear
-                .frame(width: 25, height: 25)
-        } else if let icon = fileIcon(for: entry) {
-            Image(nsImage: icon)
-                .resizable()
-                .frame(width: 20, height: 20)
-                .frame(width: 25, height: 25)
-        } else {
-            Image(systemName: entry.isPinned ? "pin.fill" : "folder")
-                .font(DS.Font.panelFloorEmphasis)
-                .foregroundStyle(entry.isPinned ? Color.accentColor : Color.secondary)
-                .frame(width: 25, height: 25)
-        }
-    }
-
     private func fileIcon(for entry: ClipboardHistoryEntry) -> NSImage? {
         guard entry.kind == .files,
               let path = entry.filePaths.first(where: { FileManager.default.fileExists(atPath: $0) })
         else { return nil }
         return ClipboardImageStore.fileIcon(atPath: path)
     }
+}
 
-    private func rowBackground(isSelected: Bool,
-                               isBatchSelected: Bool,
-                               isHovered: Bool) -> Color {
-        if isBatchSelected { return Color.accentColor.opacity(isHovered ? 0.17 : 0.13) }
-        if isSelected { return Color.white.opacity(0.30) }
-        if isHovered { return Color.primary.opacity(0.055) }
-        return .clear
+private struct ClipboardHeaderBackButton: View {
+    let action: () -> Void
+    @State private var hovered = false
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: "chevron.left")
+                .font(DS.Font.headerIcon)
+                .symbolRenderingMode(.hierarchical)
+                .foregroundStyle(hovered ? .primary : .secondary)
+                .frame(width: DS.Size.headerIconSlot)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .onHover { hovered = $0 }
+        .animation(.easeOut(duration: 0.12), value: hovered)
+    }
+}
+
+private struct ClipboardFilterButton: View {
+    let filter: ClipboardQuickTypeFilter
+    let isOpen: Bool
+    let action: () -> Void
+    @Environment(\.colorScheme) private var colorScheme
+    @State private var hovered = false
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: DS.Space.xSmall) {
+                Image(systemName: filter.systemImage)
+                    .font(DS.Font.menuIcon)
+                    .frame(width: DS.Space.large)
+                Text(filter.title)
+                    .font(DS.Font.bar)
+                    .lineLimit(1)
+                Image(systemName: "chevron.down")
+                    .font(DS.Font.disclosure)
+                    .rotationEffect(.degrees(isOpen ? 180 : 0))
+                    .animation(.easeOut(duration: 0.2), value: isOpen)
+            }
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, DS.Space.small)
+            .frame(height: DS.Size.barButtonHeight)
+            .background(
+                RoundedRectangle(cornerRadius: DS.Radius.barControl, style: .continuous)
+                    .fill(hovered || isOpen
+                          ? PanelSurface.selectionFill(for: colorScheme) : Color.clear)
+            )
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .onHover { hovered = $0 }
+        .help("Filter by type")
+    }
+}
+
+private struct ClipboardMenuCircleButton: View {
+    let action: () -> Void
+    @Environment(\.colorScheme) private var colorScheme
+    @State private var hovered = false
+
+    var body: some View {
+        Button(action: action) {
+            VStack(alignment: .leading, spacing: 3) {
+                Capsule().frame(width: 14, height: 1.5)
+                Capsule().frame(width: 8, height: 1.5)
+            }
+            .foregroundStyle(.secondary)
+            .frame(width: DS.Size.menuButton, height: DS.Size.menuButton)
+            .background(
+                Circle().fill(hovered
+                              ? PanelSurface.rowHoverFill(for: colorScheme) : Color.clear)
+            )
+            .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .background(Circle().fill(.ultraThinMaterial))
+        .overlay(
+            Circle().strokeBorder(PanelSurface.border(for: colorScheme), lineWidth: 0.7)
+        )
+        .onHover { hovered = $0 }
+        .help("Menu")
+    }
+}
+
+private struct ClipboardBarButton<Label: View>: View {
+    var isEnabled = true
+    let action: () -> Void
+    @ViewBuilder let label: Label
+    @Environment(\.colorScheme) private var colorScheme
+    @State private var hovered = false
+
+    var body: some View {
+        Button(action: action) {
+            label
+                .padding(.horizontal, DS.Space.small)
+                .frame(height: DS.Size.barButtonHeight)
+                .contentShape(Capsule())
+                .background(
+                    Capsule().fill(hovered
+                                   ? PanelSurface.selectionFill(for: colorScheme) : Color.clear)
+                )
+        }
+        .buttonStyle(.plain)
+        .disabled(!isEnabled)
+        .opacity(isEnabled ? 1 : 0.45)
+        .onHover { hovered = $0 }
+    }
+}
+
+private struct ClipboardKeyCap: View {
+    let text: String
+    @Environment(\.colorScheme) private var colorScheme
+
+    var body: some View {
+        Text(text)
+            .font(DS.Font.keyCap)
+            .foregroundStyle(.secondary)
+            .offset(y: text == "↵" ? 1 : 0)
+            .padding(.horizontal, DS.Space.xxSmall)
+            .frame(minWidth: DS.Size.keyCap, minHeight: DS.Size.keyCap)
+            .background(
+                RoundedRectangle(cornerRadius: DS.Radius.keyCap, style: .continuous)
+                    .strokeBorder(PanelSurface.border(for: colorScheme), lineWidth: 1)
+            )
+    }
+}
+
+private struct ClipboardFilterPopover: View {
+    @Binding var selection: ClipboardQuickTypeFilter
+    let dismiss: () -> Void
+
+    var body: some View {
+        VStack(spacing: DS.Space.micro) {
+            ForEach(ClipboardQuickTypeFilter.allCases) { filter in
+                ClipboardMenuRow(
+                    title: filter.title,
+                    systemImage: filter.systemImage,
+                    isSelected: filter == selection
+                ) {
+                    selection = filter
+                    dismiss()
+                }
+            }
+        }
+    }
+}
+
+private struct ClipboardActionsPopover: View {
+    let entry: ClipboardHistoryEntry
+    let canReorder: Bool
+    let dismiss: () -> Void
+    let onEdit: () -> Void
+    let onCopyText: () -> Void
+    let onClearRecent: () -> Void
+    @ObservedObject private var l10n = L10n.shared
+    @ObservedObject private var history = ClipboardHistoryService.shared
+
+    private var text: ClipboardFeatureStrings {
+        FeatureStrings.clipboard(l10n.language)
+    }
+
+    private var batchCount: Int { history.quickBatchCount }
+
+    private var header: String {
+        if batchCount > 0 {
+            return String(format: text.pasteSelectedFormat, batchCount)
+        }
+        return entry.preview
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: DS.Space.micro) {
+            Text(header)
+                .font(DS.Font.panelFloor)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .truncationMode(.tail)
+                .padding(.horizontal, DS.Space.small)
+                .padding(.vertical, DS.Space.xSmall)
+            ClipboardMenuDivider()
+            ClipboardMenuRow(
+                title: primaryTitle, systemImage: "doc.on.clipboard", shortcut: "↵"
+            ) {
+                history.copySelectedQuickEntry()
+                dismiss()
+            }
+            ClipboardMenuRow(title: copyTitle, systemImage: "doc.on.doc") {
+                history.copySelectedQuickEntryOnly()
+                dismiss()
+            }
+            if batchCount == 0, entry.kind == .text {
+                ClipboardMenuRow(title: text.edit, systemImage: "pencil") {
+                    onEdit()
+                }
+            }
+            if batchCount == 0, ClipboardImageTextCopy.imageURL(for: entry) != nil,
+               AppFeature.screenOCR.isAvailable {
+                ClipboardMenuRow(
+                    title: FeatureStrings.screenshot(l10n.language).copyTextButton,
+                    systemImage: "text.viewfinder"
+                ) {
+                    onCopyText()
+                }
+            }
+            ClipboardMenuDivider()
+            ClipboardMenuRow(
+                title: entry.isPinned ? text.unpin : text.pin,
+                systemImage: entry.isPinned ? "pin.slash" : "pin",
+                shortcut: "⌥P"
+            ) {
+                history.togglePinSelectedQuickEntry()
+                dismiss()
+            }
+            ClipboardMenuRow(
+                title: text.moveUp, systemImage: "arrow.up",
+                isEnabled: canReorder && history.canMove(entry, .up)
+            ) {
+                history.move(entry, .up)
+                dismiss()
+            }
+            ClipboardMenuRow(
+                title: text.moveDown, systemImage: "arrow.down",
+                isEnabled: canReorder && history.canMove(entry, .down)
+            ) {
+                history.move(entry, .down)
+                dismiss()
+            }
+            if batchCount > 0 {
+                ClipboardMenuRow(title: text.clearSelection, systemImage: "xmark.circle") {
+                    history.clearQuickBatchSelection()
+                    dismiss()
+                }
+            }
+            ClipboardMenuDivider()
+            ClipboardMenuRow(
+                title: deleteTitle, systemImage: "trash", shortcut: "⌫", isDestructive: true
+            ) {
+                history.removeSelectedQuickEntries()
+                dismiss()
+            }
+            ClipboardMenuRow(
+                title: text.clearRecent, systemImage: "trash.slash", isDestructive: true,
+                isEnabled: !history.recentEntries.isEmpty
+            ) {
+                onClearRecent()
+            }
+        }
+    }
+
+    private var primaryTitle: String {
+        if batchCount > 0 {
+            return String(format: text.pasteSelectedFormat, batchCount)
+        }
+        let target = history.pasteTargetDisplayName ?? "App"
+        return "Paste to \(target)"
+    }
+
+    private var copyTitle: String {
+        batchCount > 0 ? String(format: text.copySelectedFormat, batchCount) : text.copy
+    }
+
+    private var deleteTitle: String {
+        batchCount > 0 ? String(format: text.deleteSelectedFormat, batchCount) : text.delete
+    }
+}
+
+private struct ClipboardAppMenuPopover: View {
+    let onTogglePreview: () -> Void
+    let onClearRecent: () -> Void
+    let onClose: () -> Void
+    @ObservedObject private var history = ClipboardHistoryService.shared
+
+    var body: some View {
+        VStack(spacing: DS.Space.micro) {
+            ClipboardMenuRow(
+                title: history.quickPreviewPresented ? "Hide Preview" : "Show Preview",
+                systemImage: "sidebar.right", shortcut: "Space"
+            ) {
+                onTogglePreview()
+            }
+            ClipboardMenuDivider()
+            ClipboardMenuRow(
+                title: "Clear Unpinned…", systemImage: "trash", isDestructive: true,
+                isEnabled: !history.recentEntries.isEmpty
+            ) {
+                onClearRecent()
+            }
+            ClipboardMenuRow(title: "Close", systemImage: "xmark", shortcut: "esc") {
+                onClose()
+            }
+        }
+    }
+}
+
+private struct ClipboardMenuRow: View {
+    let title: String
+    var systemImage: String?
+    var shortcut: String?
+    var isSelected = false
+    var isDestructive = false
+    var isEnabled = true
+    let action: () -> Void
+    @Environment(\.colorScheme) private var colorScheme
+    @State private var hovered = false
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: DS.Space.small) {
+                if let systemImage {
+                    Image(systemName: systemImage)
+                        .font(DS.Font.menuIcon)
+                        .frame(width: DS.Space.large)
+                }
+                Text(title)
+                    .font(DS.Font.menuRow)
+                    .lineLimit(1)
+                Spacer(minLength: DS.Space.small)
+                if isSelected {
+                    Image(systemName: "checkmark")
+                        .font(DS.Font.panelFloorEmphasis)
+                } else if let shortcut {
+                    Text(shortcut)
+                        .font(DS.Font.keyCap)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .foregroundStyle(isDestructive ? Color.red : .primary)
+            .padding(.horizontal, DS.Space.small)
+            .frame(height: DS.Size.menuRowHeight)
+            .background(
+                RoundedRectangle(cornerRadius: DS.Radius.menuRow, style: .continuous)
+                    .fill(hovered && isEnabled
+                          ? PanelSurface.selectionFill(for: colorScheme) : Color.clear)
+            )
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(!isEnabled)
+        .opacity(isEnabled ? 1 : 0.45)
+        .onHover { hovered = $0 }
+    }
+}
+
+private struct ClipboardMenuDivider: View {
+    @Environment(\.colorScheme) private var colorScheme
+
+    var body: some View {
+        Rectangle()
+            .fill(PanelSurface.border(for: colorScheme))
+            .frame(height: 1)
+            .padding(.vertical, DS.Space.micro)
+    }
+}
+
+private struct ClipboardMenuSurface: ViewModifier {
+    let width: CGFloat?
+    @Environment(\.colorScheme) private var colorScheme
+
+    func body(content: Content) -> some View {
+        let shape = RoundedRectangle(cornerRadius: DS.Radius.menuPanel, style: .continuous)
+        content
+            .padding(DS.Space.small)
+            .frame(width: width)
+            .background(shape.fill(.regularMaterial))
+            .overlay(shape.strokeBorder(PanelSurface.border(for: colorScheme), lineWidth: 0.7))
+            .shadow(color: .black.opacity(0.18), radius: 18, y: 8)
+    }
+}
+
+extension View {
+    fileprivate func clipboardMenuSurface(width: CGFloat?) -> some View {
+        modifier(ClipboardMenuSurface(width: width))
     }
 }
 

@@ -15,6 +15,38 @@ Append one timestamped entry per migration slice below.
 
 ## Log
 
+### 2026-10-27 — clipboard quick panel rebuilt to Tinycast palette metrics
+
+Done (`./build.sh` release bundle OK; `./build.sh --test` compiles and
+clipboard suites pass — 17 unrelated dock-preview/switcher scroll checks
+fail on this display):
+
+- `UI/MenuPanel/ClipboardQuickPanelView.swift` — Tinycast header (16pt
+  gutter, back chevron, 20pt search, filter control), fixed 290pt list |
+  1pt separator | preview, 26pt rows with 10pt icon gap and 6pt vertical
+  padding, section headers at 11pt medium, floating 52pt footer with
+  circular app menu and frosted capsule (`Paste to <App>` + `↵`,
+  `Actions` + `⌘K`), custom in-panel filter/actions/app popovers.
+- `UI/MenuPanel/ClipboardEntryPreviewSidebar.swift` — chrome-free preview:
+  12pt horizontal padding, monospaced top-aligned selectable text, bottom
+  Information block with Source/Type/Characters/Words/Copied rows at 12pt
+  and 8pt row padding; `editingEntryID` binding replaces `isEditing`;
+  `ClipboardImageTextCopy` keeps OCR reachable from Actions.
+- `UI/MenuPanel/ClipboardTextPreview.swift` — zero text-container inset
+  and line-fragment padding; default font is now
+  `DS.Font.previewTextSize` monospaced.
+- `UI/Theme.swift` — search/bar/section/menu/keycap/header/preview font
+  tokens, micro/row-icon spacing, panel/thumbnail/keycap/bar/menu radii,
+  `Size` metrics, and selection/hover/batch surface fills.
+- `Services/Clipboard/ClipboardHistoryService.swift` — quick type filter,
+  Actions request and menu-open state, Escape closes a menu first,
+  `pasteTargetDisplayName`, transparent window with 26pt content radius.
+- `Services/Clipboard/ClipboardHistorySupport.swift` — `ClipboardQuickTypeFilter`.
+- `Tests/ClipboardFeatureTests.swift` — preview fixture gains the filter
+  property used by `filteredQuickEntries`.
+
+Clipboard files stay under Menu panel Done; no Remaining entries moved.
+
 ### 2026-10-21 — clipboard quick panel: proportional columns + sidebar stragglers
 
 Done (`swiftc -parse` OK; `./build.sh --test` exits 0 — 112,766 checks,

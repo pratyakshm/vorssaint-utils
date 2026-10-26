@@ -57,6 +57,22 @@ final class ClipboardHistoryService: ObservableObject {
             }
         }
     }
+    /// The header's type filter; every quick-window action reads the filtered
+    /// list, so keyboard navigation and the footer follow it too.
+    @Published var quickTypeFilter: ClipboardQuickTypeFilter = .all {
+        didSet {
+            if quickTypeFilter != oldValue {
+                resetQuickSelection()
+            }
+        }
+    }
+    /// A new value asks the panel to open its Actions menu; the key monitor
+    /// owns ⌘K because the search field keeps focus while typing.
+    @Published private(set) var quickActionsRequestID = UUID()
+    /// Set by the panel while one of its own popovers is up, so Escape closes
+    /// that popover before it clears a batch selection or hides the window.
+    @Published var quickMenuIsOpen = false
+    @Published private(set) var quickMenuCloseRequestID = UUID()
     /// The highlighted entry itself, not its row: a copy arriving while the
     /// window is open inserts above it, and a position would then point at
     /// a different entry than the one Return is about to paste.
@@ -99,6 +115,9 @@ final class ClipboardHistoryService: ObservableObject {
     private var hotKeyRef: EventHotKeyRef?
     private var hotKeyHandler: EventHandlerRef?
     private var registeredShortcut: GlobalShortcut?
+    /// The app a paste lands in, captured when the window opened. Reading the
+    /// live frontmost app here would name Vorssaint itself.
+    var pasteTargetDisplayName: String? { pasteTargetApp?.localizedName }
     private var pasteTargetApp: NSRunningApplication?
     private var promptedForAccessibility = false
     /// Writes coalesce per mutation cycle; the JSON encode and the disk write
@@ -412,7 +431,9 @@ final class ClipboardHistoryService: ObservableObject {
     }
 
     var filteredQuickEntries: [ClipboardHistoryEntry] {
-        filteredEntries(matching: quickQuery)
+        let matches = filteredEntries(matching: quickQuery)
+        guard quickTypeFilter != .all else { return matches }
+        return matches.filter(quickTypeFilter.matches)
     }
 
     var selectedQuickEntryID: UUID? {
@@ -430,6 +451,17 @@ final class ClipboardHistoryService: ObservableObject {
 
     func isQuickBatchSelected(_ entry: ClipboardHistoryEntry) -> Bool {
         quickBatchEntryIDs.contains(entry.id)
+    }
+
+    /// A row clicked for its actions, not for a paste: the menu and the
+    /// keyboard both act on the highlighted entry.
+    func selectQuickEntry(_ entry: ClipboardHistoryEntry) {
+        quickSelectionID = entry.id
+        quickSelectionIsVisible = true
+    }
+
+    func requestQuickActions() {
+        quickActionsRequestID = UUID()
     }
 
     func toggleQuickBatchSelection(_ entry: ClipboardHistoryEntry) {
@@ -1326,6 +1358,12 @@ final class ClipboardHistoryService: ObservableObject {
         panel.title = FeatureStrings.clipboard(L10n.shared.language).title
         panel.titlebarAppearsTransparent = true
         panel.titleVisibility = .hidden
+        panel.titlebarSeparatorStyle = .none
+        // The palette's own 26pt corners sit inside a transparent window; the
+        // system's rounded frame would otherwise show a tighter radius.
+        panel.isOpaque = false
+        panel.backgroundColor = .clear
+        panel.hasShadow = true
         panel.standardWindowButton(.closeButton)?.isHidden = true
         panel.standardWindowButton(.miniaturizeButton)?.isHidden = true
         panel.standardWindowButton(.zoomButton)?.isHidden = true
@@ -1344,6 +1382,10 @@ final class ClipboardHistoryService: ObservableObject {
         let host = NSHostingController(rootView: ClipboardQuickPanelView())
         // AppKit owns the window size; SwiftUI fills its content view.
         host.sizingOptions = []
+        // Clip the glass to the panel's own radius, not the system window's.
+        host.view.wantsLayer = true
+        host.view.layer?.cornerRadius = DS.Radius.panel
+        host.view.layer?.masksToBounds = true
         panel.contentViewController = host
         panelResizeObserver = NotificationCenter.default.addObserver(
             forName: NSWindow.didEndLiveResizeNotification, object: panel, queue: .main
@@ -1436,6 +1478,10 @@ final class ClipboardHistoryService: ObservableObject {
             }
             let modifiers = event.modifierFlags.intersection([.command, .option, .shift, .control])
             if event.keyCode == UInt16(kVK_Escape) {
+                if self.quickMenuIsOpen {
+                    self.quickMenuCloseRequestID = UUID()
+                    return nil
+                }
                 switch ClipboardHistoryEscape.action(batchCount: self.quickBatchCount) {
                 case .clearBatchSelection: self.clearQuickBatchSelection()
                 case .hideWindow: self.hideHistoryWindow()
@@ -1470,6 +1516,10 @@ final class ClipboardHistoryService: ObservableObject {
             // mistaken for them). The list only claims them over the search
             // field per the support predicates.
             let key = event.charactersIgnoringModifiers?.lowercased()
+            if modifiers == [.command], key == "k" {
+                self.requestQuickActions()
+                return nil
+            }
             if modifiers == [.command], key == "c",
                ClipboardHistoryBatch.listOwnsCopyShortcut(batchCount: self.quickBatchCount) {
                 self.copySelectedQuickEntryOnly()

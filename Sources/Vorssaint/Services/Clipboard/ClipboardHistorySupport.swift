@@ -75,6 +75,42 @@ enum ClipboardHistorySections {
     }
 }
 
+/// The quick window's type filter. Titles stay in English like the preview's
+/// Information labels, which this panel already states that way.
+enum ClipboardQuickTypeFilter: String, CaseIterable, Identifiable {
+    case all, text, image, files
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .all: return "All Types"
+        case .text: return "Text Only"
+        case .image: return "Images Only"
+        case .files: return "Files Only"
+        }
+    }
+
+    /// Also the header button's glyph, so it states the active filter at rest.
+    var systemImage: String {
+        switch self {
+        case .all: return "list.bullet"
+        case .text: return "textformat"
+        case .image: return "photo"
+        case .files: return "doc"
+        }
+    }
+
+    func matches(_ entry: ClipboardHistoryEntry) -> Bool {
+        switch self {
+        case .all: return true
+        case .text: return entry.kind == .text
+        case .image: return entry.kind == .image
+        case .files: return entry.kind == .files
+        }
+    }
+}
+
 /// How the history window shows its entries: a list in a window that keeps
 /// the size the user gives it, or a shelf of cards along the bottom of the
 /// screen.

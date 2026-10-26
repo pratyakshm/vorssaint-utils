@@ -5,75 +5,56 @@ import AppKit
 import ImageIO
 import SwiftUI
 
-/// On-demand inspector for the selected clipboard entry. It keeps the full
-/// content selectable and editable without permanently taking space from the
-/// history list.
+/// The selected entry, laid out like Tinycast's clipboard preview: content
+/// at the top, then the bottom-anchored Information block. No sidebar header,
+/// divider or footer chrome.
 struct ClipboardEntryPreviewSidebar: View {
     @ObservedObject private var l10n = L10n.shared
+    @Environment(\.colorScheme) private var colorScheme
     var text: ClipboardFeatureStrings
     var entry: ClipboardHistoryEntry?
-    @Binding var isEditing: Bool
-    var onClose: () -> Void
+    @Binding var editingEntryID: UUID?
     @State private var draft = ""
-    @State private var editingEntryID: UUID?
     /// Laid out off the main thread for the entry it was made from.
     @State private var prettyJSON: (entry: ClipboardHistoryEntry, text: String)?
     @FocusState private var editorFocused: Bool
-    @State private var recognizingEntryID: UUID?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            sidebarHeader
-            Divider()
             if let entry {
                 if editingEntryID == entry.id {
                     textEditor(entry)
                 } else if entry.kind == .text {
                     textPreview(entry)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                 } else {
                     contentScrollView(entry)
                 }
-                Divider()
                 ClipboardHistoryInfoSection(entry: entry)
-                Divider()
-                sidebarFooter(entry)
             } else {
                 emptyState
             }
         }
+        .padding(.horizontal, DS.Space.medium)
+        // Clearance for the floating footer, so Information sits above it.
+        .padding(.bottom, DS.Size.bottomBarHeight)
+        .onAppear { beginEditingIfNeeded() }
         .onChange(of: entry?.id) { _, newID in
             if editingEntryID != nil, editingEntryID != newID {
                 cancelEditing()
             }
         }
+        .onChange(of: editingEntryID) { _, _ in beginEditingIfNeeded() }
         .onDisappear { cancelEditing() }
         .task(id: entry) {
             guard let entry, entry.kind == .text else { return }
             let text = entry.text
-            let pretty = await Task.detached(priority: .userInitiated) { ClipboardJSONFormat.pretty(text) }.value
+            let pretty = await Task.detached(priority: .userInitiated) {
+                ClipboardJSONFormat.pretty(text)
+            }.value
             guard !Task.isCancelled else { return }
             prettyJSON = pretty.map { (entry, $0) }
         }
-    }
-
-    private var sidebarHeader: some View {
-        HStack(spacing: DS.Space.small) {
-            Label(text.previewLabel, systemImage: "doc.text.magnifyingglass")
-                .font(DS.Font.body)
-                .foregroundStyle(.secondary)
-            Spacer()
-            Button(action: onClose) {
-                Image(systemName: "xmark")
-                    .font(DS.Font.panelBody)
-                    .foregroundStyle(.secondary)
-                    .frame(width: 20, height: 20)
-            }
-            .buttonStyle(.plain)
-            .help(l10n.s.menuClose)
-            .accessibilityLabel(l10n.s.menuClose)
-        }
-        .padding(.horizontal, DS.Space.large)
-        .padding(.vertical, DS.Space.medium)
     }
 
     /// One text view for every text entry: JSON laid out after the entry
@@ -81,51 +62,58 @@ struct ClipboardEntryPreviewSidebar: View {
     /// layout depends only on the text, so a pin or a refreshed copy of the
     /// same entry keeps it.
     private func textPreview(_ entry: ClipboardHistoryEntry) -> ClipboardTextPreview {
+        let font = NSFont.monospacedSystemFont(ofSize: DS.Font.previewTextSize, weight: .regular)
         guard let pretty = prettyJSON, pretty.entry.id == entry.id, pretty.entry.text == entry.text else {
-            return ClipboardTextPreview(text: entry.text)
+            return ClipboardTextPreview(text: entry.text, font: font)
         }
-        return ClipboardTextPreview(text: pretty.text,
-                                    font: .monospacedSystemFont(ofSize: 11.5, weight: .regular))
+        return ClipboardTextPreview(text: pretty.text, font: font)
     }
 
     private func contentScrollView(_ entry: ClipboardHistoryEntry) -> some View {
         ScrollView {
             previewContent(entry)
-                .padding(.horizontal, DS.Space.large)
-                .padding(.vertical, DS.Space.medium)
                 .frame(maxWidth: .infinity, alignment: .topLeading)
         }
         .frame(maxHeight: .infinity)
     }
 
     private func textEditor(_ entry: ClipboardHistoryEntry) -> some View {
-        TextEditor(text: $draft)
-            .font(DS.Font.panelBody)
-            .lineSpacing(2)
-            .scrollContentBackground(.hidden)
-            .padding(DS.Space.small)
-            .background(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(Color.primary.opacity(0.045))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .strokeBorder(Color.accentColor.opacity(0.45), lineWidth: 1)
-            )
-            .padding(DS.Space.medium)
-            .focused($editorFocused)
-            .onExitCommand { cancelEditing() }
-            .accessibilityLabel(text.edit)
+        VStack(spacing: DS.Space.small) {
+            TextEditor(text: $draft)
+                .font(DS.Font.body)
+                .lineSpacing(2)
+                .scrollContentBackground(.hidden)
+                .padding(DS.Space.small)
+                .background(
+                    RoundedRectangle(cornerRadius: DS.Radius.thumbnail, style: .continuous)
+                        .fill(Color.primary.opacity(0.045))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: DS.Radius.thumbnail, style: .continuous)
+                        .strokeBorder(Color.accentColor.opacity(0.45), lineWidth: 1)
+                )
+                .focused($editorFocused)
+                .onExitCommand { cancelEditing() }
+                .accessibilityLabel(text.edit)
+            HStack(spacing: DS.Space.small) {
+                Spacer(minLength: 0)
+                Button(text.cancel) { cancelEditing() }
+                Button(text.save) { saveEditing(entry) }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(!ClipboardHistoryEditing.canSave(original: entry.text, draft: draft))
+            }
+            .controlSize(.small)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .padding(.top, DS.Space.xxSmall)
     }
 
     @ViewBuilder
     private func previewContent(_ entry: ClipboardHistoryEntry) -> some View {
         switch entry.kind {
         case .text:
-            // Standard text selection lets someone copy only the fragment
-            // they need; the window monitor leaves ⌘C with this view.
             Text(entry.text)
-                .font(DS.Font.panelBody)
+                .font(DS.Font.previewText)
                 .textSelection(.enabled)
                 .lineSpacing(2)
                 .frame(maxWidth: .infinity, alignment: .topLeading)
@@ -143,11 +131,12 @@ struct ClipboardEntryPreviewSidebar: View {
                 ClipboardThumbnailImage(source: .stored(name: name),
                                         aspectRatio: entry.imageAspectRatio)
                     .frame(maxWidth: .infinity)
-                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .clipShape(
+                        RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous)
+                            .strokeBorder(PanelSurface.border(for: colorScheme), lineWidth: 1))
             }
-            Text("\(text.imageEntryLabel) · \(entry.imageDimensionsLabel)")
-                .font(DS.Font.panelFloor)
-                .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, alignment: .topLeading)
     }
@@ -171,45 +160,33 @@ struct ClipboardEntryPreviewSidebar: View {
                 ClipboardThumbnailImage(source: .file(path: path),
                                         aspectRatio: ClipboardImageStore.imageAspectRatio(atPath: path))
                     .frame(maxWidth: .infinity)
-                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-
-                let dim = ClipboardImageStore.imageDimensionsLabel(atPath: path)
-                let size = ClipboardImageStore.fileSizeString(atPath: path)
-                let parts = [text.imageEntryLabel, dim, size].compactMap { $0 }
-                Text(parts.joined(separator: " · "))
-                    .font(DS.Font.panelFloor)
-                    .foregroundStyle(.secondary)
+                    .clipShape(
+                        RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous)
+                            .strokeBorder(PanelSurface.border(for: colorScheme), lineWidth: 1))
             } else {
                 HStack(spacing: DS.Space.small) {
                     Image(nsImage: NSWorkspace.shared.icon(forFile: path))
                         .resizable()
                         .frame(width: 32, height: 32)
-                    VStack(alignment: .leading, spacing: DS.Space.rowTextStack) {
-                        Text(fileName)
-                            .font(DS.Font.panelBody)
-                            .lineLimit(2)
-                        if let size = ClipboardImageStore.fileSizeString(atPath: path) {
-                            Text(size)
-                                .font(DS.Font.panelFloor)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
+                    Text(fileName)
+                        .font(DS.Font.body)
+                        .lineLimit(2)
                 }
             }
 
-            VStack(alignment: .leading, spacing: DS.Space.rowTextStack) {
-                Text(path)
-                    .font(.system(size: 11, design: .monospaced))
-                    .textSelection(.enabled)
-                    .lineSpacing(2)
-                    .foregroundStyle(.secondary)
-                    .padding(DS.Space.small)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(
-                        RoundedRectangle(cornerRadius: 6, style: .continuous)
-                            .fill(Color.primary.opacity(0.04))
-                    )
-            }
+            Text(path)
+                .font(DS.Font.previewText)
+                .textSelection(.enabled)
+                .lineSpacing(2)
+                .foregroundStyle(.secondary)
+                .padding(DS.Space.small)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(
+                    RoundedRectangle(cornerRadius: DS.Radius.thumbnail, style: .continuous)
+                        .fill(Color.primary.opacity(0.04))
+                )
         }
         .frame(maxWidth: .infinity, alignment: .topLeading)
     }
@@ -227,7 +204,8 @@ struct ClipboardEntryPreviewSidebar: View {
                         if ClipboardImageStore.isImageFile(atPath: path) {
                             ClipboardThumbnailImage(source: .file(path: path, maxPixelSize: 64))
                                 .frame(width: 20, height: 20)
-                                .clipShape(RoundedRectangle(cornerRadius: 3, style: .continuous))
+                                .clipShape(
+                                    RoundedRectangle(cornerRadius: 3, style: .continuous))
                         } else {
                             Image(nsImage: NSWorkspace.shared.icon(forFile: path))
                                 .resizable()
@@ -237,25 +215,25 @@ struct ClipboardEntryPreviewSidebar: View {
                             .font(DS.Font.panelFloor)
                             .lineLimit(1)
                             .truncationMode(.middle)
-                        Spacer()
+                        Spacer(minLength: 0)
                     }
                 }
             }
             .padding(DS.Space.small)
             .background(
-                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                RoundedRectangle(cornerRadius: DS.Radius.thumbnail, style: .continuous)
                     .fill(Color.primary.opacity(0.04))
             )
 
             Text(entry.filePaths.joined(separator: "\n"))
-                .font(.system(size: 11, design: .monospaced))
+                .font(DS.Font.previewText)
                 .textSelection(.enabled)
                 .lineSpacing(2)
                 .foregroundStyle(.secondary)
                 .padding(DS.Space.small)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(
-                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    RoundedRectangle(cornerRadius: DS.Radius.thumbnail, style: .continuous)
                         .fill(Color.primary.opacity(0.04))
                 )
         }
@@ -269,68 +247,39 @@ struct ClipboardEntryPreviewSidebar: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
-    private func sidebarFooter(_ entry: ClipboardHistoryEntry) -> some View {
-        HStack(spacing: DS.Space.small) {
-            if entry.isPinned {
-                Image(systemName: "pin.fill")
-                    .font(DS.Font.panelBody)
-                    .foregroundStyle(Color.accentColor)
-            }
-            Text(entry.copiedAt, style: .time)
-                .font(DS.Font.panelBody)
-                .foregroundStyle(.tertiary)
-            Spacer()
-            if editingEntryID == entry.id {
-                Button(text.cancel) {
-                    cancelEditing()
-                }
-                Button(text.save) {
-                    saveEditing(entry)
-                }
-                .buttonStyle(.borderedProminent)
-                .disabled(!ClipboardHistoryEditing.canSave(original: entry.text, draft: draft))
-            } else {
-                if entry.kind == .text {
-                    Button(text.edit) {
-                        beginEditing(entry)
-                    }
-                }
-                if AppFeature.screenOCR.isAvailable, let url = imageURL(entry) {
-                    Button(FeatureStrings.screenshot(l10n.language).copyTextButton) {
-                        copyText(in: url, of: entry)
-                    }
-                    .disabled(recognizingEntryID == entry.id)
-                }
-                Button(text.copy) {
-                    ClipboardHistoryService.shared.copyOnlyQuickEntry(entry)
-                }
-                .buttonStyle(.borderedProminent)
-            }
-        }
-        .controlSize(.mini)
-        .padding(.horizontal, DS.Space.large)
-        .padding(.vertical, DS.Space.medium)
+    /// Starts from an existing `editingEntryID` too: the Actions menu can ask
+    /// for the editor while the preview is still hidden, so the view is born
+    /// already editing and `onChange` alone would never seed the draft.
+    private func beginEditingIfNeeded() {
+        guard let newID = editingEntryID, let entry, entry.id == newID else { return }
+        if draft != entry.text { draft = entry.text }
+        ClipboardHistoryService.shared.editingEntryID = newID
+        DispatchQueue.main.async { editorFocused = true }
     }
 
-    /// The picture an image entry or a single copied image file holds.
-    private func imageURL(_ entry: ClipboardHistoryEntry) -> URL? {
-        if entry.kind == .image, let name = entry.imageFile {
-            return ClipboardImageStore.directory?.appendingPathComponent(name)
-        }
-        guard entry.kind == .files, entry.filePaths.count == 1,
-              ClipboardImageStore.isImageFile(atPath: entry.filePaths[0]) else { return nil }
-        return URL(fileURLWithPath: entry.filePaths[0])
+    private func cancelEditing() {
+        editorFocused = false
+        editingEntryID = nil
+        ClipboardHistoryService.shared.editingEntryID = nil
+        draft = ""
     }
 
-    /// Screen OCR's recognition and answer, on a picture already in the
-    /// history. It runs only when asked and its text is never stored with
-    /// the entry; the copy itself lands in the history like any other.
-    private func copyText(in url: URL, of entry: ClipboardHistoryEntry) {
-        recognizingEntryID = entry.id
-        let languages = MediaSupport.recognitionLanguages(for: l10n.language.rawValue)
+    private func saveEditing(_ entry: ClipboardHistoryEntry) {
+        guard ClipboardHistoryService.shared.updateText(entry, to: draft) else { return }
+        cancelEditing()
+    }
+}
+
+/// Screen OCR on an entry the preview is showing, shared with the Actions
+/// menu so the feature survives without resting chrome.
+enum ClipboardImageTextCopy {
+    @MainActor
+    static func copyText(for entry: ClipboardHistoryEntry, language: AppLanguage) {
+        guard AppFeature.screenOCR.isAvailable, let url = imageURL(for: entry) else { return }
+        let strings = L10n.shared.s
+        let languages = MediaSupport.recognitionLanguages(for: language.rawValue)
         let removeLineBreaks = UserDefaults.standard.bool(forKey: DefaultsKey.screenOCRRemoveLineBreaks)
         let pasteboardChangeCount = NSPasteboard.general.changeCount
-        let strings = l10n.s
         Task { @MainActor in
             let outcome = await Task.detached(priority: .userInitiated) { () -> ScreenTextService.Outcome in
                 // Full size, as Screen OCR reads its capture, so small text
@@ -349,11 +298,9 @@ struct ClipboardEntryPreviewSidebar: View {
                                                  removeLineBreaks: removeLineBreaks,
                                                  fallbackLanguages: languages)
             }.value
-            // A recognition started later, or anything copied meanwhile, is
-            // newer than this answer, and Screen OCR turned off drops it.
-            let isLatest = recognizingEntryID == entry.id
-            if isLatest { recognizingEntryID = nil }
-            guard isLatest, pasteboardChangeCount == NSPasteboard.general.changeCount,
+            // Anything copied while recognition ran is newer than this answer,
+            // and Screen OCR turned off drops it.
+            guard pasteboardChangeCount == NSPasteboard.general.changeCount,
                   AppFeature.screenOCR.isAvailable else { return }
             if case .text(let recognized) = outcome {
                 ScreenTextService.copyToPasteboard(recognized)
@@ -364,25 +311,14 @@ struct ClipboardEntryPreviewSidebar: View {
         }
     }
 
-    private func beginEditing(_ entry: ClipboardHistoryEntry) {
-        draft = entry.text
-        editingEntryID = entry.id
-        ClipboardHistoryService.shared.editingEntryID = entry.id
-        isEditing = true
-        DispatchQueue.main.async { editorFocused = true }
-    }
-
-    private func cancelEditing() {
-        editorFocused = false
-        editingEntryID = nil
-        ClipboardHistoryService.shared.editingEntryID = nil
-        draft = ""
-        isEditing = false
-    }
-
-    private func saveEditing(_ entry: ClipboardHistoryEntry) {
-        guard ClipboardHistoryService.shared.updateText(entry, to: draft) else { return }
-        cancelEditing()
+    /// The picture an image entry or a single copied image file holds.
+    static func imageURL(for entry: ClipboardHistoryEntry) -> URL? {
+        if entry.kind == .image, let name = entry.imageFile {
+            return ClipboardImageStore.directory?.appendingPathComponent(name)
+        }
+        guard entry.kind == .files, entry.filePaths.count == 1,
+              ClipboardImageStore.isImageFile(atPath: entry.filePaths[0]) else { return nil }
+        return URL(fileURLWithPath: entry.filePaths[0])
     }
 }
 
@@ -402,22 +338,21 @@ struct ClipboardHistoryInfoSection: View {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
         formatter.timeStyle = .medium
-        formatter.doesRelativeDateFormatting = true
         return formatter
     }()
 
     var body: some View {
-        VStack(alignment: .leading, spacing: DS.Space.small) {
+        VStack(alignment: .leading, spacing: DS.Space.xSmall) {
             Text("Information")
-                .font(DS.Font.cardTitle)
+                .font(DS.Font.sectionHeader)
                 .foregroundStyle(.secondary)
             VStack(spacing: 0) {
                 let rows = self.rows
                 ForEach(rows) { row in
                     if row.id != rows.first?.id { Divider() }
-                    HStack(spacing: DS.Space.large) {
+                    HStack(spacing: DS.Space.small) {
                         Text(row.label).foregroundStyle(.secondary)
-                        Spacer(minLength: DS.Space.large)
+                        Spacer(minLength: DS.Space.rowIconGap)
                         if let icon = sourceIcon, row.label == "Source" {
                             Image(nsImage: icon)
                                 .resizable()
@@ -428,14 +363,12 @@ struct ClipboardHistoryInfoSection: View {
                             .lineLimit(1)
                             .truncationMode(.middle)
                     }
-                    .font(DS.Font.body)
-                    .padding(.vertical, DS.Space.medium)
+                    .font(DS.Font.panelBody)
+                    .padding(.vertical, DS.Space.small)
                 }
             }
         }
-        .padding(.horizontal, DS.Space.large)
         .padding(.top, DS.Space.medium)
-        .padding(.bottom, DS.Space.xxSmall)
     }
 
     private var rows: [InfoRow] {

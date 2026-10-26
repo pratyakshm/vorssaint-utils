@@ -11,7 +11,8 @@ import SwiftUI
 /// so ⌘C on a fragment keeps working.
 struct ClipboardTextPreview: NSViewRepresentable {
     let text: String
-    var font: NSFont = .systemFont(ofSize: 12)
+    var font: NSFont = .monospacedSystemFont(
+        ofSize: DS.Font.previewTextSize, weight: .regular)
 
     /// The font last applied. The text view's own `font` reads the first
     /// character, which a fallback font replaces for emoji or CJK text.
@@ -34,8 +35,8 @@ struct ClipboardTextPreview: NSViewRepresentable {
         textView.isRichText = false
         textView.font = font
         context.coordinator.font = font
-        textView.textContainerInset = NSSize(width: DS.Space.small, height: DS.Space.medium)
-        textView.textContainer?.lineFragmentPadding = DS.Space.xxSmall
+        textView.textContainerInset = .zero
+        textView.textContainer?.lineFragmentPadding = 0
         textView.textContainer?.widthTracksTextView = true
         textView.string = text
         return scroll

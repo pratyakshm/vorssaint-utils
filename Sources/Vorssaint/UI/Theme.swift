@@ -12,8 +12,9 @@ enum DS {
         static let cardTitle = SwiftUI.Font.system(size: 15, weight: .semibold)
         /// Row titles in settings and panels (was implicit body, ~13).
         static let rowTitle = SwiftUI.Font.system(size: 14, weight: .regular)
-        /// Standard body text.
-        static let body = SwiftUI.Font.system(size: 13.5, weight: .regular)
+        /// Standard body text, and the point size for `SearchHighlightText`.
+        static let bodySize: CGFloat = 13.5
+        static let body = SwiftUI.Font.system(size: bodySize, weight: .regular)
         /// Explanations under row titles (was `.caption`, 11).
         static let caption = SwiftUI.Font.system(size: 12.5, weight: .regular)
         /// Tertiary hints (was `.caption2` / 9-10).
@@ -30,9 +31,29 @@ enum DS {
         static let panelFloorEmphasis = SwiftUI.Font.system(size: 11, weight: .semibold)
         /// Row icon glyphs (was 12 semibold).
         static let rowIcon = SwiftUI.Font.system(size: 13, weight: .semibold)
+        /// The clipboard header's query field, the palette's own 20pt bar text.
+        static let searchField = SwiftUI.Font.system(size: 20, weight: .regular)
+        /// A palette bar control's label.
+        static let bar = SwiftUI.Font.system(size: 12, weight: .medium)
+        /// A section header inside a list (subheadline medium).
+        static let sectionHeader = SwiftUI.Font.system(size: 11, weight: .medium)
+        /// A popover menu row.
+        static let menuRow = SwiftUI.Font.system(size: 13, weight: .regular)
+        /// A keycap legend, and a menu row's shortcut.
+        static let keyCap = SwiftUI.Font.system(size: 11, weight: .regular)
+        /// The header's back chevron.
+        static let headerIcon = SwiftUI.Font.system(size: 18, weight: .medium)
+        /// A menu button's leading glyph, and the header filter's.
+        static let menuIcon = SwiftUI.Font.system(size: 13, weight: .medium)
+        /// A menu button's trailing disclosure chevron.
+        static let disclosure = SwiftUI.Font.system(size: 10, weight: .semibold)
+        /// The preview's monospaced body; `previewTextSize` feeds its AppKit twin.
+        static let previewTextSize: CGFloat = 12
+        static let previewText = SwiftUI.Font.system(size: previewTextSize, design: .monospaced)
     }
 
     enum Space {
+        static let micro: CGFloat = 2
         static let xxSmall: CGFloat = 4
         static let xSmall: CGFloat = 6
         static let small: CGFloat = 8
@@ -47,11 +68,35 @@ enum DS {
         static let rowGap: CGFloat = 14
         static let rowTextStack: CGFloat = 4
         static let rowTitleGap: CGFloat = 8
+        /// An icon and the one-line title beside it.
+        static let rowIconGap: CGFloat = 10
     }
 
     enum Radius {
+        static let panel: CGFloat = 26
         static let card: CGFloat = 14
         static let row: CGFloat = 10
+        static let thumbnail: CGFloat = 6
+        static let keyCap: CGFloat = 6
+        static let barControl: CGFloat = 8
+        static let menuPanel: CGFloat = 16
+        static let menuRow: CGFloat = 6
+    }
+
+    enum Size {
+        /// The clipboard list column, fixed beside the preview.
+        static let clipboardListWidth: CGFloat = 290
+        static let headerHeight: CGFloat = 36
+        static let headerPadding: CGFloat = 10
+        static let headerIconSlot: CGFloat = 22
+        static let bottomBarHeight: CGFloat = 52
+        static let barButtonHeight: CGFloat = 28
+        static let resultRowIcon: CGFloat = 26
+        static let keyCap: CGFloat = 18
+        static let menuButton: CGFloat = 36
+        static let actionMenuWidth: CGFloat = 300
+        static let clipboardFilterMenuWidth: CGFloat = 180
+        static let menuRowHeight: CGFloat = 30
     }
 }
 
@@ -131,6 +176,20 @@ enum PanelSurface {
 
     static func controlFill(for scheme: ColorScheme) -> Color {
         scheme == .light ? Color.black.opacity(0.055) : Color.white.opacity(0.085)
+    }
+
+    /// A list row's selected fill, and the fainter layer under a resting pointer.
+    static func selectionFill(for scheme: ColorScheme) -> Color {
+        scheme == .light ? Color.black.opacity(0.09) : Color.white.opacity(0.10)
+    }
+
+    static func rowHoverFill(for scheme: ColorScheme) -> Color {
+        scheme == .light ? Color.black.opacity(0.045) : Color.white.opacity(0.05)
+    }
+
+    /// A row added to a batch selection; it stays lit while the pointer is away.
+    static func batchSelectionFill(for scheme: ColorScheme) -> Color {
+        Color.accentColor.opacity(scheme == .light ? 0.14 : 0.16)
     }
 
     /// Raised contrast is asked for by someone who cannot see a hairline at a
