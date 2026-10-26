@@ -1293,6 +1293,10 @@ final class ClipboardHistoryService: ObservableObject {
         if let panel, let sheet = panel.attachedSheet { panel.endSheet(sheet) }
         panel?.orderOut(nil)
         clearQuickBatchSelection()
+        // Ordering out does not run the view's `onDisappear`, so the popovers
+        // the view owns stay presented in its state. Escape would then spend
+        // its first press closing a menu nobody can see.
+        quickMenuIsOpen = false
     }
 
     func rememberPasteTarget() {

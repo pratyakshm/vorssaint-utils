@@ -89,6 +89,9 @@ struct ClipboardQuickPanelView: View {
             previewSelection.select(history.selectedQuickEntryID)
         }
         .onChange(of: history.quickWindowPresentationID) { _, _ in
+            // The panel is only ordered out between uses, so the view's own
+            // menu state survives a hide. A fresh open starts with no menu up.
+            closeMenus()
             previewSelection.select(history.selectedQuickEntryID)
         }
         .onChange(of: history.quickActionsRequestID) { _, _ in
@@ -112,11 +115,14 @@ struct ClipboardQuickPanelView: View {
             gutter(DS.Space.large)
             ClipboardHeaderBackButton { history.hideHistoryWindow() }
                 .help(l10n.s.menuClose)
+                .accessibilityLabel(Text(l10n.s.actionBack))
             gutter(DS.Space.medium)
             searchField
             gutter(DS.Space.small)
             ClipboardFilterButton(
-                filter: history.quickTypeFilter, isOpen: filterPresented
+                filter: history.quickTypeFilter,
+                isOpen: filterPresented,
+                title: text.filterByType
             ) {
                 filterPresented.toggle()
                 actionsPresented = false
@@ -138,14 +144,14 @@ struct ClipboardQuickPanelView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(alignment: .leading) {
                 if history.quickQuery.isEmpty {
-                    Text(Self.searchPrompt)
+                    Text(text.searchPrompt)
                         .font(DS.Font.searchField)
                         .foregroundStyle(.tertiary)
                         .lineLimit(1)
                         .allowsHitTesting(false)
                 }
             }
-            .accessibilityLabel(Text(Self.searchPrompt))
+            .accessibilityLabel(Text(text.searchPrompt))
     }
 
     @ViewBuilder
@@ -192,7 +198,7 @@ struct ClipboardQuickPanelView: View {
 
     private var footer: some View {
         HStack(spacing: 0) {
-            ClipboardMenuCircleButton {
+            ClipboardMenuCircleButton(title: text.menu) {
                 appMenuPresented.toggle()
                 actionsPresented = false
                 filterPresented = false
@@ -230,7 +236,7 @@ struct ClipboardQuickPanelView: View {
                 syncMenuState()
             } label: {
                 HStack(spacing: DS.Space.xSmall) {
-                    Text("Actions")
+                    Text(text.actions)
                         .font(DS.Font.bar)
                         .foregroundStyle(.secondary)
                     HStack(spacing: DS.Space.micro) {
@@ -366,8 +372,6 @@ struct ClipboardQuickPanelView: View {
     private func syncMenuState() {
         history.quickMenuIsOpen = anyMenuPresented
     }
-
-    private static let searchPrompt = "Type to filter entries…"
 }
 
 /// The sidebar alone observes hover selection. Changing its entry never
@@ -570,6 +574,7 @@ private struct ClipboardRowView: View, Equatable {
             && lhs.previewIsEditing == rhs.previewIsEditing
             && lhs.presentationID == rhs.presentationID
             && lhs.language == rhs.language
+            && lhs.colorScheme == rhs.colorScheme
     }
 
     var body: some View {
@@ -814,6 +819,8 @@ private struct ClipboardHeaderBackButton: View {
 private struct ClipboardFilterButton: View {
     let filter: ClipboardQuickTypeFilter
     let isOpen: Bool
+    /// The tooltip: the button names only the current filter.
+    let title: String
     let action: () -> Void
     @Environment(\.colorScheme) private var colorScheme
     @State private var hovered = false
@@ -844,11 +851,13 @@ private struct ClipboardFilterButton: View {
         }
         .buttonStyle(.plain)
         .onHover { hovered = $0 }
-        .help("Filter by type")
+        .help(title)
     }
 }
 
 private struct ClipboardMenuCircleButton: View {
+    /// The button is two capsules with no text of its own.
+    let title: String
     let action: () -> Void
     @Environment(\.colorScheme) private var colorScheme
     @State private var hovered = false
@@ -873,7 +882,8 @@ private struct ClipboardMenuCircleButton: View {
             Circle().strokeBorder(PanelSurface.border(for: colorScheme), lineWidth: 0.7)
         )
         .onHover { hovered = $0 }
-        .help("Menu")
+        .help(title)
+        .accessibilityLabel(Text(title))
     }
 }
 
@@ -1028,7 +1038,10 @@ private struct ClipboardActionsPopover: View {
             }
             ClipboardMenuDivider()
             ClipboardMenuRow(
-                title: deleteTitle, systemImage: "trash", shortcut: "⌫", isDestructive: true
+                title: deleteTitle,
+                systemImage: "trash",
+                shortcut: deleteShortcut,
+                isDestructive: true
             ) {
                 history.removeSelectedQuickEntries()
                 dismiss()
@@ -1057,6 +1070,12 @@ private struct ClipboardActionsPopover: View {
     private var deleteTitle: String {
         batchCount > 0 ? String(format: text.deleteSelectedFormat, batchCount) : text.delete
     }
+
+    /// Matches the key monitor: Option-Delete always deletes, and Command-Delete
+    /// joins it only while a pile is selected.
+    private var deleteShortcut: String {
+        batchCount > 0 ? "⌘⌫" : "⌥⌫"
+    }
 }
 
 private struct ClipboardAppMenuPopover: View {
@@ -1064,23 +1083,28 @@ private struct ClipboardAppMenuPopover: View {
     let onClearRecent: () -> Void
     let onClose: () -> Void
     @ObservedObject private var history = ClipboardHistoryService.shared
+    @ObservedObject private var l10n = L10n.shared
+
+    private var text: ClipboardFeatureStrings {
+        FeatureStrings.clipboard(l10n.language)
+    }
 
     var body: some View {
         VStack(spacing: DS.Space.micro) {
             ClipboardMenuRow(
-                title: history.quickPreviewPresented ? "Hide Preview" : "Show Preview",
+                title: history.quickPreviewPresented ? text.hidePreview : text.showPreview,
                 systemImage: "sidebar.right", shortcut: "Space"
             ) {
                 onTogglePreview()
             }
             ClipboardMenuDivider()
             ClipboardMenuRow(
-                title: "Clear Unpinned…", systemImage: "trash", isDestructive: true,
+                title: text.clearRecent + "…", systemImage: "trash", isDestructive: true,
                 isEnabled: !history.recentEntries.isEmpty
             ) {
                 onClearRecent()
             }
-            ClipboardMenuRow(title: "Close", systemImage: "xmark", shortcut: "esc") {
+            ClipboardMenuRow(title: l10n.s.menuClose, systemImage: "xmark", shortcut: "esc") {
                 onClose()
             }
         }

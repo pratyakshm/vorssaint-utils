@@ -212,7 +212,13 @@ extension ClipboardFeatureStrings {
         clearRecentConfirmMessage: "고정된 항목과 이후에 복사한 내용은 유지됩니다. 되돌릴 수 없습니다.",
         historyLayout: "기록 레이아웃",
         historyLayoutCards: "카드",
-        historyLayoutList: "목록"
+        historyLayoutList: "목록",
+        searchPrompt: "입력하여 항목 필터링…",
+        actions: "작업",
+        filterByType: "유형별 필터",
+        menu: "메뉴",
+        showPreview: "미리보기 표시",
+        hidePreview: "미리보기 가리기"
     )
 }
 
@@ -537,6 +543,12 @@ struct ClipboardFeatureStrings {
     let historyLayout: String
     let historyLayoutCards: String
     let historyLayoutList: String
+    let searchPrompt: String
+    let actions: String
+    let filterByType: String
+    let menu: String
+    let showPreview: String
+    let hidePreview: String
 
     static let enUS = ClipboardFeatureStrings(
         title: "Clipboard",
@@ -600,7 +612,13 @@ struct ClipboardFeatureStrings {
         clearRecentConfirmMessage: "Pinned items stay, and so does anything copied after this. This can’t be undone.",
         historyLayout: "History layout",
         historyLayoutCards: "Cards",
-        historyLayoutList: "List"
+        historyLayoutList: "List",
+        searchPrompt: "Type to filter entries…",
+        actions: "Actions",
+        filterByType: "Filter by type",
+        menu: "Menu",
+        showPreview: "Show Preview",
+        hidePreview: "Hide Preview"
     )
 
     static let ptBR = ClipboardFeatureStrings(
@@ -665,7 +683,13 @@ struct ClipboardFeatureStrings {
         clearRecentConfirmMessage: "Os itens fixados ficam, e o que for copiado depois disso também. Não dá para desfazer.",
         historyLayout: "Layout do histórico",
         historyLayoutCards: "Cartões",
-        historyLayoutList: "Lista"
+        historyLayoutList: "Lista",
+        searchPrompt: "Digite para filtrar itens…",
+        actions: "Ações",
+        filterByType: "Filtrar por tipo",
+        menu: "Menu",
+        showPreview: "Mostrar prévia",
+        hidePreview: "Ocultar prévia"
     )
 
     static let tr = ClipboardFeatureStrings(
@@ -730,7 +754,13 @@ struct ClipboardFeatureStrings {
         clearRecentConfirmMessage: "Sabitlenen öğeler ve bundan sonra kopyalananlar kalır. Bu işlem geri alınamaz.",
         historyLayout: "Geçmiş yerleşimi",
         historyLayoutCards: "Kartlar",
-        historyLayoutList: "Liste"
+        historyLayoutList: "Liste",
+        searchPrompt: "Girdileri filtrelemek için yazın…",
+        actions: "Eylemler",
+        filterByType: "Türe göre filtrele",
+        menu: "Menü",
+        showPreview: "Önizlemeyi göster",
+        hidePreview: "Önizlemeyi gizle"
     )
 
     static let ru = ClipboardFeatureStrings(
@@ -795,7 +825,13 @@ struct ClipboardFeatureStrings {
         clearRecentConfirmMessage: "Закреплённые останутся, как и всё, что скопировано после этого. Отменить нельзя.",
         historyLayout: "Макет истории",
         historyLayoutCards: "Карточки",
-        historyLayoutList: "Список"
+        historyLayoutList: "Список",
+        searchPrompt: "Введите текст для фильтрации…",
+        actions: "Действия",
+        filterByType: "Фильтр по типу",
+        menu: "Меню",
+        showPreview: "Показать просмотр",
+        hidePreview: "Скрыть просмотр"
     )
 
     static let es = ClipboardFeatureStrings(
@@ -860,7 +896,13 @@ struct ClipboardFeatureStrings {
         clearRecentConfirmMessage: "Los fijados se conservan, y también lo que copies después. No se puede deshacer.",
         historyLayout: "Diseño del historial",
         historyLayoutCards: "Tarjetas",
-        historyLayoutList: "Lista"
+        historyLayoutList: "Lista",
+        searchPrompt: "Escribe para filtrar entradas…",
+        actions: "Acciones",
+        filterByType: "Filtrar por tipo",
+        menu: "Menú",
+        showPreview: "Mostrar vista previa",
+        hidePreview: "Ocultar vista previa"
     )
 
     static let sk = ClipboardFeatureStrings(
@@ -925,7 +967,13 @@ struct ClipboardFeatureStrings {
         clearRecentConfirmMessage: "Pripnuté položky zostanú, rovnako ako všetko, čo skopírujete potom. Nedá sa to vrátiť späť.",
         historyLayout: "Rozloženie histórie",
         historyLayoutCards: "Karty",
-        historyLayoutList: "Zoznam"
+        historyLayoutList: "Zoznam",
+        searchPrompt: "Zadaním filtrujte položky…",
+        actions: "Akcie",
+        filterByType: "Filtrovať podľa typu",
+        menu: "Menu",
+        showPreview: "Zobraziť náhľad",
+        hidePreview: "Skryť náhľad"
     )
 
     static let de = ClipboardFeatureStrings(
@@ -990,7 +1038,13 @@ struct ClipboardFeatureStrings {
         clearRecentConfirmMessage: "Angeheftete bleiben, ebenso alles, was du danach kopierst. Das lässt sich nicht widerrufen.",
         historyLayout: "Verlaufslayout",
         historyLayoutCards: "Karten",
-        historyLayoutList: "Liste"
+        historyLayoutList: "Liste",
+        searchPrompt: "Tippen, um Einträge zu filtern…",
+        actions: "Aktionen",
+        filterByType: "Nach Typ filtern",
+        menu: "Menü",
+        showPreview: "Vorschau zeigen",
+        hidePreview: "Vorschau ausblenden"
     )
 
     static let fr = ClipboardFeatureStrings(
@@ -1055,7 +1109,13 @@ struct ClipboardFeatureStrings {
         clearRecentConfirmMessage: "Les éléments épinglés restent, comme tout ce qui sera copié ensuite. Action irréversible.",
         historyLayout: "Disposition de l’historique",
         historyLayoutCards: "Cartes",
-        historyLayoutList: "Liste"
+        historyLayoutList: "Liste",
+        searchPrompt: "Saisissez pour filtrer les éléments…",
+        actions: "Actions",
+        filterByType: "Filtrer par type",
+        menu: "Menu",
+        showPreview: "Afficher l’aperçu",
+        hidePreview: "Masquer l’aperçu"
     )
 
     static let it = ClipboardFeatureStrings(
@@ -1120,7 +1180,13 @@ struct ClipboardFeatureStrings {
         clearRecentConfirmMessage: "Gli elementi fissati restano, come tutto ciò che copi dopo. Non si può annullare.",
         historyLayout: "Layout cronologia",
         historyLayoutCards: "Schede",
-        historyLayoutList: "Elenco"
+        historyLayoutList: "Elenco",
+        searchPrompt: "Digita per filtrare le voci…",
+        actions: "Azioni",
+        filterByType: "Filtra per tipo",
+        menu: "Menu",
+        showPreview: "Mostra anteprima",
+        hidePreview: "Nascondi anteprima"
     )
 
     static let ja = ClipboardFeatureStrings(
@@ -1185,7 +1251,13 @@ struct ClipboardFeatureStrings {
         clearRecentConfirmMessage: "固定済みの項目と、このあとにコピーした内容は残ります。元に戻せません。",
         historyLayout: "履歴のレイアウト",
         historyLayoutCards: "カード",
-        historyLayoutList: "リスト"
+        historyLayoutList: "リスト",
+        searchPrompt: "入力して項目を絞り込む…",
+        actions: "アクション",
+        filterByType: "種類で絞り込む",
+        menu: "メニュー",
+        showPreview: "プレビューを表示",
+        hidePreview: "プレビューを隠す"
     )
 
     static let zhHans = ClipboardFeatureStrings(
@@ -1250,7 +1322,13 @@ struct ClipboardFeatureStrings {
         clearRecentConfirmMessage: "已固定的项目和此后拷贝的内容会保留。此操作无法撤销。",
         historyLayout: "历史布局",
         historyLayoutCards: "卡片",
-        historyLayoutList: "列表"
+        historyLayoutList: "列表",
+        searchPrompt: "输入以筛选项目…",
+        actions: "操作",
+        filterByType: "按类型筛选",
+        menu: "菜单",
+        showPreview: "显示预览",
+        hidePreview: "隐藏预览"
     )
 
     static let zhTW = ClipboardFeatureStrings(
@@ -1315,7 +1393,13 @@ struct ClipboardFeatureStrings {
         clearRecentConfirmMessage: "已釘選的項目和之後複製的內容會保留。此動作無法還原。",
         historyLayout: "剪貼簿紀錄佈局",
         historyLayoutCards: "卡片",
-        historyLayoutList: "列表"
+        historyLayoutList: "列表",
+        searchPrompt: "輸入以篩選項目…",
+        actions: "操作",
+        filterByType: "依類型篩選",
+        menu: "選單",
+        showPreview: "顯示預覽",
+        hidePreview: "隱藏預覽"
     )
 
     static let zhHK = ClipboardFeatureStrings(
@@ -1380,7 +1464,13 @@ struct ClipboardFeatureStrings {
         clearRecentConfirmMessage: "已釘選的項目和之後複製的內容會保留。此動作無法還原。",
         historyLayout: "剪貼簿記錄佈局",
         historyLayoutCards: "卡片",
-        historyLayoutList: "列表"
+        historyLayoutList: "列表",
+        searchPrompt: "輸入以篩選項目…",
+        actions: "操作",
+        filterByType: "按類型篩選",
+        menu: "選單",
+        showPreview: "顯示預覽",
+        hidePreview: "隱藏預覽"
     )
 }
 
@@ -3250,7 +3340,13 @@ extension ClipboardFeatureStrings {
         clearRecentConfirmMessage: "Закріплені залишаться, як і все, що скопійовано після цього. Скасувати не можна.",
         historyLayout: "Розкладка історії",
         historyLayoutCards: "Картки",
-        historyLayoutList: "Список"
+        historyLayoutList: "Список",
+        searchPrompt: "Введіть текст для фільтрування…",
+        actions: "Дії",
+        filterByType: "Фільтрувати за типом",
+        menu: "Меню",
+        showPreview: "Показати попередній перегляд",
+        hidePreview: "Приховати попередній перегляд"
     )
 }
 

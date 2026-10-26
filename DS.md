@@ -15,6 +15,27 @@ Append one timestamped entry per migration slice below.
 
 ## Log
 
+### 2026-10-27 — clipboard quick panel review fixes
+
+Done (`./build.sh` release bundle OK; `./build.sh --test-suite=clipboard` —
+1,221 checks pass):
+
+- `UI/MenuPanel/ClipboardEntryPreviewSidebar.swift` — multi-file preview
+  thumbnail clip radius `3` → `DS.Radius.thumbnail`.
+- `UI/MenuPanel/ClipboardQuickPanelView.swift` — a fresh open starts with
+  no popover up, so the first Escape still closes the window; the Delete
+  row shows the chord the key monitor binds (`⌥⌫`, `⌘⌫` with a pile); row
+  equality includes `colorScheme` so the selection fill follows an
+  appearance change; the icon-only back and app-menu buttons carry
+  localized accessibility labels; header, footer and app-menu strings come
+  from `ClipboardFeatureStrings`.
+- `Core/FeatureStrings.swift` — `searchPrompt`, `actions`, `filterByType`,
+  `menu`, `showPreview` and `hidePreview` in all 15 clipboard tables.
+- `Services/Clipboard/ClipboardHistoryService.swift` — `hideHistoryWindow`
+  clears `quickMenuIsOpen`, which `orderOut` leaves behind.
+
+Clipboard files stay under Menu panel Done; no Remaining entries moved.
+
 ### 2026-10-27 — clipboard quick panel rebuilt to Tinycast palette metrics
 
 Done (`./build.sh` release bundle OK; `./build.sh --test` compiles and

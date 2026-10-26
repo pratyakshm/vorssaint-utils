@@ -205,7 +205,8 @@ struct ClipboardEntryPreviewSidebar: View {
                             ClipboardThumbnailImage(source: .file(path: path, maxPixelSize: 64))
                                 .frame(width: 20, height: 20)
                                 .clipShape(
-                                    RoundedRectangle(cornerRadius: 3, style: .continuous))
+                                    RoundedRectangle(cornerRadius: DS.Radius.thumbnail,
+                                                 style: .continuous))
                         } else {
                             Image(nsImage: NSWorkspace.shared.icon(forFile: path))
                                 .resizable()
