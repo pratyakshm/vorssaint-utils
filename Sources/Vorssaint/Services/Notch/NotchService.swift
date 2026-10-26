@@ -3816,24 +3816,20 @@ final class NotchService: ObservableObject {
     /// island is a gesture candidate.
     private func handleScroll(_ event: NSEvent) -> Bool {
         guard let panel else { return false }
-        interruptHoverExpand(for: event)
-        return handleSectionScroll(event)
-            || handleGesture(event, screenPoint: panel.convertPoint(toScreen: event.locationInWindow))
+        let point = panel.convertPoint(toScreen: event.locationInWindow)
+        interruptIslandMotion(for: event, at: point)
+        return handleSectionScroll(event) || handleGesture(event, screenPoint: point)
     }
 
-    /// A two-finger drag that begins while hover is still springing the island
-    /// open cuts the motion short, landing the shell at its full size at once.
-    /// The drag is measured against the settled island, not one still growing
-    /// under the fingers, so its gestures read the final geometry. Over the
-    /// destination only: mid-animation the visible shape is smaller than where
-    /// it is heading, and the drag may start on ground the island has not
-    /// covered yet.
-    private func interruptHoverExpand(for event: NSEvent) {
-        guard expanded, openedByHover, windowHost?.isAnimatingShell == true else { return }
-        guard event.phase.contains(.began) else { return }
-        let point = panel?.convertPoint(toScreen: event.locationInWindow) ?? .zero
-        guard windowHost?.containsDestination(point) == true else { return }
-        windowHost?.expandToFullNow()
+    /// A gesture that begins over the island cuts its motion short, so it is
+    /// measured against a settled surface rather than one still moving under
+    /// the fingers. Over the destination: mid-animation the visible shape is
+    /// smaller than where it is heading, and the gesture may begin on ground
+    /// the island has not covered yet.
+    private func interruptIslandMotion(for event: NSEvent, at screenPoint: CGPoint) {
+        guard event.phase.contains(.began), windowHost?.isMotionInFlight == true,
+              windowHost?.containsDestination(screenPoint) == true else { return }
+        windowHost?.settleNow()
     }
 
     private func handleSectionScroll(_ event: NSEvent) -> Bool {
@@ -3869,7 +3865,7 @@ final class NotchService: ObservableObject {
             gesture = NotchGestureSupport()
             return false
         }
-        interruptHoverExpand(for: event)
+        interruptIslandMotion(for: event, at: screenPoint)
         guard windowHost?.contains(screenPoint) == true else { gesture = NotchGestureSupport(); return false }
         let fromTop = panel.frame.maxY - screenPoint.y
         // A page with no top row keeps the strip above it for the gesture.

@@ -548,16 +548,18 @@ final class NotchWindowHost: NSObject, CAAnimationDelegate {
         for action in actions { DispatchQueue.main.async(execute: action) }
     }
 
-    /// Whether the shell is still moving toward its target size.
-    var isAnimatingShell: Bool { isAnimating }
+    /// Whether the island is still moving: the shell toward its target size,
+    /// or content fading, swapping, or arriving.
+    var isMotionInFlight: Bool { isAnimating || canvas.hasContentMotion }
 
-    /// A gesture that begins while hover is still expanding the island cuts
-    /// the motion short: the shell lands at its full size at once, so the
-    /// gesture then works against a settled surface rather than one still
-    /// moving under the fingers.
-    func expandToFullNow() {
-        guard isAnimating else { return }
-        settle()
+    /// Lands every in-flight motion at once, so any gesture that begins now
+    /// works against a settled island rather than one still moving under the
+    /// fingers. A content departure is the one thing left running: it holds
+    /// the outgoing page at zero until the service's scheduled swap finishes,
+    /// and showing that page early would flash content that is going away.
+    func settleNow() {
+        if isAnimating { settle() }
+        canvas.landContent()
     }
 
     /// The stationary island must stay on Show Desktop for file drops, but it
@@ -1293,6 +1295,25 @@ private final class NotchCanvas: NSView {
     private static let departureKey = "notchDeparture"
     var departsContent: Bool {
         contentVisibility.animation(forKey: "notch.opacity")?.value(forKey: Self.departureKey) as? Bool == true
+    }
+
+    /// Whether content is still fading in, swapping, or arriving — anything
+    /// that would leave the page half-drawn under a gesture that just began.
+    var hasContentMotion: Bool {
+        contentVisibility.animation(forKey: "notch.opacity") != nil
+            || host.layer?.animation(forKey: kCATransition) != nil
+            || host.layer?.animation(forKey: Self.arrivalBlurKey) != nil
+            || host.layer?.animation(forKey: Self.arrivalScaleKey) != nil
+            || arrival != nil
+    }
+
+    /// Lands content at its settled state: full opacity, no blur, no scale.
+    /// A departure is left alone — its outgoing page is meant to stay at zero
+    /// until the service swaps the view, and forcing it visible would flash
+    /// content that is going away.
+    func landContent() {
+        guard !departsContent else { return }
+        restoreContent()
     }
     /// A resting silhouette shows its model path. Until that path is
     /// committed, the presentation layer still describes the previous one,

@@ -67,6 +67,7 @@ enum NotchSectionPagingTests {
         suite.expect(feed(-10, began: true) == 0 && feed(-10, began: true) == 0 && feed(-10) == 0 && feed(-5) == 1,
                "a new beginning discards the previous gesture's distance")
         routing(suite)
+        settling(suite)
     }
 
     // The generated Service uses the production scroll handlers verbatim.
@@ -88,11 +89,11 @@ enum NotchSectionPagingTests {
     }
     final class Host {
         var acceptsPoint = true
-        var isAnimatingShell = false
-        var expandCalls = 0
+        var isMotionInFlight = false
+        var settleCalls = 0
         func containsSurface(_ point: CGPoint) -> Bool { acceptsPoint }
         func containsDestination(_ point: CGPoint) -> Bool { acceptsPoint }
-        func expandToFullNow() { expandCalls += 1 }
+        func settleNow() { settleCalls += 1 }
     }
     class State {
         var running = true, suspended = false, expanded = true, showingSections = true, trackingMenu = false
@@ -136,5 +137,32 @@ enum NotchSectionPagingTests {
             suite.expect(!service.handleScroll(event(fromTop: headerBottom + 20)) && service.movedRows == before,
                          "transparent corners and floating controls are not captured by the gallery")
         }
+    }
+
+    // A gesture that begins over the island settles its motion first, so the
+    // drag measures a still surface rather than one moving under the fingers.
+    // Over the destination only: mid-animation the island has not covered the
+    // ground the gesture begins on.
+    private static func settling(_ suite: TestSuite) {
+        let service = Service()
+        let headerBottom = service.expandedGeometry.headerTopInset + service.expandedGeometry.headerRowHeight
+        func event(_ phase: AppKit.NSEvent.Phase, fromTop top: CGFloat) -> NSEvent {
+            var event = NSEvent(locationInWindow: CGPoint(x: 100, y: service.panel!.frame.height - top))
+            event.phase = phase
+            return event
+        }
+        let body = headerBottom + 20
+        service.windowHost?.isMotionInFlight = true
+        suite.expect(service.handleScroll(event(.began, fromTop: body)) && service.windowHost?.settleCalls == 1,
+                     "a gesture beginning over the destination settles island motion once")
+        suite.expect(service.handleScroll(event(.changed, fromTop: body)) && service.windowHost?.settleCalls == 1,
+                     "an ongoing gesture leaves island motion alone")
+        service.windowHost?.isMotionInFlight = false
+        suite.expect(service.handleScroll(event(.began, fromTop: body)) && service.windowHost?.settleCalls == 1,
+                     "a gesture beginning with nothing in flight settles nothing")
+        service.windowHost?.isMotionInFlight = true
+        service.windowHost?.acceptsPoint = false
+        suite.expect(!service.handleScroll(event(.began, fromTop: body)) && service.windowHost?.settleCalls == 1,
+                     "a gesture beginning outside the destination leaves island motion alone")
     }
 }
