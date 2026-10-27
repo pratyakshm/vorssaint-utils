@@ -348,17 +348,26 @@ struct CommandBarView: View {
                 .buttonStyle(.plain)
             }
         }
-        // The window header stands 36 points tall under 10 of top slack, the
-        // room the field needs to breathe; the island copies stay compact at
-        // the height their geometry is built around.
+        // The minimal window header stands 36 points tall under 10 of top
+        // slack, the room the field needs to breathe; the island copies stay
+        // compact at the height their geometry is built around.
         .frame(minHeight: shownAs == .window
                ? (minimalLook ? DS.Size.headerHeight : 44)
                : 0)
         .padding(.horizontal, DS.Space.large)
         .padding(.top, DS.Size.headerPadding)
-        .padding(.bottom, shownAs == .window && minimalLook
-                 ? 0
-                 : (minimalLook ? DS.Space.xSmall : DS.Space.small + DS.Space.micro))
+        .padding(.bottom, headerBottomPadding)
+    }
+
+    /// The minimal window keeps the field row fixed and changes only the
+    /// bottom slack: 10 below the field while the bar is the field alone
+    /// (36 + 10 + 10 = 56), none once the list is back. The top slack never
+    /// changes, so typing cannot move the field itself.
+    private var headerBottomPadding: CGFloat {
+        if shownAs == .window, minimalLook {
+            return service.isCompactHome ? DS.Size.headerPadding : 0
+        }
+        return minimalLook ? DS.Space.xSmall : DS.Space.small + DS.Space.micro
     }
 
     /// The collapsed bar has no footer, so the keys that still work (↓ to
