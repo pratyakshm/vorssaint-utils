@@ -11,6 +11,7 @@ struct ClipboardQuickPanelView: View {
     @ObservedObject private var l10n = L10n.shared
     @ObservedObject private var history = ClipboardHistoryService.shared
     @Environment(\.colorScheme) private var colorScheme
+    @AppStorage(DefaultsKey.clipboardHistoryShowSourceAppIcons) private var showSourceAppIcons = false
     @FocusState private var searchFocused: Bool
     @State private var previewSelection = QuickPreviewSelection()
     @State private var editingEntryID: UUID?
@@ -163,6 +164,7 @@ struct ClipboardQuickPanelView: View {
                 ClipboardListColumn(
                     entries: filtered,
                     tokens: searchTokens,
+                    showSourceAppIcons: showSourceAppIcons,
                     canReorderEntries: canReorderEntries,
                     previewIsEditing: previewIsEditing,
                     language: l10n.language,
@@ -407,6 +409,7 @@ private struct QuickPreviewPane: View {
 private struct ClipboardListColumn: View {
     let entries: [ClipboardHistoryEntry]
     let tokens: [String]
+    let showSourceAppIcons: Bool
     let canReorderEntries: Bool
     let previewIsEditing: Bool
     let language: AppLanguage
@@ -505,6 +508,7 @@ private struct ClipboardListColumn: View {
             }
             ForEach(entries, id: \.id) { entry in
                 ClipboardRowView(
+                    showSourceAppIcons: showSourceAppIcons,
                     entry: entry,
                     tokens: tokens,
                     shortcutIndex: shortcutIndex(for: entry),
@@ -539,6 +543,7 @@ private struct ClipboardListColumn: View {
 /// not rebuild the others. Value inputs let SwiftUI skip entries unaffected
 /// by selection or history changes.
 private struct ClipboardRowView: View, Equatable {
+    let showSourceAppIcons: Bool
     let entry: ClipboardHistoryEntry
     let tokens: [String]
     let shortcutIndex: Int?
@@ -562,10 +567,26 @@ private struct ClipboardRowView: View, Equatable {
     private var l10n: L10n { .shared }
     private var text: ClipboardFeatureStrings { FeatureStrings.clipboard(language) }
 
+    /// Looked up once per app. An app removed since the copy has nothing to
+    /// show, and the row keeps the kind's symbol. A miss is not kept, so an
+    /// app installed later shows up without a restart.
+    private static var sourceApps: [String: (name: String, icon: NSImage)] = [:]
+
+    private var sourceApp: (name: String, icon: NSImage)? {
+        guard let bundleID = entry.sourceBundleID else { return nil }
+        if let cached = Self.sourceApps[bundleID] { return cached }
+        let app = InstalledApps.url(for: bundleID).map {
+            (name: InstalledApps.name(for: bundleID), icon: NSWorkspace.shared.icon(forFile: $0.path))
+        }
+        if let app { Self.sourceApps[bundleID] = app }
+        return app
+    }
+
     // Preview selection is a channel to the sidebar, not part of this row's
     // appearance, so it stays out of the comparison.
     static func == (lhs: ClipboardRowView, rhs: ClipboardRowView) -> Bool {
-        lhs.entry == rhs.entry
+        lhs.showSourceAppIcons == rhs.showSourceAppIcons
+            && lhs.entry == rhs.entry
             && lhs.tokens == rhs.tokens
             && lhs.shortcutIndex == rhs.shortcutIndex
             && lhs.isSelected == rhs.isSelected
@@ -581,6 +602,14 @@ private struct ClipboardRowView: View, Equatable {
         HStack(alignment: .center, spacing: DS.Space.rowIconGap) {
             icon
                 .frame(width: DS.Size.resultRowIcon, height: DS.Size.resultRowIcon)
+            if showSourceAppIcons, let app = sourceApp {
+                Image(nsImage: app.icon)
+                    .resizable()
+                    .frame(width: DS.Size.resultRowIcon - DS.Space.xSmall,
+                           height: DS.Size.resultRowIcon - DS.Space.xSmall)
+                    .help(app.name)
+                    .accessibilityLabel(app.name)
+            }
             SearchHighlightText.text(previewText, tokens: tokens, fontSize: DS.Font.bodySize)
                 .font(DS.Font.body)
                 .lineLimit(1)

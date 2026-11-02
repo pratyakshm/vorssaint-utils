@@ -218,7 +218,8 @@ extension ClipboardFeatureStrings {
         filterByType: "유형별 필터",
         menu: "메뉴",
         showPreview: "미리보기 표시",
-        hidePreview: "미리보기 가리기"
+        hidePreview: "미리보기 가리기",
+        showSourceAppIconsInList: "목록 보기에 원본 앱 아이콘 표시"
     )
 }
 
@@ -549,6 +550,7 @@ struct ClipboardFeatureStrings {
     let menu: String
     let showPreview: String
     let hidePreview: String
+    let showSourceAppIconsInList: String
 
     static let enUS = ClipboardFeatureStrings(
         title: "Clipboard",
@@ -618,7 +620,8 @@ struct ClipboardFeatureStrings {
         filterByType: "Filter by type",
         menu: "Menu",
         showPreview: "Show Preview",
-        hidePreview: "Hide Preview"
+        hidePreview: "Hide Preview",
+        showSourceAppIconsInList: "Show source app icons in list view"
     )
 
     static let ptBR = ClipboardFeatureStrings(
@@ -689,7 +692,8 @@ struct ClipboardFeatureStrings {
         filterByType: "Filtrar por tipo",
         menu: "Menu",
         showPreview: "Mostrar prévia",
-        hidePreview: "Ocultar prévia"
+        hidePreview: "Ocultar prévia",
+        showSourceAppIconsInList: "Mostrar ícones dos apps de origem na lista"
     )
 
     static let tr = ClipboardFeatureStrings(
@@ -760,7 +764,8 @@ struct ClipboardFeatureStrings {
         filterByType: "Türe göre filtrele",
         menu: "Menü",
         showPreview: "Önizlemeyi göster",
-        hidePreview: "Önizlemeyi gizle"
+        hidePreview: "Önizlemeyi gizle",
+        showSourceAppIconsInList: "Liste görünümünde kaynak uygulama simgelerini göster"
     )
 
     static let ru = ClipboardFeatureStrings(
@@ -831,7 +836,8 @@ struct ClipboardFeatureStrings {
         filterByType: "Фильтр по типу",
         menu: "Меню",
         showPreview: "Показать просмотр",
-        hidePreview: "Скрыть просмотр"
+        hidePreview: "Скрыть просмотр",
+        showSourceAppIconsInList: "Показывать значки исходных приложений в списке"
     )
 
     static let es = ClipboardFeatureStrings(
@@ -902,7 +908,8 @@ struct ClipboardFeatureStrings {
         filterByType: "Filtrar por tipo",
         menu: "Menú",
         showPreview: "Mostrar vista previa",
-        hidePreview: "Ocultar vista previa"
+        hidePreview: "Ocultar vista previa",
+        showSourceAppIconsInList: "Mostrar iconos de las apps de origen en la lista"
     )
 
     static let sk = ClipboardFeatureStrings(
@@ -973,7 +980,8 @@ struct ClipboardFeatureStrings {
         filterByType: "Filtrovať podľa typu",
         menu: "Menu",
         showPreview: "Zobraziť náhľad",
-        hidePreview: "Skryť náhľad"
+        hidePreview: "Skryť náhľad",
+        showSourceAppIconsInList: "Zobraziť ikony zdrojových aplikácií v zozname"
     )
 
     static let de = ClipboardFeatureStrings(
@@ -1044,7 +1052,8 @@ struct ClipboardFeatureStrings {
         filterByType: "Nach Typ filtern",
         menu: "Menü",
         showPreview: "Vorschau zeigen",
-        hidePreview: "Vorschau ausblenden"
+        hidePreview: "Vorschau ausblenden",
+        showSourceAppIconsInList: "Symbole der Quell-Apps in der Liste anzeigen"
     )
 
     static let fr = ClipboardFeatureStrings(
@@ -1115,7 +1124,8 @@ struct ClipboardFeatureStrings {
         filterByType: "Filtrer par type",
         menu: "Menu",
         showPreview: "Afficher l’aperçu",
-        hidePreview: "Masquer l’aperçu"
+        hidePreview: "Masquer l’aperçu",
+        showSourceAppIconsInList: "Afficher les icônes des apps sources dans la liste"
     )
 
     static let it = ClipboardFeatureStrings(
@@ -1186,7 +1196,8 @@ struct ClipboardFeatureStrings {
         filterByType: "Filtra per tipo",
         menu: "Menu",
         showPreview: "Mostra anteprima",
-        hidePreview: "Nascondi anteprima"
+        hidePreview: "Nascondi anteprima",
+        showSourceAppIconsInList: "Mostra le icone delle app di origine nell’elenco"
     )
 
     static let ja = ClipboardFeatureStrings(
@@ -1257,7 +1268,8 @@ struct ClipboardFeatureStrings {
         filterByType: "種類で絞り込む",
         menu: "メニュー",
         showPreview: "プレビューを表示",
-        hidePreview: "プレビューを隠す"
+        hidePreview: "プレビューを隠す",
+        showSourceAppIconsInList: "リストにコピー元のアプリのアイコンを表示"
     )
 
     static let zhHans = ClipboardFeatureStrings(
@@ -1328,7 +1340,8 @@ struct ClipboardFeatureStrings {
         filterByType: "按类型筛选",
         menu: "菜单",
         showPreview: "显示预览",
-        hidePreview: "隐藏预览"
+        hidePreview: "隐藏预览",
+        showSourceAppIconsInList: "在列表中显示来源应用图标"
     )
 
     static let zhTW = ClipboardFeatureStrings(
@@ -1399,7 +1412,8 @@ struct ClipboardFeatureStrings {
         filterByType: "依類型篩選",
         menu: "選單",
         showPreview: "顯示預覽",
-        hidePreview: "隱藏預覽"
+        hidePreview: "隱藏預覽",
+        showSourceAppIconsInList: "在列表中顯示來源 App 圖示"
     )
 
     static let zhHK = ClipboardFeatureStrings(
@@ -1470,7 +1484,8 @@ struct ClipboardFeatureStrings {
         filterByType: "按類型篩選",
         menu: "選單",
         showPreview: "顯示預覽",
-        hidePreview: "隱藏預覽"
+        hidePreview: "隱藏預覽",
+        showSourceAppIconsInList: "在列表中顯示來源 App 圖示"
     )
 }
 
@@ -3346,7 +3361,8 @@ extension ClipboardFeatureStrings {
         filterByType: "Фільтрувати за типом",
         menu: "Меню",
         showPreview: "Показати попередній перегляд",
-        hidePreview: "Приховати попередній перегляд"
+        hidePreview: "Приховати попередній перегляд",
+        showSourceAppIconsInList: "Показувати значки вихідних програм у списку"
     )
 }
 

@@ -243,7 +243,10 @@ private struct PurposeStep: View {
             }
             .padding(.horizontal, 28)
 
-            LazyVStack(spacing: DS.Space.rowGap) {
+            // Eager, like the Features hub (#2311, #2642): a lazy stack nested
+            // here re-estimated the cards below the fold on every scroll step
+            // and re-anchored the viewport until the app hung.
+            VStack(spacing: DS.Space.rowGap) {
                 ForEach(FeatureGroup.allCases, id: \.self) { group in
                     VStack(alignment: .leading, spacing: DS.Space.rowTitleGap) {
                         Text(groupTitle(group))
