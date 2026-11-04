@@ -4,9 +4,9 @@
 import AppKit
 import SwiftUI
 
-/// A horizontal section change from the island's header title:
-/// swiping left goes to the next section, right to the previous one,
-/// in the same order the sections list shows.
+/// A horizontal section change from a page row's clear leading strip, or
+/// from the player's whole page: swiping left goes to the next section,
+/// right to the previous one, in the same order the sections list shows.
 enum NotchSectionSwipeDirection {
     case next
     case previous
@@ -42,11 +42,11 @@ enum NotchSectionSwipeLogic {
     }
 }
 
-/// Catches 2-finger scroll over the header title.
+/// Catches 2-finger scroll over a page row's clear leading strip.
 /// `scrollWheel` carries the 2-finger trackpad scroll and a mouse tilt.
 /// It reports through callbacks so the content follows the fingers.
-/// Over a whole page it takes only scrolls: clicks, drags and menus fall
-/// through to the controls beneath it.
+/// Where it spans the whole player page it takes only scrolls: clicks,
+/// drags and menus fall through to the controls beneath it.
 struct NotchSectionSwipeCatcher: NSViewRepresentable {
     var enabled: Bool
     var takesOnlyScrolls = false

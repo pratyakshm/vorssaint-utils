@@ -660,23 +660,20 @@ enum NotchTests {
                      "across from the player's cover a reading keeps its glyph and a meter at least 36 points long: \(narrowestPlayer)")
     }
 
-    /// The views put the island's way to the sections where the band says:
-    /// every other page leads its row with the grid button, and the player,
-    /// which lays out its own leading side, leads its row with the way back
-    /// to the sections instead and shows no button of its own.
-    private static func sectionsButtonPlacementContracts(_ suite: TestSuite) {
+    /// The open island draws no section menu button: a page's row holds only
+    /// its own controls, and the player lays out its leading side without a
+    /// way to the sections.
+    private static func sectionNavigationButtonContracts(_ suite: TestSuite) {
         func source(_ path: String) -> String { (try? String(contentsOfFile: path, encoding: .utf8)) ?? "" }
         let island = source("Sources/Vorssaint/UI/Notch/NotchView.swift")
         let row = (island.components(separatedBy: "private func bandRow(").dropFirst().first ?? "")
             .components(separatedBy: "private func updateControl(").first ?? ""
-        let fallbacks = row.components(separatedBy: "HStack(spacing: 6) {").count - 1
-        suite.expect(fallbacks == 4 && !row.contains("trailingSections(band)")
-                     && row.contains("} else if band.trailingSectionsButton || band.pageSectionsButton {")
-                     && row.contains(#"NotchIconButton(symbol: "chevron.left", title: l10n.s.obBack, action: service.toggleSections)"#),
-                     "the row leads with the way to the sections on a page that wraps the camera, and its trailing fallbacks never end with the grid button")
+        suite.expect(!row.isEmpty && !row.contains("NotchSectionsButton")
+                     && !row.contains("toggleSections") && !row.contains(#"symbol: "chevron.left""#),
+                     "the row holds no section menu button")
         let player = source("Sources/Vorssaint/UI/Notch/NotchMusicView.swift")
-        suite.expect(!player.contains("sectionsButton"),
-                     "the player leaves the way to the sections to its row and shows none of its own")
+        suite.expect(!player.contains("sectionsButton") && !player.contains("pageSectionsButton"),
+                     "the player draws no section menu button of its own")
     }
 
     /// The home page's rail never scrolls a tile it could show whole. Where
@@ -1762,7 +1759,7 @@ enum NotchTests {
         pageTopContracts(suite)
         pageWidthContracts(suite)
         sectionsButtonContracts(suite)
-        sectionsButtonPlacementContracts(suite)
+        sectionNavigationButtonContracts(suite)
         homeRailContracts(suite)
         homeRailRowContracts(suite)
         toolRailContracts(suite)

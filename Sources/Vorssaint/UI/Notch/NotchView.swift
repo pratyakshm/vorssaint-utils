@@ -378,6 +378,12 @@ struct NotchView: View {
             .accessibilityAction(named: service.pinned ? text.unpin : text.pin) { service.pinned.toggle() }
             .accessibilityAction(named: l10n.s.menuSettings) { service.openSettings() }
             .accessibilityAction(named: text.collapse) { service.collapse() }
+            // The gallery already lists every section, so its own page keeps
+            // this action off and Escape stays a way out of the island.
+            .modifier(NotchSectionAccessibilityAction(
+                enabled: !service.showingSections && !service.modules.isEmpty,
+                title: text.sectionsTitle
+            ) { service.toggleSections() })
             .padding(.top, geometry.pageTopInset - geometry.headerTopInset)
             .overlayPreferenceValue(NotchBandKey.self, alignment: .top) { items in
                 if geometry.headerRowHeight > 0 {
@@ -429,9 +435,10 @@ struct NotchView: View {
         }
     }
 
-    /// The row: the island's way back or to the sections leads it, and an
-    /// update or the pin ends it, around what the page puts there. A page
-    /// that wraps the camera lays out the leading side itself.
+    /// The row: a detail's way back leads it, and an update or the pin ends
+    /// it, around what the page puts there. A plain page keeps the rest of
+    /// its leading side clear for a section swipe. A page that wraps the
+    /// camera lays out the leading side itself.
     private func bandRow(_ items: NotchBandItems, band: NotchBand, wraps: Bool) -> some View {
         let feedback = headerFeedback
         // Across a full row the home page's levels fill the leading side, so
@@ -443,22 +450,18 @@ struct NotchView: View {
         let side: HorizontalEdge = wraps || homeReading != nil ? .trailing : .leading
         let readingWidth = homeReading ?? (band.besideCamera ? band.side : min(band.side, 220))
         let makesRoom = homeReading != nil && feedback != nil
-        // Pages that bring no leading controls of their own keep the open
-        // section's title, where a horizontal swipe switches sections.
-        let titles = !wraps && !homeRow && !service.showingSections && !showsDetail
+        // Pages that bring no leading controls of their own keep the rest of
+        // the leading side clear for a horizontal swipe, which switches
+        // sections without naming the page.
+        let showsSectionSwipe = !wraps && !homeRow && !service.showingSections && !showsDetail
             && !service.modules.isEmpty
         // A level reading covers its side for the moment it shows; the
         // controls there stay mounted, so a search keeps its focus.
         return NotchBandRow(band: band, covered: feedback == nil ? nil : side) {
             if !wraps {
                 bandLeading(band)
-                if titles { sectionTitle }
                 items.leading
-            } else if band.trailingSectionsButton || band.pageSectionsButton {
-                // The player lays out its leading side itself, but still
-                // leads its row with the way to the sections, where the
-                // other pages keep theirs in theirs.
-                NotchIconButton(symbol: "chevron.left", title: l10n.s.obBack, action: service.toggleSections)
+                if showsSectionSwipe { sectionSwipeRegion }
             }
         } trailing: {
             if makesRoom {
@@ -507,6 +510,9 @@ struct NotchView: View {
         return false
     }
 
+    /// The way back from the gallery or a detail. A plain page shows no
+    /// section menu here; its row leaves that side to the page's own controls
+    /// and a clear strip for the section swipe.
     @ViewBuilder private func bandLeading(_ band: NotchBand) -> some View {
         if service.showingSections {
             NotchIconButton(symbol: "chevron.left", title: l10n.s.obBack, action: service.toggleSections)
@@ -515,29 +521,22 @@ struct NotchView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
         } else if showsDetail {
             NotchBandBackButton(title: service.detailTitle, action: service.goBack)
-        } else if band.sectionsButton {
-            // Without the floating button, the sections stay one click away;
-            // the row keeps it room before the page's own controls.
-            NotchSectionsButton(action: service.toggleSections)
         }
     }
 
-    /// The open section's title. A horizontal swipe anywhere across it moves
-    /// to the next or previous section. The page follows the fingers and
-    /// springs into the new section, with a haptic on the change.
-    private var sectionTitle: some View {
-        Text(service.selected.title(l10n.language))
-            .font(DS.Font.cardTitle)
-            .lineLimit(1)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-            .contentShape(Rectangle())
-            // A subtle parallax while the page follows the swipe.
-            .offset(x: canSwipeSections ? sectionSwipeOffset * 0.18 : 0)
+    /// A clear strip across the rest of a plain page's leading side. A
+    /// horizontal two-finger swipe over it moves to the next or previous
+    /// section, with the page following the fingers and a haptic on the
+    /// change. It draws nothing and stays out of VoiceOver.
+    private var sectionSwipeRegion: some View {
+        Color.clear
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
             .contentShape(Rectangle())
             .overlay {
                 if canSwipeSections {
                     NotchSectionSwipeCatcher(
                         enabled: canSwipeSections,
+                        takesOnlyScrolls: true,
                         onChanged: { swipeChanged($0) },
                         onCommit: { swipeCommitted($0) },
                         onCancelled: { swipeCancelled() }
@@ -546,8 +545,7 @@ struct NotchView: View {
                     .allowsHitTesting(true)
                 }
             }
-            .accessibilityAddTraits(.isHeader)
-            .accessibilityHint(text.switchSection)
+            .accessibilityHidden(true)
     }
 
     /// The island's own actions, on a secondary click anywhere a page has no
@@ -955,6 +953,22 @@ extension NotchModule: PanelOrderItem {
         case .scratchpad: return FeatureStrings.scratchpad(language).pageTitle
         case .agents: return FeatureStrings.notchAgents(language).title
         case .watch: return FeatureStrings.notchWatch(language).title
+        }
+    }
+}
+
+/// VoiceOver's way to the sections from a page. The gallery already shows
+/// them, so the action stays off there.
+private struct NotchSectionAccessibilityAction: ViewModifier {
+    let enabled: Bool
+    let title: String
+    let action: () -> Void
+
+    @ViewBuilder func body(content: Content) -> some View {
+        if enabled {
+            content.accessibilityAction(named: title) { action() }
+        } else {
+            content
         }
     }
 }

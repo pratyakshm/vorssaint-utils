@@ -291,7 +291,8 @@ enum NotchDestinationContract {
                      "opening a page while the capture controls are up expands them instead")
     }
 
-    /// Escape steps back through what the island shows, then closes it.
+    /// Escape steps back through what the island shows, then opens the
+    /// sections gallery from a page. Escape in the gallery closes the island.
     private static func stepBackContracts(_ suite: TestSuite) {
         let metric = Service()
         metric.open(.system)
@@ -300,7 +301,22 @@ enum NotchDestinationContract {
         suite.expect(metric.expanded && metric.selected == .system && metric.selectedMetric == nil,
                      "Escape steps back from a detail opened on its page, as the Back button does")
         metric.stepBack()
-        suite.expect(!metric.expanded, "Escape closes the island once nothing lies behind the page")
+        suite.expect(metric.expanded && metric.showingSections && metric.selected == .system,
+                     "Escape opens the sections gallery once nothing lies behind the page")
+
+        let bare = Service()
+        bare.expanded = true
+        bare.modules = []
+        bare.stepBack()
+        suite.expect(!bare.expanded, "Escape closes an expanded island when it has no sections")
+
+        let sections = Service()
+        sections.expanded = true
+        sections.modules = [.system]
+        sections.selected = .system
+        sections.stepBack()
+        suite.expect(sections.expanded && sections.showingSections,
+                     "Escape opens the sections gallery from an expanded island with sections")
 
         let panel = Service()
         panel.open(.music)
@@ -370,9 +386,10 @@ enum NotchDestinationContract {
         layered.setPageLayer(.music) { closes.append(.music); layered.setPageLayer(.music, close: nil) }
         layered.setPageLayer(.calendar) { closes.append(.calendar) }
         layered.stepBack()
-        suite.expect(layered.expanded && closes == [.music], "Escape closes the page's own layer before the island")
+        suite.expect(layered.expanded && closes == [.music], "Escape closes the page's own layer before the gallery")
         layered.stepBack()
-        suite.expect(!layered.expanded && closes == [.music], "only the visible page's layer answers Escape")
+        suite.expect(layered.expanded && layered.showingSections && closes == [.music],
+                     "after the page's own layer, Escape opens the sections gallery, and only the visible page's layer answers it")
 
         let covered = Service()
         covered.open(.system)

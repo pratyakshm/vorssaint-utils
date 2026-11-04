@@ -141,8 +141,7 @@ struct NotchLayoutEditor: View {
     /// the page's own, as the island takes no more.
     private var actualWidth: CGFloat { previewGeometry.expandedWidth }
     /// The home page around a camera, or as a capsule while the island
-    /// floats in its display's menu bar, with the sections button in its
-    /// row when nothing floats for it.
+    /// floats in its display's menu bar.
     private var previewGeometry: NotchGeometry {
         let floats = notch.geometry.floats
         let geometry = NotchGeometry(screen: CGRect(x: 0, y: 0, width: 1920, height: 1080),
@@ -283,15 +282,9 @@ struct NotchLayoutEditor: View {
         .accessibilityLabel(editor.content)
         .overlay {
             VStack(spacing: NotchLayout.spacing) {
-                // The top row, around the camera, holds the levels, after the
-                // sections button when nothing floats for that.
+                // The top row, around the camera, holds the levels, as the
+                // island's row does; it draws no section menu.
                 NotchBandRow(band: band) {
-                    if band.sectionsButton {
-                        Image(systemName: "square.grid.2x2")
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundStyle(.white.opacity(0.55))
-                            .frame(width: 28, height: 28)
-                    }
                     NotchBandLevels(band: band, levels: bandLevels, side: .leading) { levelRow($0) }
                 } trailing: {
                     NotchBandLevels(band: band, levels: bandLevels, side: .trailing) { levelRow($0) }

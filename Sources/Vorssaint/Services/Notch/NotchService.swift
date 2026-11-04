@@ -2012,14 +2012,17 @@ final class NotchService: ObservableObject {
     }
 
     /// Escape steps back one level: a detail returns to its page as the Back
-    /// button does, a page closes the layer it shows, and the island closes
-    /// once nothing lies behind.
+    /// button does, a page closes the layer it shows, and a plain page opens
+    /// the sections gallery. The island closes when it is not expanded or has
+    /// no sections to show.
     private func stepBack() {
         guard captureControls == nil, !heldDrag else { return }
         if showingAppPanel || selectedMetric != nil {
             if detailHasPage { goBack() } else { collapse() }
         } else if let close = pageLayers[selected] {
             close()
+        } else if expanded, !modules.isEmpty {
+            toggleSections()
         } else {
             collapse()
         }
@@ -3949,7 +3952,7 @@ final class NotchService: ObservableObject {
                     return nil
                 }
                 if event.keyCode == 53, self.showingSections {
-                    self.toggleSections()
+                    self.collapse()
                     return nil
                 }
                 if self.handleSectionKey(event) { return nil }

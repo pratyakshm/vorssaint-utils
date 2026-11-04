@@ -222,8 +222,8 @@ enum NotchTimerSupport {
         /// Whether the menu beside the camera can name the current mode in
         /// `room`: every mode's name, so choosing another never changes how
         /// the menu reads, at the minimum scale with macOS 15's wider kana.
-        /// Where the sections button leaves less, the menu shows the mode's
-        /// glyph instead of cutting its name.
+        /// Where the section menu's room leaves less, the menu shows the
+        /// mode's glyph instead of cutting its name.
         static func menuNamesFit(_ names: [String], in room: CGFloat) -> Bool {
             let font = NSFont.systemFont(ofSize: labelSize, weight: .medium)
             let widest = names.map { ($0 as NSString).size(withAttributes: [.font: font]).width }.max() ?? 0

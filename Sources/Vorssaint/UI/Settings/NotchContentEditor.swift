@@ -99,13 +99,11 @@ struct NotchIslandPreview: View {
 
     /// The island as it opens on this section: the page, and its top row
     /// with what the page puts there, around the camera where the island has
-    /// one. The row's own way to the sections leads it, or ends it where the
-    /// page lays out its leading side itself, when nothing floats beside the
-    /// island for that.
+    /// one. The row draws no section menu, so only the page's own controls
+    /// show in it.
     private func island(size: CGSize, geometry: NotchGeometry) -> some View {
         let content = geometry.contentSize(for: size)
         let band = NotchBand(geometry: geometry, contentWidth: content.width)
-        let wraps = geometry.pageTop == .wrapsCamera
         return NotchPagePreview(module: module, size: content)
             .frame(width: content.width, height: content.height, alignment: .top)
             .clipped()
@@ -113,12 +111,7 @@ struct NotchIslandPreview: View {
             .overlayPreferenceValue(NotchBandKey.self, alignment: .top) { items in
                 if geometry.headerRowHeight > 0 {
                     NotchBandRow(band: band) {
-                        if !wraps {
-                            if band.sectionsButton { NotchSectionsButton(action: {}) }
-                            items.leading
-                        } else if band.trailingSectionsButton || band.pageSectionsButton {
-                            NotchIconButton(symbol: "chevron.left", title: l10n.s.obBack, action: {})
-                        }
+                        items.leading
                     } trailing: {
                         items.trailing
                     }

@@ -57,7 +57,7 @@ enum NotchKeyMonitorTests {
     struct Application { let delegate: AnyObject? = nil }
     static let NSApp = Application()
     enum AssistiveKeyboard { static func ownsCocoaPoint(_ point: CGPoint) -> Bool { false } }
-    /// What each Escape did: the gallery toggled, Tools took it or the island closed.
+    /// What each Escape did: the gallery closed, Tools took it or the island stepped back.
     static var actions: [String] = []
     final class Launcher {
         var isEditing = false
@@ -144,11 +144,11 @@ enum NotchKeyMonitorTests {
                      "reverse keyboard navigation restores visible focus without consuming Shift-Tab")
         let escape = NSEvent(window: service.panel, keyCode: 53)
         // Each Escape branch, reached from a field that can hold a composing
-        // input method: the gallery search, a field in a Tools utility, one
-        // in the app panel and the Scratchpad editor.
+        // input method: the gallery search, which closes the island; a field
+        // in a Tools utility; one in the app panel; and the Scratchpad editor.
         let destinations: [(name: String, module: NotchModule, sections: Bool, appPanel: Bool,
                             field: NSTextView, action: String)] = [
-            ("the gallery search", .controls, true, false, NSTextView(isFieldEditor: true), "sections"),
+            ("the gallery search", .controls, true, false, NSTextView(isFieldEditor: true), "collapse"),
             ("a Tools utility", .tools, false, false, NSTextView(isFieldEditor: true), "tools"),
             ("the app panel", .tools, false, true, NSTextView(isFieldEditor: true), "stepBack"),
             ("the Scratchpad editor", .scratchpad, false, false, NSTextView(isFieldEditor: false), "stepBack"),

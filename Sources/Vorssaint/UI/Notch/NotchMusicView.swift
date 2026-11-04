@@ -131,9 +131,8 @@ struct NotchMusicView: View {
     /// The cover and what goes beside it: the song level with the cover's
     /// foot, below the camera where the cover reaches up beside it, and the
     /// bars at the far end, level with the cover's middle. Without a camera
-    /// row the song's toggles and the way to the sections take the corner
-    /// above the bars; a camera's row too narrow for that way leaves it
-    /// beside the bars.
+    /// row the song's toggles take the corner above the bars; a camera's row
+    /// keeps them beside the bars.
     private func head<Artwork: View, Titles: View, Accessory: View, Corner: View>(
         corner showsCorner: Bool = false,
         @ViewBuilder artwork: () -> Artwork, @ViewBuilder titles: () -> Titles,
@@ -159,7 +158,7 @@ struct NotchMusicView: View {
         let opens = player != nil
         let openTitle = player.map { NotchPreferredPlayer.openTitle(for: $0) } ?? ""
         return VStack(spacing: NotchLayout.musicHeadSpacing) {
-            head(corner: !band.besideCamera && band.pageSectionsButton) {
+            head {
                 // With a music app to open, the cover and the buttons below open it.
                 Button { NotchPreferredPlayer.open() } label: {
                     NotchArtwork(image: nil, size: NotchLayout.musicArtworkSize)

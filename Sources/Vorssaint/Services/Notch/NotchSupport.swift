@@ -26,7 +26,7 @@ enum NotchModule: String, CaseIterable, Identifiable {
         case .captures: return "camera.viewfinder"
         case .files: return "tray.full"
         case .system: return "gauge.with.dots.needle.50percent"
-        // The quick panel's own mark; the grid belongs to the sections button.
+        // The quick panel's own mark.
         case .tools: return AppFeature.quickLauncher.symbolName
         case .scratchpad: return "note.text"
         case .agents: return "sparkles"
@@ -221,8 +221,10 @@ extension NotchModule {
 struct NotchBand: Equatable {
     /// Room every control keeps from the camera.
     static let cameraClearance: CGFloat = 8
-    /// The island's way to its sections: a 28-point button and the row's
-    /// spacing after it.
+    /// The room the island's section menu used to take: a 28-point button and
+    /// the row's spacing after it. The open island draws no menu button there,
+    /// but the band keeps the room because the page width and level layout
+    /// still account for it.
     static let sectionsButtonRoom: CGFloat = 28 + 6
 
     /// The row wraps a physical camera, half of it on either side.
@@ -231,14 +233,15 @@ struct NotchBand: Equatable {
     /// Each side's width beside the camera, past the clearance; without a
     /// camera, the whole row.
     var side: CGFloat = 0
-    /// The island's way to its sections leads the row, before the page's
-    /// own controls.
+    /// The band reserves the section menu's room at the start of the row,
+    /// before the page's own controls, though the open island draws no menu.
     var sectionsButton = false
     /// On a page that lays out its leading side itself, as the player does
-    /// across from its cover, the row ends with it after the page's own
-    /// controls where they fit together.
+    /// across from its cover, the band reserves the section menu's room after
+    /// the page's own controls where they fit together.
     var trailingSectionsButton = false
-    /// Where the row does not hold it, such a page shows it itself.
+    /// The player's row has no room for the section menu's reservation, so the
+    /// page's own width keeps it instead of the row.
     var pageSectionsButton = false
 
     init() {}
@@ -565,7 +568,7 @@ enum NotchLayout {
     }
 
     /// How many of the home page's levels the island's top row holds, each
-    /// at least at its narrowest after the sections button. A full row
+    /// at least at its narrowest after the section menu's room. A full row
     /// holds them all. Beside a camera they sit one on each side only
     /// while they split evenly; three would leave one side with two and
     /// nothing under the other, so they share a row below the camera's,
@@ -2387,17 +2390,18 @@ struct NotchGeometry: Equatable {
     }
     /// What each side of the camera keeps for the page's row.
     var pageBandSide: CGFloat { pageTop == .wrapsCamera ? NotchLayout.musicBandSide : 100 }
-    /// The sections button leads the row, unless the page lays out its
-    /// leading side itself, as the player does: the row then ends with it.
+    /// The row reserves the section menu's room at its start, unless the page
+    /// lays out its leading side itself, as the player does: the row then
+    /// reserves it at its end. The open island draws no menu button either way.
     var rowShowsSectionsButton: Bool { sectionsButtonInRow && pageTop != .wrapsCamera }
     var sectionsButtonEndsRow: Bool { sectionsButtonInRow && pageTop == .wrapsCamera }
-    /// The page's controls and then the button, each control taking the
-    /// button's room.
+    /// The page's controls and then the section menu's room, each control
+    /// taking the button's room.
     var trailingSectionsRoom: CGFloat { CGFloat(pageTrailingControls) * NotchBand.sectionsButtonRoom + 28 }
 
     /// The island opened on `module` at rest: the page's top row and the
-    /// width it reads best at, with the sections button where nothing
-    /// floating beside the island offers them.
+    /// width it reads best at, with the section menu's room where nothing
+    /// floating beside the island offers the sections.
     func page(_ module: NotchModule, controls: [NotchControlItem], sectionsButton: Bool) -> NotchGeometry {
         var result = self
         result.pageTop = module.pageTop
@@ -2703,12 +2707,12 @@ struct NotchGeometry: Equatable {
         let chosen = NotchLayout.preferredWidth(layout, custom: customWidth)
         // Under a preset, a page with a width of its own takes no more, still
         // wrapping the camera with its row where the chosen width would have.
-        // Each side keeps its room for the page's controls past the sections
-        // button, as the camera's sides are as wide as each other. A row that
-        // ends with the button grows only when the page's controls leave it
-        // no room and the chosen width holds both; otherwise the page shows
-        // it. A width set by hand is the island's on every page, so making it
-        // wider makes the player and the home page wider too.
+        // Each side keeps its room for the page's controls past the section
+        // menu's room, as the camera's sides are as wide as each other. A row
+        // that reserves that room at its end grows only when the page's
+        // controls leave it no room and the chosen width holds both. A width
+        // set by hand is the island's on every page, so making it wider makes
+        // the player and the home page wider too.
         var wing = pageBandSide + (rowShowsSectionsButton ? NotchBand.sectionsButtonRoom : 0)
         let ending = max(wing, trailingSectionsRoom + NotchBand.cameraClearance)
         if sectionsButtonEndsRow, cameraWidth + ending * 2 + NotchLayout.horizontalInset * 2 <= chosen { wing = ending }

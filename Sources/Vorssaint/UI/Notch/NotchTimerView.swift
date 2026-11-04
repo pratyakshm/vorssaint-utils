@@ -115,8 +115,8 @@ struct NotchTimerView: View {
                         .lineLimit(1)
                         .minimumScaleFactor(NotchTimerSupport.ModePicker.menuMinimumScale)
                 } else {
-                    // Past the sections button a side can be too narrow for
-                    // a long name; the mode's glyph names it instead.
+                    // Past the section menu's room a side can be too narrow
+                    // for a long name; the mode's glyph names it instead.
                     Image(systemName: NotchTimerSupport.ModePicker.symbol(for: mode))
                         .font(.system(size: NotchTimerSupport.ModePicker.labelSize, weight: .medium))
                 }
