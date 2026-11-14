@@ -23,7 +23,7 @@ struct NotchMascotSettings: View {
     @AppStorage(DefaultsKey.notchMascotPalette) private var palette = NotchMascotPalette.pearl.rawValue
     @AppStorage(DefaultsKey.notchMascotSide) private var side = NotchMascotSide.left.rawValue
     @AppStorage(DefaultsKey.notchMascotVisitFrequency) private var frequency = NotchMascotVisitFrequency.normal.rawValue
-    @AppStorage(DefaultsKey.notchCommandBar) private var commandBar = true
+    @AppStorage(DefaultsKey.commandBarOpeningStyle) private var openingStyle = CommandBarOpeningStyle.island.rawValue
     @AppStorage(DefaultsKey.notchCommandBarStyle) private var commandBarStyle = NotchCommandBarStyle.droplet.rawValue
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -37,6 +37,12 @@ struct NotchMascotSettings: View {
     }
 
     private var restingSide: NotchMascotSide { NotchMascotSide(rawValue: side) ?? .left }
+
+    /// The Command Bar page owns this choice; the card here mirrors it so the
+    /// two switches can never disagree.
+    private var commandBarInIsland: Bool {
+        (CommandBarOpeningStyle(rawValue: openingStyle) ?? .island) == .island
+    }
 
     /// The island it lives in is installed and on.
     private var islandOn: Bool { features.isAvailable(.notch) && islandEnabled }
@@ -231,8 +237,11 @@ struct NotchMascotSettings: View {
         let bar = FeatureStrings.commandBar(l10n.language)
         return SettingsCard(title: bar.pageTitle) {
             SettingsFeatureSwitchRow(symbol: "command", title: text.commandBar, caption: text.commandBarHint,
-                                     isOn: $commandBar, feature: .commandBar)
-            if available, commandBar {
+                                     isOn: Binding(get: { commandBarInIsland },
+                                                   set: { openingStyle = ($0 ? CommandBarOpeningStyle.island
+                                                                              : .popup).rawValue }),
+                                     feature: .commandBar)
+            if available, commandBarInIsland {
                 SettingsRow(symbol: "drop", title: text.opensAs) { EmptyView() }
                     .transition(.opacity)
                 HStack(spacing: 10) {
@@ -249,7 +258,7 @@ struct NotchMascotSettings: View {
                 .transition(.opacity)
             }
         }
-        .animation(animation, value: available && commandBar)
+        .animation(animation, value: available && commandBarInIsland)
     }
 
     /// An option with its icon, a line about it and a switch, like the rest of Settings.

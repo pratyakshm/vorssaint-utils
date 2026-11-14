@@ -1277,12 +1277,11 @@ enum NotchMascotSupport {
     }
 
     /// How the Command Bar comes out of the island, or nil when it opens in
-    /// its own window as it always has. Chosen popup keeps its own window
-    /// whatever the island says.
+    /// its own window as it always has. The opening style decides on its own:
+    /// the old companion switch must not veto a chosen island.
     static func commandBarStyle(in defaults: UserDefaults = .standard) -> NotchCommandBarStyle? {
         guard CommandBarOpeningStyle(rawValue: defaults.string(forKey: DefaultsKey.commandBarOpeningStyle) ?? "") != .popup,
-              isEnabled(in: defaults), AppFeature.commandBar.isAvailable(in: defaults),
-              defaults.bool(forKey: DefaultsKey.notchCommandBar) else { return nil }
+              isEnabled(in: defaults), AppFeature.commandBar.isAvailable(in: defaults) else { return nil }
         return NotchCommandBarStyle(rawValue: defaults.string(forKey: DefaultsKey.notchCommandBarStyle) ?? "") ?? .droplet
     }
 

@@ -141,7 +141,8 @@ enum NotchMascotTests {
                      && SettingsBackupSupport.exportKeys().contains(DefaultsKey.commandBarOpeningStyle),
                      "the opening style is registered with today's island behavior and travels in a backup")
         defaults.set(false, forKey: DefaultsKey.notchCommandBar)
-        suite.expect(NotchMascotSupport.commandBarStyle(in: defaults) == nil, "turned off, the bar keeps its own window")
+        suite.expect(NotchMascotSupport.commandBarStyle(in: defaults) == .droplet,
+                     "the old companion switch no longer vetoes the chosen island")
         defaults.set(true, forKey: DefaultsKey.notchCommandBar)
         defaults.set(false, forKey: AppFeature.commandBar.availabilityKey)
         suite.expect(NotchMascotSupport.commandBarStyle(in: defaults) == nil,
