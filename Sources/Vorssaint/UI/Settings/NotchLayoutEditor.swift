@@ -84,7 +84,7 @@ struct NotchLayoutEditor: View {
                         }
                         if layout.hasRoom(on: side) {
                             Button { addingSide = side } label: {
-                                Image(systemName: "plus").font(.system(size: 15, weight: .semibold))
+                                Image(systemName: "plus").font(DS.Font.cardTitle)
                                     .frame(width: 30, height: 30)
                                     .background(.background, in: Circle())
                                     .overlay { Circle().strokeBorder(Color.accentColor.opacity(0.65), style: StrokeStyle(lineWidth: 1, dash: [3, 3])) }
@@ -105,7 +105,7 @@ struct NotchLayoutEditor: View {
                     }
                     // A grip on the corner, clear of the page inside the silhouette.
                     Image(systemName: "arrow.up.left.and.arrow.down.right")
-                        .font(.system(size: 10, weight: .semibold)).foregroundStyle(Color.accentColor)
+                        .font(DS.Font.disclosure).foregroundStyle(Color.accentColor)
                         .frame(width: 24, height: 24)
                         .background(.background, in: Circle())
                         .overlay { Circle().strokeBorder(Color.accentColor.opacity(0.65), lineWidth: 1) }
@@ -126,7 +126,7 @@ struct NotchLayoutEditor: View {
             }
             .frame(height: Self.canvasHeight)
             .animation(reduceMotion ? nil : .smooth(duration: 0.2), value: layout)
-            Text(editor.layoutHint).font(.callout).foregroundStyle(.secondary)
+            Text(editor.layoutHint).font(DS.Font.panelBody).foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
@@ -208,7 +208,7 @@ struct NotchLayoutEditor: View {
         let hidden = button.action?.isAvailable() != true
         return Button { editingName = button.label; editingID = button.id } label: {
             Image(systemName: button.action?.symbol ?? "questionmark")
-                .font(.system(size: 12, weight: .medium)).foregroundStyle(.white)
+                .font(DS.Font.bar).foregroundStyle(.white)
                 .frame(width: 30, height: 30).background(.black, in: Circle())
                 .overlay { Circle().strokeBorder(editingID == button.id ? Color.accentColor : .white.opacity(0.2), lineWidth: 1.5) }
                 .shadow(color: .black.opacity(0.12), radius: 3, y: 2)
@@ -221,7 +221,7 @@ struct NotchLayoutEditor: View {
         .popover(isPresented: Binding(get: { editingID == button.id }, set: { if !$0 { editingID = nil } }),
                  arrowEdge: button.side == .left ? .trailing : button.side == .right ? .leading : .top) {
             VStack(alignment: .leading, spacing: 14) {
-                Text(editor.editButton).font(.headline)
+                Text(editor.editButton).font(DS.Font.cardTitle)
                 TextField(editor.buttonName, text: $editingName, prompt: Text(button.action?.title(l10n) ?? ""))
                     .onChange(of: editingName) { _, value in
                         if let index = configuration.buttons.firstIndex(where: { $0.id == button.id }) { configuration.buttons[index].label = value }
@@ -327,8 +327,8 @@ struct NotchLayoutEditor: View {
             // its line beside the cover, as on the island.
             VStack(alignment: .leading, spacing: 2) {
                 Text(FeatureStrings.radialMenu(l10n.language).mediaNothingPlaying)
-                    .font(.system(size: 13, weight: .semibold)).lineLimit(1)
-                Text(text.musicHint).font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(1)
+                    .font(DS.Font.rowIcon).lineLimit(1)
+                Text(text.musicHint).font(DS.Font.panelFloor).foregroundStyle(.secondary).lineLimit(1)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -342,10 +342,10 @@ struct NotchLayoutEditor: View {
     /// no readout. Brightness has a chooser only beside a second display.
     private func levelRow(_ item: NotchControlItem) -> some View {
         HStack(spacing: 6) {
-            Image(systemName: item.symbol).font(.system(size: 12, weight: .medium)).frame(width: 18, height: 18)
+            Image(systemName: item.symbol).font(DS.Font.bar).frame(width: 18, height: 18)
             NotchMeter(value: item == .volume ? 0.45 : 0.65, height: 8).frame(height: 24)
             if item == .volume {
-                Image(systemName: "chevron.down").font(.system(size: 9, weight: .semibold))
+                Image(systemName: "chevron.down").font(DS.Font.disclosure)
                     .foregroundStyle(.secondary)
                     .frame(width: 16, height: 24)
             }
@@ -365,7 +365,7 @@ struct NotchActionChooser: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            if !title.isEmpty { Text(title).font(.headline) }
+            if !title.isEmpty { Text(title).font(DS.Font.cardTitle) }
             TextField(editor.findAction, text: $query).textFieldStyle(.roundedBorder).focused($searching)
             ScrollView {
                 VStack(alignment: .leading, spacing: 12) {
@@ -391,12 +391,12 @@ struct NotchActionChooser: View {
         let matches = actions.filter(matchesQuery)
         if !matches.isEmpty {
             VStack(alignment: .leading, spacing: 8) {
-                Text(title).font(.caption).foregroundStyle(.secondary)
+                Text(title).font(DS.Font.caption).foregroundStyle(.secondary)
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 6) {
                     ForEach(matches) { action in
                         Button { choose(action) } label: {
                             Label(action.title(l10n), systemImage: action.symbol)
-                                .font(.system(size: 11)).lineLimit(2)
+                                .font(DS.Font.panelFloor).lineLimit(2)
                                 .frame(maxWidth: .infinity, minHeight: 38, alignment: .leading).padding(.horizontal, 8)
                                 .background(selected == action ? Color.accentColor.opacity(0.14) : Color.secondary.opacity(0.07), in: RoundedRectangle(cornerRadius: 9))
                         }.buttonStyle(.plain).disabled(!action.isAvailable())

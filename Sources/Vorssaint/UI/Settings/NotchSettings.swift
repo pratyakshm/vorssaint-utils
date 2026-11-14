@@ -155,7 +155,7 @@ struct NotchSettings: View {
             HStack(alignment: .center) {
                 VStack(alignment: .leading, spacing: 5) {
                     Text(text.title).font(.title2.bold())
-                    Text(text.description).font(.callout).foregroundStyle(.secondary)
+                    Text(text.description).font(DS.Font.panelBody).foregroundStyle(.secondary)
                 }
                 Spacer(minLength: 12)
                 Toggle(text.enable, isOn: $enabled).labelsHidden().toggleStyle(.switch)
@@ -164,7 +164,7 @@ struct NotchSettings: View {
             if enabled, AppFeature.notch.isAvailable, !(hover && hideUntilHover && !hiddenShowsActivity), !notch.geometry.isNotched, !permissions.accessibility {
                 VStack(alignment: .leading, spacing: 8) {
                     Text(text.menuBarAccessHint)
-                        .font(.callout).foregroundStyle(.secondary)
+                        .font(DS.Font.panelBody).foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                     PermissionRow(kind: .accessibility)
                 }
@@ -247,7 +247,7 @@ struct NotchSettings: View {
                         dimensionSlider(text.width, value: $customWidth, range: NotchSize.widthRange, fallback: NotchSize.defaultWidth)
                         dimensionSlider(text.maximumHeight, value: $customHeight, range: NotchSize.heightRange, fallback: NotchSize.defaultHeight)
                     }
-                    Text(text.sizeHint).font(.caption).foregroundStyle(.secondary)
+                    Text(text.sizeHint).font(DS.Font.caption).foregroundStyle(.secondary)
                 }
                 // Liquid Glass takes the open island's background when it is
                 // on and is already see-through, so the switch reads on and
@@ -267,7 +267,7 @@ struct NotchSettings: View {
                     // An island kept on a camera, or away with the lid closed,
                     // shows neither shape, so the card says where to change that.
                     if enabled, !NotchService.reachesDisplayWithoutNotch(NotchDisplay(rawValue: display) ?? .automatic) {
-                        Text(text.withoutNotchUnreached).font(.caption).foregroundStyle(.secondary)
+                        Text(text.withoutNotchUnreached).font(DS.Font.caption).foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
                         Button(text.showOnAllDisplays) { display = NotchDisplay.all.rawValue }
                     }
@@ -283,7 +283,7 @@ struct NotchSettings: View {
                             fitSlider(text.fromTop, card: text.capsuleFit, value: $capsuleFitDrop,
                                       range: NotchCapsuleFit.dropRange, step: 1)
                         }
-                        Text(text.capsuleFitHint).font(.caption).foregroundStyle(.secondary)
+                        Text(text.capsuleFitHint).font(DS.Font.caption).foregroundStyle(.secondary)
                     }
                 }
             }
@@ -302,7 +302,7 @@ struct NotchSettings: View {
                         fitSlider(text.height, card: text.cameraFit, value: $cameraFitHeight,
                                   range: NotchCameraFit.heightRange, step: 0.5)
                     }
-                    Text(text.cameraFitHint).font(.caption).foregroundStyle(.secondary)
+                    Text(text.cameraFitHint).font(DS.Font.caption).foregroundStyle(.secondary)
                 }
             }
         }
@@ -342,7 +342,7 @@ struct NotchSettings: View {
                     if available, hasOptions(module) {
                         SettingsCard { moduleOptions(module) }
                     } else if available {
-                        Text(editor.noOptions).font(.callout).foregroundStyle(.secondary)
+                        Text(editor.noOptions).font(DS.Font.panelBody).foregroundStyle(.secondary)
                     }
                 }
                 .padding(.bottom, 22)
@@ -365,8 +365,8 @@ struct NotchSettings: View {
     private var sectionList: some View {
         VStack(alignment: .leading, spacing: 8) {
             VStack(alignment: .leading, spacing: 3) {
-                Text(editor.sections).font(.headline)
-                Text(editor.sectionsHint).font(.caption).foregroundStyle(.secondary)
+                Text(editor.sections).font(DS.Font.cardTitle)
+                Text(editor.sectionsHint).font(DS.Font.caption).foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
             .padding(.horizontal, 6)
@@ -415,7 +415,7 @@ struct NotchSettings: View {
                                unavailableAction: controlUnavailableAction(item))
                 }
             }
-            Text(text.controlShortcuts).font(.subheadline.weight(.medium))
+            Text(text.controlShortcuts).font(DS.Font.sectionHeader)
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 116), spacing: 8)], spacing: 8) {
                 ForEach(orderedShortcuts) { item in
                     PanelReorderableItem(item: item,
@@ -472,7 +472,7 @@ struct NotchSettings: View {
                 .toggleStyle(TrailingSwitchToggleStyle())
         case .calendar:
             let calendar = FeatureStrings.notchCalendar(l10n.language)
-            Text(calendar.permission).font(.callout).foregroundStyle(.secondary)
+            Text(calendar.permission).font(DS.Font.panelBody).foregroundStyle(.secondary)
             if permissions.calendarAccess == .fullAccess {
                 Label(l10n.s.permissionGranted, systemImage: "checkmark.circle.fill").foregroundStyle(.green)
             } else {
@@ -503,7 +503,7 @@ struct NotchSettings: View {
             switchRow("speaker.wave.2", activities.soundEnabled, isOn: $timerSoundEnabled)
                 .disabled(!AppFeature.notchTimer.isAvailable)
         case .camera:
-            Text(FeatureStrings.notchActivities(l10n.language).cameraHint).font(.callout).foregroundStyle(.secondary)
+            Text(FeatureStrings.notchActivities(l10n.language).cameraHint).font(DS.Font.panelBody).foregroundStyle(.secondary)
             if permissions.camera == .granted {
                 Label(l10n.s.permissionGranted, systemImage: "checkmark.circle.fill").foregroundStyle(.green)
             } else {
@@ -515,7 +515,7 @@ struct NotchSettings: View {
             if shelfWindow { switchRow("hand.draw", text.dragReveal, isOn: $dragReveal) }
             if AppFeature.mediaTools.isAvailable {
                 Text(FeatureStrings.notchFiles(l10n.language).optimizeDropHint)
-                    .font(.caption).foregroundStyle(.secondary)
+                    .font(DS.Font.caption).foregroundStyle(.secondary)
             }
         case .clipboard:
             destination(FeatureStrings.clipboard(l10n.language).title, symbol: "doc.on.clipboard", value: $clipboardWindow, available: AppFeature.clipboardHistory.isAvailable)
@@ -531,7 +531,7 @@ struct NotchSettings: View {
                         Text(size.comfortable).tag(NotchClipboardCardSize.comfortable)
                     }
                     Text(size.hint)
-                        .font(.caption)
+                        .font(DS.Font.caption)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                         .padding(.leading, settingsRowTextInset)
@@ -645,7 +645,7 @@ struct NotchSettings: View {
                     toggleCard(text.inputSource, symbol: "keyboard", value: $inputSource,
                                available: true, reservesReason: reserves)
                 }
-                if accessoriesEnabled { Text(FeatureStrings.notchActivities(l10n.language).accessoryDescription).font(.caption).foregroundStyle(.secondary) }
+                if accessoriesEnabled { Text(FeatureStrings.notchActivities(l10n.language).accessoryDescription).font(DS.Font.caption).foregroundStyle(.secondary) }
                 if enabled, (volume || brightness || keyboardLight), !permissions.accessibility { PermissionRow(kind: .accessibility) }
             }
             let locked = FeatureStrings.notchLockScreen(l10n.language)
@@ -688,7 +688,7 @@ struct NotchSettings: View {
                     .padding(.leading, settingsRowTextInset)
                     if notch.shortcutRegistrationFailed {
                         Text(l10n.s.shortcutUnavailable)
-                            .font(.caption)
+                            .font(DS.Font.caption)
                             .foregroundStyle(.orange)
                             .padding(.leading, settingsRowTextInset)
                     }
@@ -749,7 +749,7 @@ struct NotchSettings: View {
             }
             SettingsCard(title: editor.destinations) {
                 destination(text.panel, symbol: "bubble.middle.top", value: $appPanel)
-                Text(editor.appPanelHint).font(.caption).foregroundStyle(.secondary)
+                Text(editor.appPanelHint).font(DS.Font.caption).foregroundStyle(.secondary)
                 switchRow("menubar.rectangle", editor.hideMenuBarIcon, caption: editor.hideMenuBarIconHint,
                           isOn: $hidesMenuBarIcon)
                 destination(text.tools, symbol: NotchModule.tools.symbol, value: $quickPanel, available: AppFeature.quickLauncher.isAvailable)
@@ -828,7 +828,7 @@ struct NotchSettings: View {
             Slider(value: value, in: range, step: 0.05) {
                 Text(title)
             }.labelsHidden().accessibilityValue(formatted)
-            Text(hint).font(.caption).foregroundStyle(.secondary)
+            Text(hint).font(DS.Font.caption).foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
@@ -836,8 +836,8 @@ struct NotchSettings: View {
     private func choice(_ title: String, symbol: String, selected: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             VStack(spacing: 8) {
-                Image(systemName: symbol).font(.system(size: 20, weight: .medium))
-                Text(title).font(.system(size: 11, weight: .medium)).lineLimit(2).multilineTextAlignment(.center)
+                Image(systemName: symbol).font(DS.Font.headerIcon)
+                Text(title).font(DS.Font.sectionHeader).lineLimit(2).multilineTextAlignment(.center)
             }.frame(maxWidth: .infinity, minHeight: 68).padding(8)
                 .foregroundStyle(selected ? Color.accentColor : .primary)
                 .background(selected ? Color.accentColor.opacity(0.12) : Color.secondary.opacity(0.06), in: RoundedRectangle(cornerRadius: 12))
@@ -851,7 +851,7 @@ struct NotchSettings: View {
         return Button { silhouette = item.rawValue } label: {
             VStack(spacing: 10) {
                 NotchSilhouetteSample(silhouette: item)
-                Text(title).font(.system(size: 11, weight: .medium)).lineLimit(2).multilineTextAlignment(.center)
+                Text(title).font(DS.Font.sectionHeader).lineLimit(2).multilineTextAlignment(.center)
             }.frame(maxWidth: .infinity, minHeight: 68).padding(8)
                 .foregroundStyle(selected ? Color.accentColor : .primary)
                 .background(selected ? Color.accentColor.opacity(0.12) : Color.secondary.opacity(0.06), in: RoundedRectangle(cornerRadius: 12))
@@ -985,13 +985,13 @@ struct NotchSettings: View {
                         if item == .none, restsWithMascot {
                             restingMascot
                         } else if item != .none {
-                            Image(systemName: symbol).font(.system(size: 11))
+                            Image(systemName: symbol).font(DS.Font.panelFloor)
                             RoundedRectangle(cornerRadius: 4).fill(.black).frame(width: 20, height: 12)
                             if item == .battery || item == .agents { Text(item == .agents ? "62%" : "76%").font(.system(size: 9, weight: .medium)) }
                             else { Image(systemName: item == .music ? "waveform" : "minus").font(.system(size: 9)) }
                         } else { Color.clear.frame(width: 50, height: 12) }
                     }.foregroundStyle(.white).padding(10).background(.black, in: Capsule())
-                    Text(title).font(.system(size: 11, weight: .medium))
+                    Text(title).font(DS.Font.sectionHeader)
                 }.frame(maxWidth: .infinity).padding(.vertical, 14)
                     .background(marked ? Color.accentColor.opacity(0.12) : Color.secondary.opacity(0.05), in: RoundedRectangle(cornerRadius: 12))
             }.buttonStyle(.plain).accessibilityAddTraits(restingChoice == item ? .isSelected : [])
@@ -1003,7 +1003,7 @@ struct NotchSettings: View {
             if waits, let reason {
                 Button(reason, action: fix)
                     .buttonStyle(.plain)
-                    .font(.caption2)
+                    .font(DS.Font.footnote)
                     .foregroundStyle(Color.accentColor)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
@@ -1142,7 +1142,7 @@ private struct NotchMediaExposureSettings: View {
                 if !hiddenApps.isEmpty {
                     ForEach(hiddenApps, id: \.self) { bundle in
                         HStack(spacing: 6) {
-                            Text(bundle).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                            Text(bundle).font(DS.Font.caption).foregroundStyle(.secondary).lineLimit(1)
                             Spacer(minLength: 4)
                             Button("Show") {
                                 NotchMediaExposureStore.setHidden(false, bundleIdentifier: bundle)

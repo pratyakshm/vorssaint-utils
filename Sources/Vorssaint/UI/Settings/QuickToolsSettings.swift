@@ -37,10 +37,10 @@ struct QuickToolsSettings: View {
                         Label(l10n.s.launcherOpenNow, systemImage: "square.grid.2x2")
                     }
                     Text(l10n.s.launcherCaption)
-                        .font(.caption)
+                        .font(DS.Font.caption)
                         .foregroundStyle(.secondary)
                     Text(l10n.s.launcherEditHint)
-                        .font(.caption)
+                        .font(DS.Font.caption)
                         .foregroundStyle(.tertiary)
                     Toggle(l10n.s.quickToolShortcutToggle, isOn: $launcherShortcutEnabled)
                         .onChange(of: launcherShortcutEnabled) { _, _ in
@@ -52,7 +52,7 @@ struct QuickToolsSettings: View {
                     }
                     if launcherShortcutEnabled, launcher.shortcutRegistrationFailed {
                         Text(l10n.s.shortcutUnavailable)
-                            .font(.caption)
+                            .font(DS.Font.caption)
                             .foregroundStyle(.orange)
                     }
                 } header: {
@@ -87,14 +87,14 @@ struct QuickToolsSettings: View {
                             .accessibilityLabel(
                                 FeatureStrings.brightness(l10n.language).keyboardLight)
                             Text("\(Int(((brightness.keyboardLightLevel ?? 0) * 100).rounded()))%")
-                                .font(.caption.monospacedDigit())
+                                .font(DS.Font.caption.monospacedDigit())
                                 .foregroundStyle(.secondary)
                                 .frame(width: 34, alignment: .trailing)
                         }
                     }
                     DiskExclusionsList()
                     Text(FeatureStrings.quickToggles(l10n.language).panelCaption)
-                        .font(.caption)
+                        .font(DS.Font.caption)
                         .foregroundStyle(.secondary)
                 } header: {
                     Text(FeatureStrings.quickToggles(l10n.language).pageTitle)
@@ -123,7 +123,7 @@ struct QuickToolsSettings: View {
                     }
                     if quitAllShortcutEnabled, quickToggles.shortcutRegistrationFailed {
                         Text(l10n.s.shortcutUnavailable)
-                            .font(.caption)
+                            .font(DS.Font.caption)
                             .foregroundStyle(.orange)
                     }
                     Toggle("\(l10n.s.quickToolShortcutToggle): \(FeatureStrings.quickToggles(l10n.language).quitOthersTitle)",
@@ -137,11 +137,11 @@ struct QuickToolsSettings: View {
                     }
                     if quitOthersShortcutEnabled, quickToggles.othersShortcutRegistrationFailed {
                         Text(l10n.s.shortcutUnavailable)
-                            .font(.caption)
+                            .font(DS.Font.caption)
                             .foregroundStyle(.orange)
                     }
                     Text(l10n.s.quitAppsCaption)
-                        .font(.caption)
+                        .font(DS.Font.caption)
                         .foregroundStyle(.secondary)
                 } header: {
                     Text(l10n.s.quitAppsName)
@@ -159,15 +159,15 @@ struct QuickToolsSettings: View {
                     }
                     if micMute.isMuted {
                         Label(l10n.s.micMutedHUD, systemImage: "mic.slash.fill")
-                            .font(.caption)
+                            .font(DS.Font.caption)
                             .foregroundStyle(.orange)
                     }
                     Text(l10n.s.micMuteCaption)
-                        .font(.caption)
+                        .font(DS.Font.caption)
                         .foregroundStyle(.secondary)
                     Toggle(l10n.s.micMuteMenuBarToggle, isOn: $micMenuBarIndicator)
                     Text(l10n.s.micMuteMenuBarCaption)
-                        .font(.caption)
+                        .font(DS.Font.caption)
                         .foregroundStyle(.secondary)
                     Toggle(l10n.s.quickToolShortcutToggle, isOn: $micShortcutEnabled)
                         .onChange(of: micShortcutEnabled) { _, _ in
@@ -179,7 +179,7 @@ struct QuickToolsSettings: View {
                     }
                     if micShortcutEnabled, micMute.shortcutRegistrationFailed {
                         Text(l10n.s.shortcutUnavailable)
-                            .font(.caption)
+                            .font(DS.Font.caption)
                             .foregroundStyle(.orange)
                     }
                 } header: {
@@ -197,7 +197,7 @@ struct QuickToolsSettings: View {
                               systemImage: "web.camera")
                     }
                     Text(FeatureStrings.cameraPreview(l10n.language).panelCaption)
-                        .font(.caption)
+                        .font(DS.Font.caption)
                         .foregroundStyle(.secondary)
                     Toggle(l10n.s.quickToolShortcutToggle, isOn: $cameraShortcutEnabled)
                         .onChange(of: cameraShortcutEnabled) { _, _ in
@@ -209,7 +209,7 @@ struct QuickToolsSettings: View {
                     }
                     if cameraShortcutEnabled, cameraPreview.shortcutRegistrationFailed {
                         Text(l10n.s.shortcutUnavailable)
-                            .font(.caption)
+                            .font(DS.Font.caption)
                             .foregroundStyle(.orange)
                     }
                     if permissions.camera == .denied {
@@ -249,7 +249,7 @@ struct QuickToolsSettings: View {
                               systemImage: "note.text")
                     }
                     Text(FeatureStrings.scratchpad(l10n.language).panelCaption)
-                        .font(.caption)
+                        .font(DS.Font.caption)
                         .foregroundStyle(.secondary)
                     Picker(FeatureStrings.scratchpad(l10n.language).retentionTitle,
                            selection: $scratchpadRetention) {
@@ -263,7 +263,7 @@ struct QuickToolsSettings: View {
                             .tag(ScratchpadRetention.month.rawValue)
                     }
                     Text(FeatureStrings.scratchpad(l10n.language).retentionCaption)
-                        .font(.caption)
+                        .font(DS.Font.caption)
                         .foregroundStyle(.secondary)
                     Toggle(FeatureStrings.scratchpad(l10n.language).closeOnClickOutside,
                            isOn: $scratchpadCloseOnClickOutside)
@@ -292,7 +292,7 @@ struct QuickToolsSettings: View {
                             Spacer()
                             Text(FeatureStrings.scratchpad(l10n.language).backgroundOpaque)
                         }
-                        .font(.caption)
+                        .font(DS.Font.caption)
                         .foregroundStyle(.secondary)
                     }
                     Toggle(l10n.s.quickToolShortcutToggle, isOn: $scratchpadShortcutEnabled)
@@ -305,7 +305,7 @@ struct QuickToolsSettings: View {
                     }
                     if scratchpadShortcutEnabled, scratchpad.shortcutRegistrationFailed {
                         Text(l10n.s.shortcutUnavailable)
-                            .font(.caption)
+                            .font(DS.Font.caption)
                             .foregroundStyle(.orange)
                     }
                 } header: {
@@ -322,11 +322,11 @@ struct QuickToolsSettings: View {
                         Label(l10n.s.cleaningStartNow, systemImage: "bubbles.and.sparkles")
                     }
                     Text(l10n.s.cleaningPanelCaption)
-                        .font(.caption)
+                        .font(DS.Font.caption)
                         .foregroundStyle(.secondary)
                     Toggle(l10n.s.cleaningKeepScreenVisibleToggle, isOn: $cleaningModeKeepScreenVisible)
                     Text(l10n.s.cleaningKeepScreenVisibleCaption)
-                        .font(.caption)
+                        .font(DS.Font.caption)
                         .foregroundStyle(.secondary)
                 } header: {
                     Text(l10n.s.cleaningMenuItem)
@@ -365,7 +365,7 @@ private struct CameraPermissionRow: View {
                 Text(FeatureStrings.cameraPreview(l10n.language).permName)
                 Spacer()
                 Text(l10n.s.permissionMissing)
-                    .font(.caption)
+                    .font(DS.Font.caption)
                     .foregroundStyle(.orange)
             }
             Button(l10n.s.permissionOpenSettings) {

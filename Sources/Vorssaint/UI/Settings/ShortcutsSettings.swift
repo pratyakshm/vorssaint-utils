@@ -40,7 +40,7 @@ struct ShortcutsSettings: View {
         Form {
             Section {
                 Text(l10n.s.shortcutsPageCaption)
-                    .font(.caption)
+                    .font(DS.Font.caption)
                     .foregroundStyle(.secondary)
             }
 
@@ -65,7 +65,7 @@ struct ShortcutsSettings: View {
                               systemImage: "app.badge")
                     }
                     Text(FeatureStrings.commandBar(l10n.language).appCenterCaption)
-                        .font(.caption)
+                        .font(DS.Font.caption)
                         .foregroundStyle(.secondary)
                 }
             }
@@ -206,7 +206,7 @@ struct ShortcutsSettings: View {
             )
             Spacer()
             Text("\(count)")
-                .font(.caption.monospacedDigit())
+                .font(DS.Font.caption.monospacedDigit())
                 .foregroundStyle(.secondary)
                 .padding(.horizontal, 7)
                 .padding(.vertical, 2)
@@ -295,7 +295,7 @@ private struct KeyboardBrightnessShortcutToggle: View {
             }
         if isEnabled, brightness.keyboardBrightnessShortcutRegistrationFailed {
             Text(l10n.s.shortcutUnavailable)
-                .font(.caption)
+                .font(DS.Font.caption)
                 .foregroundStyle(.orange)
         }
     }
@@ -425,7 +425,7 @@ private struct CentralWindowLayoutShortcutRow: View {
                     }
                     if let alternative = superKeyAlternative {
                         Text(String(format: text.superKeyAlternativeFormat, alternative))
-                            .font(.caption2)
+                            .font(DS.Font.footnote)
                             .foregroundStyle(.secondary)
                             .accessibilityLabel(alternative)
                     }
@@ -433,11 +433,11 @@ private struct CentralWindowLayoutShortcutRow: View {
             }
             if let errorText {
                 Text(errorText)
-                    .font(.caption)
+                    .font(DS.Font.caption)
                     .foregroundStyle(.orange)
             } else if isRecording {
                 Text(ShortcutRecordingCaption.text(l10n.s, canClear: true))
-                    .font(.caption)
+                    .font(DS.Font.caption)
                     .foregroundStyle(.secondary)
             }
             if let pendingTakeOver {

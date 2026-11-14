@@ -15,6 +15,48 @@ Append one timestamped entry per migration slice below.
 
 ## Log
 
+### 2026-11-14 — fifth slice (settings detail pages)
+
+Done (`swiftc -parse` OK on every touched file; builds and the test suite
+were not run in this session at the maintainer's request):
+
+- `UI/Theme.swift` — `DS.Font.captionEmphasis` (12.5 medium) for the
+  `.caption.weight(.medium)` labels that name something instead of
+  explaining it.
+- Settings detail pages, every `.caption` → `DS.Font.caption`,
+  `.caption2` → `footnote`, `.callout` → `panelBody` (all three are exact
+  matches), `.subheadline.weight(.medium)` → `sectionHeader` (exact),
+  `.headline` → `cardTitle`, and raw sizes to the nearest token:
+  `QuickToolsSettings.swift` (21), `ShortcutsSettings.swift` (9),
+  `AdvancedSettings.swift` (8), `AutoQuitSettings.swift` (8),
+  `URLCleanerSettings.swift` (9), `DisplayBrightnessShortcutControls.swift`
+  (2), `FeatureHubSettings.swift` (22), `NotchSettings.swift` (22),
+  `NotchLayoutEditor.swift` (11), `NotchContentEditor.swift` (9),
+  `NotchAgentsSettings.swift` (12), `NotchSpringTuner.swift` (5),
+  `PanelLayoutEditor.swift` (6). Tile glyphs 11 → `sectionHeader`, 12 →
+  `bar`, 12.5 → `panelTitle`, 13 → `rowIcon`, 16 → `cardTitle`, 20 →
+  `headerIcon`; 9/8-bold badges → `badge`; 10 semibold chevrons and grips →
+  `disclosure`; 8 medium labels → `panelFloor` (the 11pt floor).
+
+Kept on purpose (page-level system styles, or pinned geometry):
+
+- Page titles stay `.title2.bold()` and module headers `.title3.weight(.semibold)`
+  (same as the earlier migrated Settings pages).
+- `PanelLayoutEditor`'s `MenuBarPanelMiniature`: 9.5/10/9/8pt glyphs and the
+  title scale are miniature renderer geometry, kept pixel-exact (the
+  `MenuBarMetricsPreview` precedent).
+- `NotchSettings`'s outlined-island silhouette: 9/11pt labels inside the
+  drawn capsule, same reason.
+- `NotchContentEditor`: the 34pt light camera glyph, the dynamic
+  `ScratchpadSupport` text size, the section tile's `side * 0.46` glyph, and
+  the 12.5pt section row whose weight follows selection (no token carries a
+  runtime weight).
+- `URLCleanerSettings`: `.system(.caption, design: .monospaced)` for the
+  cleaned URL (a monospaced AppKit-size text; `previewText` is 12pt).
+
+Settings detail pages are now fully migrated; the Remaining section keeps
+only the notch view cluster.
+
 ### 2026-10-27 — command bar rebuilt to Tinycast palette metrics
 
 Done (`./build.sh` release bundle OK; `./build.sh --test-suite=command-bar`
@@ -320,15 +362,14 @@ clips at radius 6, and the empty-state VStack's 10.
 
 ## Remaining
 
-### Settings detail pages (shell is done; per-file literals remain)
+### Settings detail pages
 
-- `QuickToolsSettings.swift`,
-  `NotchSettings.swift` + sub-editors (`NotchLayoutEditor`,
-  `NotchContentEditor`, `NotchAgentsSettings`, `NotchSpringTuner`,
-  `PanelLayoutEditor`), `FeatureHubSettings.swift` (Features page),
-  `ShortcutsSettings.swift`, `AdvancedSettings.swift`,
-  `AutoQuitSettings.swift`, `URLCleanerSettings.swift`,
-  `DisplayBrightnessShortcutControls.swift`.
+Done — shell plus every detail page migrated (`QuickToolsSettings`,
+`NotchSettings` + `NotchLayoutEditor`, `NotchContentEditor`,
+`NotchAgentsSettings`, `NotchSpringTuner`, `PanelLayoutEditor`,
+`FeatureHubSettings`, `ShortcutsSettings`, `AdvancedSettings`,
+`AutoQuitSettings`, `URLCleanerSettings`,
+`DisplayBrightnessShortcutControls`).
 
 ### Menu panel sections
 

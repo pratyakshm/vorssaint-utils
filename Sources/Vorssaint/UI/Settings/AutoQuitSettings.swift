@@ -23,11 +23,11 @@ struct AutoQuitSettings: View {
                         AutoQuitService.shared.syncWithPreferences()
                     }
                 Text(l10n.s.autoQuitEnableCaption)
-                    .font(.caption)
+                    .font(DS.Font.caption)
                     .foregroundStyle(.secondary)
                 if enabled, service.isRunning {
                     Label(l10n.s.autoQuitActiveNow, systemImage: "checkmark.circle.fill")
-                        .font(.caption)
+                        .font(DS.Font.caption)
                         .foregroundStyle(.green)
                 }
             }
@@ -36,10 +36,10 @@ struct AutoQuitSettings: View {
                 bullet("rectangle.badge.xmark", l10n.s.autoQuitStep1)
                 bullet("bolt.fill", l10n.s.autoQuitStep2)
                 Text(l10n.s.autoQuitPredictableNote)
-                    .font(.caption)
+                    .font(DS.Font.caption)
                     .foregroundStyle(.secondary)
                 Label(l10n.s.autoQuitOngoingWorkNote, systemImage: "exclamationmark.triangle.fill")
-                    .font(.caption)
+                    .font(DS.Font.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -50,7 +50,7 @@ struct AutoQuitSettings: View {
             Section(l10n.s.autoQuitExceptionsTitle) {
                 if sortedExceptions.isEmpty {
                     Text(l10n.s.autoQuitExceptionsEmpty)
-                        .font(.callout)
+                        .font(DS.Font.panelBody)
                         .foregroundStyle(.secondary)
                 } else {
                     ForEach(sortedExceptions, id: \.self) { bundleID in
@@ -84,7 +84,7 @@ struct AutoQuitSettings: View {
                 .disabled(!enabled)
 
                 Text(l10n.s.autoQuitExceptionsCaption)
-                    .font(.caption)
+                    .font(DS.Font.caption)
                     .foregroundStyle(.secondary)
             }
 
@@ -115,7 +115,7 @@ struct AutoQuitSettings: View {
                 .disabled(!enabled)
 
                 Text(dockAppsText.caption)
-                    .font(.caption)
+                    .font(DS.Font.caption)
                     .foregroundStyle(.secondary)
             }
 
@@ -183,11 +183,11 @@ struct AutoQuitSettings: View {
     private func bullet(_ icon: String, _ text: String) -> some View {
         HStack(alignment: .top, spacing: 10) {
             Image(systemName: icon)
-                .font(.system(size: 12))
+                .font(DS.Font.rowIcon)
                 .foregroundStyle(.tint)
                 .frame(width: 18)
             Text(text)
-                .font(.callout)
+                .font(DS.Font.panelBody)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }

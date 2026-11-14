@@ -76,7 +76,7 @@ struct NotchIslandPreview: View {
 
     private var caption: some View {
         Label(hidden ? editor.hiddenInIsland : editor.preview, systemImage: hidden ? "eye.slash" : "eye")
-            .font(.caption.weight(.medium))
+            .font(DS.Font.captionEmphasis)
             .foregroundStyle(.secondary)
             .padding(.horizontal, 12)
             .padding(.bottom, 8)
@@ -181,7 +181,7 @@ struct NotchPagePreview: View {
                 .font(.system(size: 34, weight: .light))
                 .foregroundStyle(.white.opacity(0.5))
             Text(FeatureStrings.notchEditor(l10n.language).cameraPreview)
-                .font(.system(size: 12))
+                .font(DS.Font.panelBody)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
         }
@@ -212,10 +212,10 @@ private struct NotchScratchpadStill: View {
                 if band.besideCamera {
                     HStack(spacing: 4) {
                         Text(pad.selectedPadName)
-                            .font(.system(size: 12, weight: .medium))
+                            .font(DS.Font.bar)
                             .lineLimit(1)
                         Image(systemName: "chevron.down")
-                            .font(.system(size: 9, weight: .semibold))
+                            .font(DS.Font.disclosure)
                     }
                     .foregroundStyle(.white.opacity(0.85))
                     .padding(.horizontal, 7)
@@ -241,11 +241,11 @@ private struct NotchScratchpadStill: View {
     private func tab(_ name: String, selected: Bool) -> some View {
         HStack(spacing: 4) {
             Text(name)
-                .font(.system(size: 11, weight: .medium))
+                .font(DS.Font.sectionHeader)
                 .lineLimit(1)
             if selected {
                 Image(systemName: "chevron.down")
-                    .font(.system(size: 8, weight: .semibold))
+                    .font(DS.Font.disclosure)
             }
         }
         .foregroundStyle(selected ? .white : .white.opacity(0.6))
@@ -257,7 +257,7 @@ private struct NotchScratchpadStill: View {
 
     private func glyph(_ symbol: String) -> some View {
         Image(systemName: symbol)
-            .font(.system(size: 12, weight: .medium))
+            .font(DS.Font.bar)
             .foregroundStyle(.white.opacity(0.55))
             .frame(width: 28, height: 28)
     }
@@ -342,13 +342,13 @@ struct NotchSectionHeader: View {
             VStack(alignment: .leading, spacing: 3) {
                 Text(module.title(l10n.language)).font(.title3.weight(.semibold))
                 Text(editor.summary(module))
-                    .font(.callout)
+                    .font(DS.Font.panelBody)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
                 if let reason {
                     HStack(spacing: 10) {
                         Text(reason)
-                            .font(.callout)
+                            .font(DS.Font.panelBody)
                             .foregroundStyle(.orange)
                             .fixedSize(horizontal: false, vertical: true)
                         Button(editor.openFeatures, action: openFeatures).controlSize(.small)

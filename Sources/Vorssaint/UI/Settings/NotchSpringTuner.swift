@@ -44,10 +44,10 @@ struct NotchSpringTunerPopover: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("Opening spring").font(.headline)
+                Text("Opening spring").font(DS.Font.cardTitle)
                 Spacer(minLength: 8)
                 Text("\(settlingMilliseconds) ms")
-                    .font(.caption.monospacedDigit())
+                    .font(DS.Font.caption.monospacedDigit())
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 8).padding(.vertical, 3)
                     .background(.quaternary.opacity(0.5), in: Capsule())
@@ -65,7 +65,7 @@ struct NotchSpringTunerPopover: View {
                    formatted: String(format: "%.1f", locale: locale, sanitized.damping))
             HStack {
                 Text("Snappy at the defaults, like the phone's island; lower damping bounces more.")
-                    .font(.caption).foregroundStyle(.secondary)
+                    .font(DS.Font.caption).foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: 8)
                 Button("Reset") {
@@ -91,7 +91,7 @@ struct NotchSpringTunerPopover: View {
                 Spacer()
                 Text(formatted).monospacedDigit().foregroundStyle(.secondary)
             }
-            .font(.callout)
+            .font(DS.Font.panelBody)
             Slider(value: clamped, in: range, step: step) { Text(title) }
                 .labelsHidden()
         }
@@ -165,7 +165,7 @@ private struct NotchSpringPreview: View {
                             }
                         }
                     Text(opening ? "Opening" : "Closing")
-                        .font(.caption2).foregroundStyle(.secondary)
+                        .font(DS.Font.footnote).foregroundStyle(.secondary)
                         .padding(.top, 8)
                     Spacer(minLength: 0)
                 }

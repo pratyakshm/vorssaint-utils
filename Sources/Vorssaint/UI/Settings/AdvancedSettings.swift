@@ -27,7 +27,7 @@ struct AdvancedSettings: View {
         Form {
             Section(backup.title) {
                 Text(backup.description)
-                    .font(.caption)
+                    .font(DS.Font.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
                 HStack(spacing: 10) {
@@ -54,23 +54,23 @@ struct AdvancedSettings: View {
                 if exported == true {
                     HStack(spacing: 6) {
                         Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
-                        Text(backup.exported).font(.caption).foregroundStyle(.green)
+                        Text(backup.exported).font(DS.Font.caption).foregroundStyle(.green)
                     }
                 } else if exported == false {
                     Text(backup.exportFailed)
-                        .font(.caption)
+                        .font(DS.Font.caption)
                         .foregroundStyle(.orange)
                 }
                 if importFailed {
                     Text(backup.invalidFile)
-                        .font(.caption)
+                        .font(DS.Font.caption)
                         .foregroundStyle(.orange)
                 }
             }
 
             Section(l10n.s.advancedResetSection) {
                 Text(l10n.s.advancedResetDescription)
-                    .font(.caption)
+                    .font(DS.Font.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
                 Button(role: .destructive) {
@@ -82,18 +82,18 @@ struct AdvancedSettings: View {
                 if cleared == true {
                     HStack(spacing: 6) {
                         Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
-                        Text(l10n.s.advancedCleared).font(.caption).foregroundStyle(.green)
+                        Text(l10n.s.advancedCleared).font(DS.Font.caption).foregroundStyle(.green)
                     }
                 } else if cleared == false {
                     Text(l10n.s.advancedClearFailed)
-                        .font(.caption)
+                        .font(DS.Font.caption)
                         .foregroundStyle(.orange)
                 }
             }
 
             Section(l10n.s.advancedUninstallSection) {
                 Text(l10n.s.advancedUninstallDescription)
-                    .font(.caption)
+                    .font(DS.Font.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
                 Button(role: .destructive) {

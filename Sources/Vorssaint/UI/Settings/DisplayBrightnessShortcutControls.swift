@@ -25,7 +25,7 @@ struct DisplayBrightnessShortcutControls: View {
                     VStack(alignment: .leading, spacing: 3) {
                         Text(strings.displayBrightnessShortcuts)
                         Text(strings.displayBrightnessShortcutCaption)
-                            .font(.caption)
+                            .font(DS.Font.caption)
                             .foregroundStyle(.secondary)
                     }
                 }
@@ -47,7 +47,7 @@ struct DisplayBrightnessShortcutControls: View {
         }
         if enabled, brightness.displayBrightnessShortcutRegistrationFailed {
             Text(l10n.s.shortcutUnavailable)
-                .font(.caption)
+                .font(DS.Font.caption)
                 .foregroundStyle(.red)
                 .padding(.leading, showsSettingsRow ? settingsRowTextInset : 0)
         }

@@ -50,7 +50,7 @@ struct PanelLayoutEditor: View {
             }
             .animation(reduceMotion ? nil : .smooth(duration: 0.2), value: visibleSections)
             Text(text.panelReorderHint)
-                .font(.caption)
+                .font(DS.Font.caption)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -177,21 +177,21 @@ private struct PanelSectionRow: View {
         HStack(spacing: 10) {
             HStack(spacing: 10) {
                 Image(systemName: "line.3.horizontal")
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(DS.Font.panelFloorEmphasis)
                     .foregroundStyle(.tertiary)
                     .frame(width: 14)
                 Image(systemName: id.symbolName)
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(DS.Font.panelTitle)
                     .foregroundStyle(shown ? Color.accentColor : Color.secondary)
                     .frame(width: 26, height: 26)
                     .background((shown ? Color.accentColor : Color.secondary).opacity(0.12),
                                 in: RoundedRectangle(cornerRadius: 7, style: .continuous))
                 VStack(alignment: .leading, spacing: 1) {
                     Text(title)
-                        .font(.callout.weight(.medium))
+                        .font(DS.Font.bar)
                         .foregroundStyle(shown ? .primary : .secondary)
                     Text(description)
-                        .font(.caption)
+                        .font(DS.Font.caption)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }

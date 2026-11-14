@@ -64,7 +64,7 @@ struct FeatureHubSettings: View {
                     VStack(alignment: .leading, spacing: 5) {
                         Text(hub.pageTitle).font(.title2.bold())
                         Text(tab == .features ? hub.intro : hub.permissionsIntro)
-                            .font(.callout)
+                            .font(DS.Font.panelBody)
                             .foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
                     }
@@ -97,7 +97,7 @@ struct FeatureHubSettings: View {
                         Text(hub.footerNote)
                         Text(hub.energyHelp)
                     }
-                    .font(.caption)
+                    .font(DS.Font.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
                 } else {
@@ -192,7 +192,7 @@ struct FeatureHubSettings: View {
                 .font(.system(size: 24))
                 .foregroundStyle(Color.accentColor)
             Text(hub.restartNote)
-                .font(.callout)
+                .font(DS.Font.panelBody)
                 .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 12)
             Button(hub.restartButton) {
@@ -211,7 +211,7 @@ struct FeatureHubSettings: View {
             HStack(spacing: 12) {
                 Text(String(format: hub.activeCountFormat,
                             features.availableCount, features.installableCount))
-                    .font(.headline)
+                    .font(DS.Font.cardTitle)
                 Spacer(minLength: 12)
                 Button(hub.installAllButton) {
                     FeatureRuntime.shared.setAllAvailable(true)
@@ -240,7 +240,7 @@ struct FeatureHubSettings: View {
                         .foregroundStyle(.green)
                         .accessibilityHidden(true)
                     Text(hub.footerNote)
-                        .font(.callout)
+                        .font(DS.Font.panelBody)
                         .fixedSize(horizontal: false, vertical: true)
                     Spacer(minLength: 12)
                     Button(l10n.s.menuUndo, action: undoNeverUsedUninstall)
@@ -250,7 +250,7 @@ struct FeatureHubSettings: View {
             SettingsCard(title: hub.neverUsedTitle) {
                 Text(String(format: hub.neverUsedMessageFormat,
                             neverUsed.map { $0.hubTitle(l10n.s, hub: hub) }.joined(separator: ", ")))
-                    .font(.callout)
+                    .font(DS.Font.panelBody)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
                 HStack(spacing: 8) {
@@ -318,7 +318,7 @@ struct FeatureHubSettings: View {
                         }
                     }
                     Text(hub.presetsCaption)
-                        .font(.caption)
+                        .font(DS.Font.caption)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -403,7 +403,7 @@ struct FeatureHubSettings: View {
                     if group == .monitor,
                        !FeatureVisibilitySupport.monitorFeatures.contains(where: \.isAvailable) {
                         Text(hub.monitorAllOffNote)
-                            .font(.caption)
+                            .font(DS.Font.caption)
                             .foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
                     }
@@ -418,15 +418,15 @@ struct FeatureHubSettings: View {
     private func groupHeader(_ group: FeatureGroup, installed: Int, total: Int) -> some View {
         HStack(spacing: 10) {
             Image(systemName: group.symbolName)
-                .font(.system(size: 12, weight: .semibold))
+                .font(DS.Font.panelTitle)
                 .foregroundStyle(Color.accentColor)
                 .frame(width: 26, height: 26)
                 .background(Color.accentColor.opacity(0.12),
                             in: RoundedRectangle(cornerRadius: 7, style: .continuous))
-            Text(groupTitle(group)).font(.headline)
+            Text(groupTitle(group)).font(DS.Font.cardTitle)
             Spacer(minLength: 12)
             Text("\(installed)/\(total)")
-                .font(.caption.monospacedDigit())
+                .font(DS.Font.caption.monospacedDigit())
                 .foregroundStyle(.secondary)
             InstalledShareBar(installed: installed, total: total)
                 .controlSize(.small)
@@ -620,16 +620,16 @@ private struct PresetCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Image(systemName: preset.symbolName)
-                .font(.system(size: 16, weight: .semibold))
+                .font(DS.Font.cardTitle)
                 .foregroundStyle(Color.accentColor)
                 .frame(width: 34, height: 34)
                 .background(Color.accentColor.opacity(0.12),
                             in: RoundedRectangle(cornerRadius: 9, style: .continuous))
             Text(name)
-                .font(.system(size: 13, weight: .semibold))
+                .font(DS.Font.rowIcon)
                 .lineLimit(1)
             Text(caption)
-                .font(.caption)
+                .font(DS.Font.caption)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -757,7 +757,7 @@ private struct FeatureHubRow: View {
                         .foregroundStyle(installed ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary))
                     if feature == .notch {
                         Text(hub.experimentalBadge.uppercased())
-                            .font(.system(size: 9, weight: .bold))
+                            .font(DS.Font.badge)
                             .padding(.horizontal, 7)
                             .padding(.vertical, 3)
                             .foregroundStyle(.orange)
@@ -766,7 +766,7 @@ private struct FeatureHubRow: View {
                     }
                     if feature.isBeta {
                         Text(l10n.s.betaBadge)
-                            .font(.system(size: 8, weight: .bold))
+                            .font(DS.Font.badge)
                             .foregroundStyle(Color.white)
                             .padding(.horizontal, 5)
                             .padding(.vertical, 1)
@@ -775,14 +775,14 @@ private struct FeatureHubRow: View {
                     }
                 }
                 Text(feature.hubDescription(hub))
-                    .font(.caption)
+                    .font(DS.Font.caption)
                     .foregroundStyle(installed ? Color.secondary : Color.secondary.opacity(0.7))
                     .fixedSize(horizontal: false, vertical: true)
             }
             Spacer(minLength: 8)
             if showsChevron {
                 Image(systemName: "chevron.forward")
-                    .font(.system(size: 10, weight: .semibold))
+                    .font(DS.Font.panelFloorEmphasis)
                     .foregroundStyle(.tertiary)
                     .accessibilityHidden(true)
             }
@@ -799,7 +799,7 @@ private struct FeatureHubRow: View {
             showingMetadata.toggle()
         }
         .buttonStyle(.plain)
-        .font(.caption)
+        .font(DS.Font.caption)
         .foregroundStyle(.secondary)
         .help(explanation)
         .accessibilityLabel(explanation)
@@ -983,7 +983,7 @@ private struct PermissionPortalRow: View {
             // The tile wears the status color, so a glance down the list
             // shows what is granted before any word is read.
             Image(systemName: permission.symbolName)
-                .font(.system(size: 13, weight: .semibold))
+                .font(DS.Font.rowIcon)
                 .foregroundStyle(statusColor)
                 .frame(width: 30, height: 30)
                 .background(statusColor.opacity(0.14),
@@ -995,11 +995,11 @@ private struct PermissionPortalRow: View {
                     statusChip
                 }
                 Text(permission.explainer(hub))
-                    .font(.caption)
+                    .font(DS.Font.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
                 Text(usedByLine)
-                    .font(.caption)
+                    .font(DS.Font.caption)
                     .foregroundStyle(.tertiary)
                     .fixedSize(horizontal: false, vertical: true)
                 if status == .granted, activeFeatures.isEmpty {
@@ -1036,7 +1036,7 @@ private struct PermissionPortalRow: View {
                 .fill(statusColor)
                 .frame(width: 6, height: 6)
             Text(chipText)
-                .font(.caption)
+                .font(DS.Font.caption)
                 .foregroundStyle(.secondary)
         }
     }
@@ -1059,7 +1059,7 @@ private struct PermissionPortalRow: View {
 
     private var unusedCard: some View {
         Text(hub.unusedBanner)
-            .font(.caption)
+            .font(DS.Font.caption)
             .foregroundStyle(.secondary)
             .fixedSize(horizontal: false, vertical: true)
             .padding(8)

@@ -26,6 +26,9 @@ enum DS {
         static let body = SwiftUI.Font.system(size: bodySize, weight: .regular)
         /// Explanations under row titles (was `.caption`, 11).
         static let caption = SwiftUI.Font.system(size: 12.5, weight: .regular)
+        /// A caption that names something rather than explains it
+        /// (was `.caption.weight(.medium)`).
+        static let captionEmphasis = SwiftUI.Font.system(size: 12.5, weight: .medium)
         /// Tertiary hints (was `.caption2` / 9-10).
         static let footnote = SwiftUI.Font.system(size: 11.5, weight: .regular)
         /// Small badges (was 8 bold).

@@ -44,7 +44,7 @@ struct NotchAgentsSettingsControls: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             Text(text.settingsDescription)
-                .font(.callout)
+                .font(DS.Font.panelBody)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             providerRow(.claude, isOn: $claude)
@@ -56,7 +56,7 @@ struct NotchAgentsSettingsControls: View {
             if codex { CodexAccountsSettings() }
 
             Divider()
-            Text(text.cardsTitle).font(.subheadline.weight(.medium))
+            Text(text.cardsTitle).font(DS.Font.sectionHeader)
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 104), spacing: 8)], spacing: 8) {
                 ForEach(orderedCards) { card in
                     PanelReorderableItem(item: card,
@@ -71,10 +71,10 @@ struct NotchAgentsSettingsControls: View {
                     }
                 }
             }
-            Text(text.cardsHint).font(.caption).foregroundStyle(.secondary)
+            Text(text.cardsHint).font(DS.Font.caption).foregroundStyle(.secondary)
             // The card that makes Codex ask the default account, said where it is chosen.
             if codex, cardBinding(.resets).wrappedValue {
-                Text(text.resetsHelp).font(.caption).foregroundStyle(.secondary)
+                Text(text.resetsHelp).font(DS.Font.caption).foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
             SettingsChoiceRow(symbol: NotchAgentCard.limits.symbol, title: text.limitsAs, selection: $limitDisplay) {
@@ -90,7 +90,7 @@ struct NotchAgentsSettingsControls: View {
             }
 
             Divider()
-            Text(text.liveTitle).font(.subheadline.weight(.medium))
+            Text(text.liveTitle).font(DS.Font.sectionHeader)
             switchRow("waveform.path.ecg", text.liveActivity, isOn: $liveActivity)
             if liveActivity {
                 SettingsMenuRow(symbol: "camera.metering.center.weighted", title: text.readout, selection: $readout) {
@@ -107,7 +107,7 @@ struct NotchAgentsSettingsControls: View {
             }
 
             Divider()
-            Text(text.alerts).font(.subheadline.weight(.medium))
+            Text(text.alerts).font(DS.Font.sectionHeader)
             switchRow("checkmark.circle", text.finishAlert, isOn: $finishAlert)
             if finishAlert {
                 SettingsMenuRow(symbol: "timer", title: text.finishAfter, selection: $finishMinimum) {
@@ -132,7 +132,7 @@ struct NotchAgentsSettingsControls: View {
                     Text(value == 0 ? text.off : AgentFormat.cost(value)).tag(value)
                 }
             }
-            Text(text.valueNote).font(.caption).foregroundStyle(.secondary)
+            Text(text.valueNote).font(DS.Font.caption).foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             SettingsRow(symbol: "arrow.triangle.2.circlepath", title: text.priceUpdates, caption: priceCaption) {
                 Toggle(text.priceUpdates, isOn: $priceUpdates).labelsHidden().toggleStyle(.switch)
@@ -140,13 +140,13 @@ struct NotchAgentsSettingsControls: View {
 
             if claude {
                 Divider()
-                Text(text.claudeLimitsTitle).font(.subheadline.weight(.medium))
+                Text(text.claudeLimitsTitle).font(DS.Font.sectionHeader)
                 TimelineView(.periodic(from: .now, by: 30)) { context in
                     claudeLimitsStatus(now: context.date)
                 }
                 if usage.claudeAccountChecking { ProgressView().controlSize(.small) }
                 if claudeProfile.isEmpty {
-                    Text(text.claudeLimitsPrivacy).font(.caption).foregroundStyle(.secondary)
+                    Text(text.claudeLimitsPrivacy).font(DS.Font.caption).foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
@@ -219,7 +219,7 @@ struct NotchAgentsSettingsControls: View {
                 }
             }
         }
-        .font(.callout)
+        .font(DS.Font.panelBody)
         .fixedSize(horizontal: false, vertical: true)
     }
 
@@ -256,7 +256,7 @@ struct NotchAgentsSettingsControls: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(provider.displayName)
                 Text(roots[provider] == true ? text.found : text.notFound)
-                    .font(.caption)
+                    .font(DS.Font.caption)
                     .foregroundStyle(.secondary)
             }
             Spacer(minLength: 12)
@@ -318,7 +318,7 @@ private struct NotchAgentStripSample: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                 Color.clear.frame(width: Self.camera)
                 Text(reading(at: date))
-                    .font(.system(size: 12, weight: .medium))
+                    .font(DS.Font.bar)
                     .monospacedDigit()
                     .foregroundStyle(working.tint)
                     .lineLimit(1)
