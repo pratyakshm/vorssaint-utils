@@ -212,33 +212,19 @@ enum NotchHoverTests {
         }
         for physical in [false, true] {
             for reduced in [false, true] {
-                let picker = fixture(physical: physical)
-                picker.compactActivity = .agents
-                picker.compactActivities = [.agents, .music]
+                let direct = fixture(physical: physical)
+                direct.compactActivity = .agents
+                direct.compactActivities = [.agents, .music]
                 NSWorkspace.shared.accessibilityDisplayShouldReduceMotion = reduced
-                picker.hover(true)
-                suite.expect(picker.showsCompactActivityPicker && picker.hoverWork == nil,
-                             "hover exposes named choices without an automatic opening deadline, including Reduce Motion")
-                DispatchQueue.main.advance(2)
-                suite.expect(picker.openings == 0, "the activity chooser stays available while the person decides")
-                picker.activityPickerMenuOpen = true
-                leave(picker)
-                suite.expect(picker.showsCompactActivityPicker, "moving into the combination menu keeps its picker visible")
-                picker.activityPickerMenuOpen = false
-                leave(picker)
-                suite.expect(!picker.showsCompactActivityPicker, "leaving hides the activity chooser")
-                picker.expanded = true
-                picker.inside = true
-                suite.expect(!picker.showsCompactActivityPicker, "the chooser does not cover an open page")
-                picker.expanded = false
-                picker.captureControls = true
-                suite.expect(!picker.showsCompactActivityPicker, "capture controls retain priority")
-                picker.captureControls = nil
-                picker.notice = volume
-                suite.expect(!picker.showsCompactActivityPicker, "system notices retain priority")
-                picker.notice = nil
-                picker.hiddenInFullscreen = true
-                suite.expect(!picker.showsCompactActivityPicker, "full-screen content hiding retains priority")
+                direct.hover(true)
+                suite.expect(!direct.showsCompactActivityPicker && direct.hoverWork != nil,
+                             "several activities never replace the opening with a chooser, including Reduce Motion")
+                DispatchQueue.main.advance(1)
+                suite.expect(direct.openings == 1 && !direct.showsCompactActivityPicker,
+                             "the visible strip's page opens after the hover stay")
+                leave(direct)
+                suite.expect(!direct.inside && !direct.showsCompactActivityPicker,
+                             "leaving clears the pointer with no chooser to hide")
             }
         }
         for physical in [false, true] {
@@ -701,21 +687,20 @@ enum NotchHoverTests {
             suite.expect(!interrupted.hoverEmphasized && !interrupted.inside
                          && NSEvent.global.isEmpty && NSEvent.local.isEmpty,
                          "an unreported exit after the notice still clears the emphasis and its observers")
-            // A second activity that starts during a hover opening shows the
-            // picker instead, which still needs the pointer followed out.
+            // A second activity that starts during a hover opening no longer
+            // swaps in a chooser; the opening keeps its deadline and pointer follow.
             let joined = fixture()
             joined.compactActivity = .agents
             joined.compactActivities = [.agents]
             NSEvent.mouseLocation = CGPoint(x: top.midX, y: top.maxY - 1)
             joined.hover(true)
             joined.compactActivities = [.agents, .music]
-            DispatchQueue.main.advance(1)
-            suite.expect(joined.openings == 0 && joined.showsCompactActivityPicker
+            suite.expect(joined.openings == 0 && joined.hoverWork != nil
                          && NSEvent.global.count == 1 && NSEvent.local.count == 1,
-                         "a picker that appears during a hover opening keeps following the pointer")
+                         "a second activity cannot cancel the hover opening")
             follow(to: CGPoint(x: top.midX, y: top.maxY + 300))
-            suite.expect(!joined.showsCompactActivityPicker && NSEvent.global.isEmpty && NSEvent.local.isEmpty,
-                         "an unreported exit to the display above still hides that picker and releases its observers")
+            suite.expect(!joined.inside && NSEvent.global.isEmpty && NSEvent.local.isEmpty,
+                         "an unreported exit to the display above still discards the opening and releases its observers")
         }
         // A full opening grows the island first, and still needs
         // an uninterrupted stay. Leaving without a tracking exit must discard the old deadline.
@@ -1513,17 +1498,17 @@ enum NotchHoverTests {
                    "anything else on the island takes the strip's place for the pointer")
         }
         for opens in [false, true] {
-            let picking = strip(true)
+            let direct = strip(true)
             UserDefaults.standard.enabled = opens
-            picking.compactActivities = [.music, .timer]
-            picking.hover(true)
-            picking.hoverMusicStrip(.cover, entered: true)
-            DispatchQueue.main.advance(1)
-            expect(picking.showsCompactActivityPicker && !picking.musicStripNamed && picking.musicStripPointer == nil,
-                   "the strip at the top of the activity picker has no room to name the song")
-            picking.hoverMusicStrip(.bars, entered: true)
-            expect(picking.musicStripPointer == .bars && picking.musicStripAnswers(.bars),
-                   "but its bars still become the button, even where hover would otherwise open the island")
+            direct.compactActivities = [.music, .timer]
+            direct.hover(true)
+            expect(!direct.showsCompactActivityPicker
+                   && direct.musicStripAnswers(.cover) == !opens
+                   && direct.musicStripAnswers(.bars) == !opens,
+                   "with no chooser the strip answers wherever hover does not open its page")
+            direct.hoverMusicStrip(.bars, entered: true)
+            expect(direct.musicStripPointer == (opens ? nil : .bars),
+                   "its bars become the button only while hover stays on the strip")
         }
 
         // Where the menus leave a capsule no wings, a preview opens on hover.

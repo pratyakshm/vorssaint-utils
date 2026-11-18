@@ -549,10 +549,10 @@ final class NotchService: ObservableObject {
                                       music: hasMusicActivity, keepAwake: hasKeepAwakeActivity)
     }
 
+    /// No named chooser: a closed activity opens its own page. The visible
+    /// strip is the choice, so hover and click both lead to what is shown.
     var showsCompactActivityPicker: Bool {
-        (inside || activityPickerMenuOpen) && !hiddenInFullscreen && !hiddenUntilHover && !expanded && !peeking
-            && !dragPlaceholder && notice == nil && captureControls == nil
-            && compactActivities.count > 1
+        false
     }
 
     var compactActivityPickerLayout: NotchActivityPickerLayout {
@@ -1596,7 +1596,7 @@ final class NotchService: ObservableObject {
         let unnamesMusic = inside != wasInside && endMusicStripHover(leaving: !inside)
         // Hover widens the island a little at once, whatever it does next:
         // a click opening stays widened, and a timed one opens from there.
-        // The activity picker replaces that opening and keeps its hover response.
+        // The visible strip is the only choice; it opens its own page.
         let emphasize = inside && !hiddenInFullscreen && !hiddenUntilHover && !expanded && !peeking && !dragPlaceholder
             && notice == nil && captureControls == nil
             && !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
@@ -1628,8 +1628,8 @@ final class NotchService: ObservableObject {
         // Keep the first deadline until the pointer actually crosses the boundary.
         if inside == wasInside, let hoverWork, !hoverWork.isCancelled { return }
         hoverWork?.cancel(); hoverWork = nil
-        // The visible choices replace automatic opening while several
-        // activities compete. Clicking the strip still opens its full page.
+        // Several activities never replace the opening: the strip on screen
+        // is what opens, so hover and click lead to the same page.
         if showsCompactActivityPicker { return }
         if inside {
             if holdsNotification, let id = notice?.notificationID { holdNotification(id); return }
@@ -3029,9 +3029,8 @@ final class NotchService: ObservableObject {
 
     /// Whether the closed music strip answers the pointer on `part` itself.
     /// Hovering must not open the island over it, which would show the song
-    /// and its buttons anyway. The activity picker, which takes the place of
-    /// that opening while several activities run, keeps the bars' button, but
-    /// the strip at its top has no room to name the song.
+    /// and its buttons anyway. No chooser takes that opening's place: the
+    /// strip answers wherever hover does not immediately open the page.
     func musicStripAnswers(_ part: NotchMusicStripPart) -> Bool {
         guard compactMusicIsVisible, !hiddenUntilHover else { return false }
         if showsCompactActivityPicker { return part == .bars }

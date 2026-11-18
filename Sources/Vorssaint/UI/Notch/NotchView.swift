@@ -188,38 +188,15 @@ struct NotchView: View {
             }
             .padding(.horizontal, NotchLayout.horizontalInset).padding(.top, service.geometry.safeContentTop)
         } else if let activity = service.compactActivity {
-            if service.showsCompactActivityPicker {
-                let layout = service.compactActivityPickerLayout
-                VStack(spacing: 0) {
-                    let strip = service.compactStripSize(for: activity, companion: service.compactCompanion)
-                    ZStack(alignment: .top) {
-                        activityStrip(activity, size: strip)
-                            .frame(width: strip.width, height: layout.headerHeight, alignment: .top)
-                            .id(NotchPickedStrip(activity: activity, companion: service.compactCompanion))
-                            .transition(.blurReplace)
-                    }
-                    .frame(height: layout.headerHeight, alignment: .top)
-                    NotchActivityPicker(activities: service.compactActivities, selected: activity,
-                                        combinations: service.compactActivityCombinations,
-                                        combination: service.compactCompanion.map {
-                                            NotchActivityCombination(primary: activity, companion: $0)
-                                        },
-                                        columns: layout.columns, language: l10n.language,
-                                        select: service.selectCompactActivity, combine: service.selectCompactCombination)
-                        .padding(.horizontal, NotchActivityPickerLayout.horizontalInset)
-                        .padding(.vertical, NotchActivityPickerLayout.verticalInset)
-                }
-            } else {
-                // Hover grows the capsule around its strip, as it grows the
-                // notch around its wings. Drawn at the grown size, a song's
-                // cover and bars jumped out at once while the shape still grew.
-                let strip = service.compactStripSize(for: activity, companion: service.compactCompanion)
-                activityStrip(activity, size: strip)
-                    .modifier(NotchMascotActivityVisit(service: service,
-                                                       track: service.mascotTrack(overActivityStrip: strip),
-                                                       ownStrip: true))
-                    .transition(companionSwap)
-            }
+            // Hover grows the capsule around its strip, as it grows the
+            // notch around its wings. Drawn at the grown size, a song's
+            // cover and bars jumped out at once while the shape still grew.
+            let strip = service.compactStripSize(for: activity, companion: service.compactCompanion)
+            activityStrip(activity, size: strip)
+                .modifier(NotchMascotActivityVisit(service: service,
+                                                   track: service.mascotTrack(overActivityStrip: strip),
+                                                   ownStrip: true))
+                .transition(companionSwap)
         } else if let departingMusic = service.departingMusic ?? service.lingeringMusic {
             Group {
                 if floats { NotchCapsuleMusicStrip(service: service, snapshot: departingMusic) }
